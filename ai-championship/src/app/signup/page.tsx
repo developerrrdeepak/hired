@@ -109,6 +109,7 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [emailError, setEmailError] = useState<string | null>(null);
@@ -180,7 +181,18 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-            await updateProfile(user, { displayName: name });
+            
+            let photoURL = '';
+            if (photoFile) {
+                const { ref: storageRef, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                const { getStorage } = await import('firebase/storage');
+                const storage = getStorage();
+                const photoRef = storageRef(storage, `profiles/${user.uid}/photo`);
+                await uploadBytes(photoRef, photoFile);
+                photoURL = await getDownloadURL(photoRef);
+            }
+            
+            await updateProfile(user, { displayName: name, photoURL: photoURL || undefined });
             
             const organizationId = `personal-${user.uid}`;
             
@@ -192,6 +204,7 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
                 organizationId: organizationId,
                 email: user.email,
                 displayName: name,
+                photoURL: photoURL,
                 role: 'Candidate' as UserRole,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -274,6 +287,11 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
               <div className="grid gap-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="photo">Profile Photo (Optional)</Label>
+                <Input id="photo" type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} disabled={isLoading} />
+                <p className="text-xs text-muted-foreground">You can skip this and add it later</p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
