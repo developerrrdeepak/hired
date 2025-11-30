@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, collectionGroup } from 'firebase/firestore';
 import type { Application, Candidate, Job, Challenge } from '@/lib/definitions';
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -163,9 +163,7 @@ function ActionIconButton({ title, icon: Icon, href, disabled = false, delay }: 
 export default function CandidateDashboardPage() {
     const { firestore, user, isUserLoading } = useFirebase();
     const candidateEmail = user?.email;
-    
-    // In a real multi-tenant app, org ID would come from user profile. For demo, it's hardcoded.
-    const organizationId = 'org-demo-owner-id';
+    const organizationId = user?.uid ? `personal-${user.uid}` : null;
 
     const candidateQuery = useMemoFirebase(() => {
         if (!firestore || !candidateEmail || isUserLoading) return null;
@@ -224,7 +222,7 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
 
-       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20">
+       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20 relative">
           <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-primary/10 to-transparent">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -238,7 +236,7 @@ export default function CandidateDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AvailableJobsList organizationId={organizationId} candidate={candidate} />
+            <AvailableJobsList candidate={candidate} />
           </CardContent>
         </Card>
 
@@ -256,7 +254,7 @@ export default function CandidateDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <AvailableChallengesList organizationId={organizationId} />
+            <AvailableChallengesList />
           </CardContent>
         </Card>
 
@@ -302,15 +300,16 @@ export default function CandidateDashboardPage() {
 }
 
 
-function AvailableJobsList({ organizationId, candidate }: { organizationId: string, candidate: Candidate | null }) {
+function AvailableJobsList({ candidate }: { candidate: Candidate | null }) {
     const { firestore } = useFirebase();
     const jobsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
+        // Use collectionGroup to fetch jobs from ALL organizations
         return query(
-            collection(firestore, `organizations/${organizationId}/jobs`),
+            collectionGroup(firestore, 'jobs'),
             where('status', '==', 'open')
         );
-    }, [firestore, organizationId]);
+    }, [firestore]);
 
     const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
 
@@ -347,6 +346,7 @@ function AvailableJobsList({ organizationId, candidate }: { organizationId: stri
                                 {job.matchScore && job.matchScore >= 85 && (
                                     <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">Hot Match!</span>
                                 )}
+                                <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded">Posted by Employer</span>
                             </div>
                             <p className="text-sm text-muted-foreground">{job.department} • {job.location}</p>
                         </div>
@@ -376,15 +376,16 @@ function AvailableJobsList({ organizationId, candidate }: { organizationId: stri
     );
 }
 
-function AvailableChallengesList({ organizationId }: { organizationId: string }) {
+function AvailableChallengesList() {
     const { firestore } = useFirebase();
     const challengesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
+        // Use collectionGroup to fetch challenges from ALL organizations
         return query(
-            collection(firestore, `organizations/${organizationId}/challenges`),
+            collectionGroup(firestore, 'challenges'),
             where('status', '==', 'active')
         );
-    }, [firestore, organizationId]);
+    }, [firestore]);
 
     const { data: challenges, isLoading } = useCollection<Challenge>(challengesQuery);
 
@@ -413,6 +414,7 @@ function AvailableChallengesList({ organizationId }: { organizationId: string })
                                 <div className="flex items-center gap-2 mb-1">
                                     <h4 className="font-bold text-lg">{challenge.title}</h4>
                                     <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">LIVE</span>
+                                    <span className="text-xs bg-purple-500/10 text-purple-600 px-2 py-0.5 rounded">By Employer</span>
                                 </div>
                                 <p className="text-sm text-muted-foreground">{challenge.difficulty} • {challenge.type}</p>
                             </div>
