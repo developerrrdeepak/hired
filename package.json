@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "cd ai-championship && npm install && npm run build"
+  },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@vultr/vultr-node": "^2.8.0"
