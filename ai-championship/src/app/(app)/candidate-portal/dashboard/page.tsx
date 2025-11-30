@@ -22,7 +22,7 @@ import {
 import Link from "next/link";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from 'firebase/firestore';
-import type { Application, Candidate, Job } from '@/lib/definitions';
+import type { Application, Candidate, Job, Challenge } from '@/lib/definitions';
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -210,8 +210,32 @@ export default function CandidateDashboardPage() {
             <ActionIconButton title="Skill-set Finder" icon={Sparkles} href="#" disabled delay={400} />
         </div>
 
+       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-500">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Available Jobs</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/jobs">View All</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <AvailableJobsList organizationId={organizationId} />
+          </CardContent>
+        </Card>
+
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-600">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Hackathons & Challenges</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/challenges">View All</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <AvailableChallengesList organizationId={organizationId} />
+          </CardContent>
+        </Card>
+
        <div className="grid gap-6 md:grid-cols-2">
-         <Card className="glassmorphism transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-500">
+         <Card className="glassmorphism transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-700">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Trending News</CardTitle>
             <RefreshCcw className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />
@@ -251,6 +275,70 @@ export default function CandidateDashboardPage() {
   );
 }
 
+
+function AvailableJobsList({ organizationId }: { organizationId: string }) {
+    const { firestore } = useFirebase();
+    const jobsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, `organizations/${organizationId}/jobs`),
+            where('status', '==', 'open')
+        );
+    }, [firestore, organizationId]);
+
+    const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
+
+    if (isLoading) return <Skeleton className="h-32 w-full" />;
+    if (!jobs?.length) return <p className="text-sm text-muted-foreground">No jobs available</p>;
+
+    return (
+        <div className="space-y-3">
+            {jobs.slice(0, 3).map((job) => (
+                <Link key={job.id} href={`/jobs/${job.id}`} className="block p-3 rounded-lg border hover:bg-accent transition-colors">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h4 className="font-semibold">{job.title}</h4>
+                            <p className="text-sm text-muted-foreground">{job.department}</p>
+                        </div>
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{job.type}</span>
+                    </div>
+                </Link>
+            ))}
+        </div>
+    );
+}
+
+function AvailableChallengesList({ organizationId }: { organizationId: string }) {
+    const { firestore } = useFirebase();
+    const challengesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, `organizations/${organizationId}/challenges`),
+            where('status', '==', 'active')
+        );
+    }, [firestore, organizationId]);
+
+    const { data: challenges, isLoading } = useCollection<Challenge>(challengesQuery);
+
+    if (isLoading) return <Skeleton className="h-32 w-full" />;
+    if (!challenges?.length) return <p className="text-sm text-muted-foreground">No challenges available</p>;
+
+    return (
+        <div className="space-y-3">
+            {challenges.slice(0, 3).map((challenge) => (
+                <Link key={challenge.id} href={`/challenges/${challenge.id}`} className="block p-3 rounded-lg border hover:bg-accent transition-colors">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h4 className="font-semibold">{challenge.title}</h4>
+                            <p className="text-sm text-muted-foreground">{challenge.difficulty}</p>
+                        </div>
+                        <span className="text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">{challenge.type}</span>
+                    </div>
+                </Link>
+            ))}
+        </div>
+    );
+}
 
 function DashboardSkeleton() {
   return (
