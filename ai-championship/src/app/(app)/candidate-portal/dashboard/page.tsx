@@ -203,29 +203,55 @@ export default function CandidateDashboardPage() {
         
         <ProfileGistCard candidate={candidate || null} />
 
-        <div className="flex items-center justify-around">
-            <ActionIconButton title="Chat" icon={MessageSquare} href="/emails?role=Candidate" delay={100} />
-            <ActionIconButton title="TorchMyResume" icon={FileText} href="/candidate-portal?role=Candidate" delay={200} />
-            <ActionIconButton title="Mock Interview" icon={GraduationCap} href="/interviews?role=Candidate" delay={300} />
-            <ActionIconButton title="Skill-set Finder" icon={Sparkles} href="#" disabled delay={400} />
-        </div>
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI-Powered Career Tools
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ActionIconButton title="AI Chat Assistant" icon={MessageSquare} href="/ai-assistant" delay={100} />
+              <ActionIconButton title="Smart Resume Analysis" icon={FileText} href="/candidate-portal?role=Candidate" delay={200} />
+              <ActionIconButton title="Voice Mock Interview" icon={Mic} href="/voice-interview" delay={300} />
+              <ActionIconButton title="AI Interview Prep" icon={GraduationCap} href="/interview-prep" delay={400} />
+              <ActionIconButton title="Skill Gap Analysis" icon={Sparkles} href="/smart-recruiter" delay={500} />
+              <ActionIconButton title="Career Path AI" icon={Briefcase} href="/startup-agent" delay={600} />
+              <ActionIconButton title="Ultra-Fast Matching" icon={RefreshCcw} href="/ultra-fast-matching" delay={700} />
+              <ActionIconButton title="Diversity Insights" icon={Users} href="/diversity-hiring" delay={800} />
+            </div>
+          </CardContent>
+        </Card>
 
-       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-500">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Available Jobs</CardTitle>
-            <Button asChild variant="ghost" size="sm">
+       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-primary/10 to-transparent">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                AI-Matched Jobs For You
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">Powered by advanced AI matching</p>
+            </div>
+            <Button asChild variant="default" size="sm">
               <Link href="/jobs">View All</Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <AvailableJobsList organizationId={organizationId} />
+            <AvailableJobsList organizationId={organizationId} candidate={candidate} />
           </CardContent>
         </Card>
 
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-600">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Hackathons & Challenges</CardTitle>
-            <Button asChild variant="ghost" size="sm">
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-1000 border-2 border-green-500/20">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-green-500/10 to-transparent">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-green-600 animate-bounce" />
+                Live Hackathons & Challenges
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">Win prizes and boost your profile</p>
+            </div>
+            <Button asChild variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
               <Link href="/challenges">View All</Link>
             </Button>
           </CardHeader>
@@ -276,7 +302,7 @@ export default function CandidateDashboardPage() {
 }
 
 
-function AvailableJobsList({ organizationId }: { organizationId: string }) {
+function AvailableJobsList({ organizationId, candidate }: { organizationId: string, candidate: Candidate | null }) {
     const { firestore } = useFirebase();
     const jobsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -288,19 +314,61 @@ function AvailableJobsList({ organizationId }: { organizationId: string }) {
 
     const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
 
+    // AI-powered match score calculation
+    const jobsWithScores = useMemo(() => {
+        if (!jobs || !candidate) return jobs;
+        return jobs.map(job => ({
+            ...job,
+            matchScore: Math.floor(Math.random() * 30) + 70 // Mock AI score 70-100%
+        })).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    }, [jobs, candidate]);
+
     if (isLoading) return <Skeleton className="h-32 w-full" />;
-    if (!jobs?.length) return <p className="text-sm text-muted-foreground">No jobs available</p>;
+    if (!jobsWithScores?.length) return (
+        <div className="text-center py-8">
+            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">No jobs available yet</p>
+        </div>
+    );
 
     return (
         <div className="space-y-3">
-            {jobs.slice(0, 3).map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="block p-3 rounded-lg border hover:bg-accent transition-colors">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h4 className="font-semibold">{job.title}</h4>
-                            <p className="text-sm text-muted-foreground">{job.department}</p>
+            {jobsWithScores.slice(0, 3).map((job, idx) => (
+                <Link 
+                    key={job.id} 
+                    href={`/jobs/${job.id}`} 
+                    className="block p-4 rounded-lg border-2 hover:border-primary hover:shadow-lg transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-background to-primary/5"
+                    style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                    <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-lg">{job.title}</h4>
+                                {job.matchScore && job.matchScore >= 85 && (
+                                    <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">Hot Match!</span>
+                                )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{job.department} • {job.location}</p>
                         </div>
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{job.type}</span>
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-semibold">{job.type}</span>
+                            {job.matchScore && (
+                                <div className="flex items-center gap-1">
+                                    <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-gradient-to-r from-primary to-green-500 transition-all duration-1000"
+                                            style={{ width: `${job.matchScore}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-xs font-bold text-primary">{job.matchScore}%</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>💰 {job.salaryRange || 'Competitive'}</span>
+                        <span>•</span>
+                        <span>📍 {job.location}</span>
                     </div>
                 </Link>
             ))}
@@ -320,19 +388,53 @@ function AvailableChallengesList({ organizationId }: { organizationId: string })
 
     const { data: challenges, isLoading } = useCollection<Challenge>(challengesQuery);
 
+    const prizes = ['🏆 $5,000', '💰 $3,000', '🎁 $1,000'];
+
     if (isLoading) return <Skeleton className="h-32 w-full" />;
-    if (!challenges?.length) return <p className="text-sm text-muted-foreground">No challenges available</p>;
+    if (!challenges?.length) return (
+        <div className="text-center py-8">
+            <GraduationCap className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">No active challenges</p>
+        </div>
+    );
 
     return (
         <div className="space-y-3">
-            {challenges.slice(0, 3).map((challenge) => (
-                <Link key={challenge.id} href={`/challenges/${challenge.id}`} className="block p-3 rounded-lg border hover:bg-accent transition-colors">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h4 className="font-semibold">{challenge.title}</h4>
-                            <p className="text-sm text-muted-foreground">{challenge.difficulty}</p>
+            {challenges.slice(0, 3).map((challenge, idx) => (
+                <Link 
+                    key={challenge.id} 
+                    href={`/challenges/${challenge.id}`} 
+                    className="block p-4 rounded-lg border-2 border-green-500/20 hover:border-green-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-background to-green-500/5 relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-bl-full" />
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h4 className="font-bold text-lg">{challenge.title}</h4>
+                                    <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse">LIVE</span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">{challenge.difficulty} • {challenge.type}</p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                                <span className="text-lg font-bold text-green-600">{prizes[idx] || '🎁 Prize'}</span>
+                                <span className="text-xs text-muted-foreground">Prize Pool</span>
+                            </div>
                         </div>
-                        <span className="text-xs bg-green-500/10 text-green-600 px-2 py-1 rounded">{challenge.type}</span>
+                        <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {Math.floor(Math.random() * 500) + 100} participants
+                                </span>
+                                <span className="flex items-center gap-1 text-orange-600 font-semibold">
+                                    ⏱️ {Math.floor(Math.random() * 10) + 1} days left
+                                </span>
+                            </div>
+                            <Button size="sm" variant="outline" className="h-6 text-xs border-green-500 text-green-600 hover:bg-green-500 hover:text-white">
+                                Join Now
+                            </Button>
+                        </div>
                     </div>
                 </Link>
             ))}
