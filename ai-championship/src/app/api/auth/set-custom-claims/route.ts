@@ -4,15 +4,18 @@ import { getAuth } from 'firebase-admin/auth';
 import { z } from 'zod';
 
 // Initialize Firebase Admin with proper credentials
-if (!getApps().length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-    : undefined;
-
-  initializeApp({
-    credential: serviceAccount ? cert(serviceAccount) : undefined,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  });
+let adminInitialized = false;
+try {
+  if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    initializeApp({
+      credential: cert(serviceAccount),
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+    adminInitialized = true;
+  }
+} catch (error) {
+  console.warn('Firebase Admin not initialized:', error);
 }
 
 // Input validation schema
@@ -49,6 +52,14 @@ function checkRateLimit(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Firebase Admin is initialized
+    if (!adminInitialized) {
+      return NextResponse.json(
+        { error: 'Firebase Admin not configured' },
+        { status: 503 }
+      );
+    }
+
     // Rate limiting
     const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
     if (!checkRateLimit(ip)) {

@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
-import { initializeApp, getApps } from 'firebase-admin/app'
+import { initializeApp, getApps, cert } from 'firebase-admin/app'
 
-if (!getApps().length) {
-  initializeApp()
+let adminInitialized = false;
+try {
+  if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    initializeApp({
+      credential: cert(serviceAccount),
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+    adminInitialized = true;
+  }
+} catch (error) {
+  console.warn('Firebase Admin not initialized:', error);
 }
 
 export async function GET(request: NextRequest) {
   try {
+    if (!adminInitialized) {
+      return NextResponse.json({ error: 'Firebase Admin not configured' }, { status: 503 })
+    }
+
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Missing authorization token' }, { status: 401 })
