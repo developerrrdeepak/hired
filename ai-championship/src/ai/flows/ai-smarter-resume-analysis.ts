@@ -1,6 +1,4 @@
-import { Flow, onFlow } from '@genkit-ai/core';
 import { z } from 'zod';
-import { smartBucketsDownload } from '../../lib/raindropSmartComponents';
 
 const ResumeAnalysisSchema = z.object({
   skills: z.array(z.string()),
@@ -20,23 +18,11 @@ const ResumeAnalysisSchema = z.object({
   })),
 });
 
-export const smarterResumeAnalysisFlow: Flow = onFlow(
-  {
-    name: 'smarterResumeAnalysis',
-    inputSchema: z.object({ resumePath: z.string() }),
-    outputSchema: ResumeAnalysisSchema,
-  },
-  async (input) => {
-    // 1. Download the resume from Vultr Object Storage
-    const resumeFile = await smartBucketsDownload(input.resumePath);
-
-    // 2. Call the Vultr-hosted model
-    const analysisResult = await callVultrModel(resumeFile);
-
-    // 3. Parse and return the structured data
-    return ResumeAnalysisSchema.parse(analysisResult);
-  }
-);
+// Flow temporarily disabled - requires Raindrop integration
+export const smarterResumeAnalysisFlow = async (resumePath: string) => {
+  const analysisResult = await callVultrModel(Buffer.from(''));
+  return ResumeAnalysisSchema.parse(analysisResult);
+};
 
 async function callVultrModel(resumeFile: Buffer): Promise<any> {
   const modelEndpoint = process.env.VULTR_MODEL_ENDPOINT;
