@@ -90,7 +90,8 @@ async function handleGoogleSignIn(role: UserRole, { auth, firestore, toast, rout
             toast({ title: `Welcome back, ${user.displayName}!` });
         }
         
-        router.push('/');
+        const redirectPath = role === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+        router.push(redirectPath);
 
     } catch (error: any) {
         console.error("Google Sign-In failed:", error);
@@ -240,7 +241,7 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
             });
 
             localStorage.setItem('userOrgId', organizationId);
-            setTimeout(() => router.push('/dashboard'), 500);
+            setTimeout(() => router.push('/candidate-portal/dashboard'), 500);
             
         } catch (err: any) {
             const errorMessage = getEmailErrorMessage(err);

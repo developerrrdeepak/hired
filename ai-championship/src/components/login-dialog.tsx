@@ -17,7 +17,7 @@ import { Loader2, Briefcase, GraduationCap } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { UserRole } from '@/lib/definitions';
 import { doc, getDoc, writeBatch } from 'firebase/firestore';
 
@@ -91,7 +91,8 @@ async function handleGoogleSignIn(role: UserRole, { auth, firestore, toast, rout
         }
         
         onLoginSuccess();
-        router.push('/');
+        const redirectPath = role === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+        router.push(redirectPath);
 
     } catch (error: any) {
         console.error("Google Sign-In failed:", error);
@@ -127,9 +128,13 @@ function LoginForm({ userType, onBack, onLoginSuccess }: { userType: 'candidate'
 
         setIsLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, values.email, values.password);
+            const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+            const userDocRef = doc(firestore, "users", userCredential.user.uid);
+            const userDoc = await getDoc(userDocRef);
+            const userRole = userDoc.data()?.role;
             onLoginSuccess();
-            router.push('/');
+            const redirectPath = userRole === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+            router.push(redirectPath);
         } catch (error: any) {
             console.error("Sign-in failed:", error);
             let description = 'Invalid credentials. Please check your email and password.';
@@ -268,6 +273,7 @@ export function LoginDialog() {
                 <Button variant="ghost">Sign In</Button>
             </DialogTrigger>
             <DialogContent className="p-0 border-none w-full max-w-md">
+                <DialogTitle className="sr-only">Sign In to HireVision</DialogTitle>
                  <FirebaseClientProvider>
                     <LoginPageContent onLoginSuccess={() => setIsOpen(false)} />
                  </FirebaseClientProvider>

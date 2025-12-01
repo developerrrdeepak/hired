@@ -99,7 +99,8 @@ async function handleGoogleSignIn(role: UserRole, { auth, firestore, toast, rout
             toast({ title: `Welcome back, ${user.displayName}!` });
         }
         
-        router.push('/');
+        const redirectPath = role === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+        router.push(redirectPath);
 
     } catch (error: any) {
         console.error("Google Sign-In failed:", error);
@@ -146,7 +147,9 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
                 localStorage.setItem('userOrgId', userDoc.data().organizationId);
             }
             toast({ title: 'Success', description: 'Logging you in...' });
-            router.push('/');
+            const userRole = userDoc.data()?.role;
+            const redirectPath = userRole === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+            router.push(redirectPath);
         } catch (error: any) {
             console.error("Sign-in failed:", error);
             const description = getEmailErrorMessage(error);
