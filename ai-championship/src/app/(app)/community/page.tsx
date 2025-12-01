@@ -42,12 +42,12 @@ export default function CommunityPage() {
   const { data: allPosts, isLoading } = useCollection<Post>(postsQuery);
 
   const connectionsQuery = useMemoFirebase(() => {
-    if (!firestore || !userId) return null;
+    if (!firestore) return null;
     return query(
       collection(firestore, 'connections'),
       where('status', '==', 'accepted')
     );
-  }, [firestore, userId]);
+  }, [firestore]);
 
   const { data: connections } = useCollection(connectionsQuery);
 

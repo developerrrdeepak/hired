@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserPlus, UserCheck, Users, Check, X } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, addDoc, updateDoc, doc, arrayUnion, or } from 'firebase/firestore';
+import { collection, query, where, orderBy, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
 import { useUserContext } from '../layout';
 import type { Connection } from '@/lib/definitions';
@@ -30,15 +30,16 @@ export default function ConnectionsPage() {
     if (!firestore || !userId) return null;
     return query(
       collection(firestore, 'connections'),
-      or(
-        where('requesterId', '==', userId),
-        where('receiverId', '==', userId)
-      ),
       orderBy('createdAt', 'desc')
     );
   }, [firestore, userId]);
 
-  const { data: connections } = useCollection<Connection>(connectionsQuery);
+  const { data: allConnections } = useCollection<Connection>(connectionsQuery);
+
+  const connections = useMemo(() => {
+    if (!allConnections || !userId) return [];
+    return allConnections.filter(c => c.requesterId === userId || c.receiverId === userId);
+  }, [allConnections, userId]);
 
   const acceptedConnections = useMemo(() => {
     return connections?.filter(c => c.status === 'accepted') || [];

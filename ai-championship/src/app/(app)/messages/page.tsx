@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Send, Paperclip, Mic, Search, MoreVertical } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useUserContext } from '../layout';
 import type { Conversation, Message } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
@@ -40,12 +40,18 @@ export default function MessagesPage() {
     if (!firestore || !userId) return null;
     return query(
       collection(firestore, 'conversations'),
-      where('participantIds', 'array-contains', userId),
       orderBy('updatedAt', 'desc')
     );
   }, [firestore, userId]);
 
-  const { data: conversations } = useCollection<Conversation>(conversationsQuery);
+  const { data: allConversations } = useCollection<Conversation>(conversationsQuery);
+
+  const conversations = useMemo(() => {
+    if (!allConversations || !userId) return [];
+    return allConversations.filter(conv => 
+      conv.participants.some(p => p.id === userId)
+    );
+  }, [allConversations, userId]);
 
   const messagesQuery = useMemoFirebase(() => {
     if (!firestore || !selectedConversation) return null;
