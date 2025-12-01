@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, X, Building } from "lucide-react";
-import { useUserContext } from "../layout";
+import { useUserContext } from "@/app/(app)/layout";
 
 const jobFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
