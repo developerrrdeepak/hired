@@ -257,6 +257,15 @@ export default function MessagesPage() {
     return otherParticipant?.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const convId = params.get('convId');
+    if (convId && conversations) {
+      const conv = conversations.find(c => c.id === convId);
+      if (conv) setSelectedConversation(conv);
+    }
+  }, [conversations]);
+
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <PageHeader

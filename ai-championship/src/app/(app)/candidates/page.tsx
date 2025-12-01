@@ -500,7 +500,26 @@ export default function CandidatesPage() {
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => router.push(`/messages?userId=${candidate.id}`)}
+                      onClick={async () => {
+                        if (!firestore || !userId) return;
+                        try {
+                          const convRef = await addDoc(collection(firestore, 'conversations'), {
+                            participants: [
+                              { id: userId, name: displayName, role: role },
+                              { id: candidate.id, name: candidate.name, role: 'Candidate' }
+                            ],
+                            participantIds: [userId, candidate.id],
+                            lastMessage: '',
+                            lastMessageAt: new Date().toISOString(),
+                            unreadCount: {},
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                          });
+                          router.push(`/messages?convId=${convRef.id}`);
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      }}
                       title="Send Message"
                     >
                       <Mail className="h-4 w-4" />
