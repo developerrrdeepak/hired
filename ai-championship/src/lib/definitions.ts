@@ -279,3 +279,37 @@ export type Course = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type MessageType = 'text' | 'voice' | 'attachment';
+
+export type Message = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: UserRole;
+  receiverId: string;
+  type: MessageType;
+  content: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  voiceUrl?: string;
+  voiceDuration?: number;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export type Conversation = {
+  id: string;
+  participants: {
+    id: string;
+    name: string;
+    role: UserRole;
+    avatarUrl?: string;
+  }[];
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unreadCount: { [userId: string]: number };
+  createdAt: string;
+  updatedAt: string;
+};

@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Star, Search, Bookmark, Mail, UserPlus, Sparkles } from 'lucide-react';
+import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Candidate, Application, Job } from '@/lib/definitions';
@@ -500,12 +500,10 @@ export default function CandidatesPage() {
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => {
-                        setSelectedCandidate(candidate);
-                        setInviteDialogOpen(true);
-                      }}
+                      onClick={() => router.push(`/messages?userId=${candidate.id}`)}
+                      title="Send Message"
                     >
-                      <UserPlus className="h-4 w-4" />
+                      <Mail className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
