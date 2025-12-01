@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfileEditPage() {
-  const { user, firestore, storage } = useFirebase();
+  const { user, firestore, storage } = useFirebase() as any;
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
