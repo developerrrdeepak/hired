@@ -23,7 +23,10 @@ import {
   Mic,
   Brain,
   Rocket,
-  Heart
+  Heart,
+  Sparkles,
+  UserPlus,
+  MessageCircle
 } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -56,14 +59,12 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/applications', icon: FileText, label: 'Applications' },
-        { href: '/interviews', icon: List, label: 'Interviews' },
-        { href: '/challenges', icon: Trophy, label: 'Challenges' },
-        { href: '/emails', icon: Mail, label: 'Emails' },
+        { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+        { href: '/messages', icon: MessageCircle, label: 'Messages' },
       ],
     },
     {
         items: [
-            { href: '/ai-assistant', icon: Bot, label: 'AI Tools' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
@@ -76,13 +77,12 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/applications', icon: FileText, label: 'Applications' },
-        { href: '/interviews', icon: List, label: 'Interviews' },
-        { href: '/emails', icon: Mail, label: 'Emails' },
+        { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+        { href: '/messages', icon: MessageCircle, label: 'Messages' },
       ]
     },
     {
       items: [
-        { href: '/ai-assistant', icon: Bot, label: 'AI Tools' },
         { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
@@ -109,16 +109,11 @@ const navConfig: Record<string, NavSection[]> = {
         items: [
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
+            { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
             { href: '/challenges', icon: Trophy, label: 'Challenges' },
-            { href: '/courses', icon: GraduationCap, label: 'Courses' },
             { href: '/community', icon: Users, label: 'Community' },
-        ]
-    },
-    {
-        items: [
-            { href: '/voice-interview', icon: Mic, label: 'AI Interview' },
-            { href: '/interview-prep', icon: Brain, label: 'Interview Prep' },
-            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/connections', icon: UserPlus, label: 'Connections' },
+            { href: '/messages', icon: MessageCircle, label: 'Messages' },
         ]
     },
     {
