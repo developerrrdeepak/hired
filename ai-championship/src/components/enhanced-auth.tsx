@@ -33,7 +33,10 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
   const router = useRouter();
 
   const handleGoogleAuth = async () => {
-    if (!auth || !firestore) return;
+    if (!auth || !firestore) {
+      setError('Firebase not initialized');
+      return;
+    }
     
     setIsLoading(true);
     setError('');
@@ -42,6 +45,9 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
       const provider = new GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
       
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
@@ -119,11 +125,25 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
       router.push('/');
     } catch (error: any) {
       console.error('Google auth error:', error);
-      setError(error.message || 'Authentication failed');
+      console.error('Error code:', error.code);
+      console.error('Error details:', error);
+      
+      let errorMessage = 'Authentication failed';
+      if (error.code === 'auth/internal-error') {
+        errorMessage = 'Internal error. Check Firebase configuration and authorized domains.';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Popup blocked. Please allow popups for this site.';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in cancelled.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Authentication Failed',
-        description: error.message || 'Please try again.'
+        description: errorMessage
       });
     } finally {
       setIsLoading(false);
