@@ -1,103 +1,83 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom'
+import { initializeApp, getApps, deleteApp } from 'firebase/app'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
+
+// Test Firebase configuration
+const testFirebaseConfig = {
+  apiKey: "test-api-key",
+  authDomain: "test-project.firebaseapp.com",
+  projectId: "test-project",
+  storageBucket: "test-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:test"
+}
+
+// Global test setup
+beforeAll(async () => {
+  // Initialize Firebase for testing
+  if (!getApps().length) {
+    const app = initializeApp(testFirebaseConfig, 'test-app')
+    const auth = getAuth(app)
+    const firestore = getFirestore(app)
+    const storage = getStorage(app)
+
+    // Connect to emulators
+    try {
+      connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true })
+      connectFirestoreEmulator(firestore, 'localhost', 8080)
+      connectStorageEmulator(storage, 'localhost', 9199)
+    } catch (error) {
+      console.warn('Emulator connection failed:', error)
+    }
+
+    // Make Firebase instances available globally for tests
+    global.testFirebaseApp = app
+    global.testAuth = auth
+    global.testFirestore = firestore
+    global.testStorage = storage
+  }
+})
+
+// Cleanup after all tests
+afterAll(async () => {
+  const apps = getApps()
+  await Promise.all(apps.map(app => deleteApp(app)))
+})
 
 // Mock Next.js router
-jest.mock('next/router', () => ({
-  useRouter() {
-    return {
-      route: '/',
-      pathname: '/',
-      query: {},
-      asPath: '/',
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn().mockResolvedValue(undefined),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-      isFallback: false,
-    };
-  },
-}));
-
-// Mock Next.js navigation
 jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-    };
-  },
-  useSearchParams() {
-    return new URLSearchParams();
-  },
-  usePathname() {
-    return '/';
-  },
-}));
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}))
 
-// Mock environment variables
-process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'test-api-key';
-process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = 'test.firebaseapp.com';
-process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'test-project';
-process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = 'test-project.appspot.com';
-process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = '123456789';
-process.env.NEXT_PUBLIC_FIREBASE_APP_ID = '1:123456789:web:abcdef';
+// Mock toast hook
+jest.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: jest.fn(),
+  }),
+}))
 
-// Mock Firebase
-jest.mock('firebase/app', () => ({
-  initializeApp: jest.fn(),
-  getApps: jest.fn(() => []),
-}));
-
-jest.mock('firebase/auth', () => ({
-  getAuth: jest.fn(),
-  signInWithEmailAndPassword: jest.fn(),
-  createUserWithEmailAndPassword: jest.fn(),
-  signOut: jest.fn(),
-  onAuthStateChanged: jest.fn(),
-}));
-
-jest.mock('firebase/firestore', () => ({
-  getFirestore: jest.fn(),
-  collection: jest.fn(),
-  doc: jest.fn(),
-  getDoc: jest.fn(),
-  getDocs: jest.fn(),
-  addDoc: jest.fn(),
-  updateDoc: jest.fn(),
-  deleteDoc: jest.fn(),
-  query: jest.fn(),
-  where: jest.fn(),
-  orderBy: jest.fn(),
-  limit: jest.fn(),
-}));
-
-// Global test utilities
-global.fetch = jest.fn();
-
-// Suppress console errors in tests unless explicitly needed
-const originalError = console.error;
-beforeAll(() => {
-  console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
-    ) {
-      return;
+// Suppress console warnings in tests
+const originalConsoleWarn = console.warn
+beforeEach(() => {
+  console.warn = (...args) => {
+    if (args[0]?.includes?.('Firebase') || args[0]?.includes?.('emulator')) {
+      return
     }
-    originalError.call(console, ...args);
-  };
-});
+    originalConsoleWarn(...args)
+  }
+})
 
-afterAll(() => {
-  console.error = originalError;
-});
+afterEach(() => {
+  console.warn = originalConsoleWarn
+})
