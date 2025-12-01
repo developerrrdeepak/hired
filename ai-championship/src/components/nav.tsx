@@ -53,26 +53,18 @@ const navConfig: Record<string, NavSection[]> = {
     {
       items: [
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/reports', icon: BarChart3, label: 'Reports' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
+        { href: '/applications', icon: FileText, label: 'Applications' },
         { href: '/interviews', icon: List, label: 'Interviews' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
-        { href: '/courses', icon: GraduationCap, label: 'Courses' },
+        { href: '/emails', icon: Mail, label: 'Emails' },
       ],
     },
     {
         items: [
-            { href: '/organization', icon: Building, label: 'Public Profile' },
-            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/ai-assistant', icon: Bot, label: 'AI Tools' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
-            { href: '/smart-recruiter', icon: Brain, label: 'Smart Recruiter' },
-            { href: '/startup-agent', icon: Rocket, label: 'Startup Agent' },
-            { href: '/diversity-hiring', icon: Heart, label: 'Diversity Hub' },
-            { href: '/ultra-fast-matching', icon: Zap, label: 'Ultra-Fast Match' },
-            { href: '/raindrop-showcase', icon: Zap, label: 'Raindrop Integration' },
-            { href: '/billing', icon: CreditCard, label: 'Billing' },
-            { href: '/vultr', icon: Cloud, label: 'Vultr' },
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
     }
@@ -85,14 +77,12 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/applications', icon: FileText, label: 'Applications' },
         { href: '/interviews', icon: List, label: 'Interviews' },
-        { href: '/challenges', icon: Trophy, label: 'Challenges' },
-        { href: '/emails', icon: Mail, label: 'Email Center' },
-        { href: '/reports', icon: LineChart, label: 'Reports' },
+        { href: '/emails', icon: Mail, label: 'Emails' },
       ]
     },
     {
       items: [
-        { href: '/raindrop-showcase', icon: Zap, label: 'Raindrop Integration' },
+        { href: '/ai-assistant', icon: Bot, label: 'AI Tools' },
         { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
@@ -118,16 +108,17 @@ const navConfig: Record<string, NavSection[]> = {
     {
         items: [
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-            { href: '/jobs', icon: Briefcase, label: 'Find Jobs' },
+            { href: '/jobs', icon: Briefcase, label: 'Jobs' },
             { href: '/challenges', icon: Trophy, label: 'Challenges' },
+            { href: '/courses', icon: GraduationCap, label: 'Courses' },
+            { href: '/community', icon: Users, label: 'Community' },
         ]
     },
     {
         items: [
-            { href: '/candidate-portal', icon: FileText, label: 'TorchMyResume' },
-            { href: '/voice-interview', icon: Mic, label: 'Voice Interview Prep' },
-            { href: '/interviews', icon: GraduationCap, label: 'Mock Interview' },
-            { href: '/emails', icon: MessageSquare, label: 'Chat' },
+            { href: '/voice-interview', icon: Mic, label: 'AI Interview' },
+            { href: '/interview-prep', icon: Brain, label: 'Interview Prep' },
+            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
         ]
     },
     {
