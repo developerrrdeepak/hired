@@ -46,8 +46,17 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
       provider.addScope('email');
       provider.addScope('profile');
       provider.setCustomParameters({
-        prompt: 'select_account'
+        prompt: 'select_account',
+        access_type: 'offline'
       });
+      
+      // Ensure popup is allowed
+      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        provider.setCustomParameters({
+          ...provider.customParameters,
+          hd: undefined // Remove hosted domain restriction for localhost
+        });
+      }
       
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
