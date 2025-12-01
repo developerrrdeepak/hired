@@ -1,49 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { textToSpeech } from '@/lib/elevenlabs'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server';
 
-const ttsSchema = z.object({
-  text: z.string().min(1).max(5000),
-  voiceId: z.string().optional(),
-  stability: z.number().min(0).max(1).optional(),
-  similarityBoost: z.number().min(0).max(1).optional(),
-})
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { text, voiceId, stability, similarityBoost } = ttsSchema.parse(body)
+    const { text, voiceId } = await request.json();
 
-    const audio = await textToSpeech(text, {
-      voiceId,
-      stability,
-      similarityBoost,
-    })
+    const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+    const VOICE_ID = voiceId || process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
 
-    return new NextResponse(audio, {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': 'attachment; filename="audio.mp3"',
-      },
-    })
+    if (!ELEVENLABS_API_KEY) {
+      // Return mock audio for development
+      return new NextResponse(new Blob(), {
+        headers: { 'Content-Type': 'audio/mpeg' }
+      });
+    }
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'audio/mpeg',
+          'Content-Type': 'application/json',
+          'xi-api-key': ELEVENLABS_API_KEY
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.5
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('ElevenLabs API error');
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    return new NextResponse(audioBuffer, {
+      headers: { 'Content-Type': 'audio/mpeg' }
+    });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to generate audio' },
-      { status: 500 }
-    )
+    console.error('Text-to-speech error:', error);
+    return new NextResponse(new Blob(), {
+      headers: { 'Content-Type': 'audio/mpeg' }
+    });
   }
 }

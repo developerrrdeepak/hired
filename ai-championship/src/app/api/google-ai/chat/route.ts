@@ -1,32 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateAIResponse } from '@/lib/google-ai';
 
 export async function POST(request: NextRequest) {
   try {
     const { message, context } = await request.json();
 
-    if (!message) {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      );
-    }
+    // Mock AI response for now - integrate with your Genkit flows later
+    const responses: Record<string, string> = {
+      'recruitment_assistant': `I can help you with: 
+• Finding and matching candidates
+• Writing job descriptions
+• Interview preparation
+• Candidate screening
+• Resume analysis
 
-    const response = await generateAIResponse(message, context);
+What would you like help with?`,
+      'default': 'I\'m your AI recruitment assistant. How can I help you today?'
+    };
 
     return NextResponse.json({
       success: true,
-      response,
-      timestamp: new Date().toISOString()
+      response: responses[context] || responses.default
     });
-
   } catch (error) {
-    console.error('Google AI API error:', error);
     return NextResponse.json(
-      { 
-        error: 'AI response failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { success: false, error: 'Failed to process request' },
       { status: 500 }
     );
   }

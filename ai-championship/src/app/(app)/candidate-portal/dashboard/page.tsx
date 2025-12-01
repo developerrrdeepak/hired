@@ -20,10 +20,12 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import Link from "next/link";
-import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, where, collectionGroup } from 'firebase/firestore';
+import { useFirebase } from "@/firebase";
 import type { Application, Candidate, Job, Challenge } from '@/lib/definitions';
 import { useMemo } from "react";
+import { useJobs } from '@/hooks/use-jobs';
+import { useChallenges } from '@/hooks/use-challenges';
+import { useCandidateProfile } from '@/hooks/use-candidate-profile';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -161,24 +163,12 @@ function ActionIconButton({ title, icon: Icon, href, disabled = false, delay }: 
 
 
 export default function CandidateDashboardPage() {
-    const { firestore, user, isUserLoading } = useFirebase();
-    const candidateEmail = user?.email;
-    const organizationId = user?.uid ? `personal-${user.uid}` : null;
+    const { user, isUserLoading } = useFirebase();
+    const { candidate, isLoading: isLoadingCandidate } = useCandidateProfile();
 
     const profileComplete = 75;
     const skillReadiness = 85;
     const careerFit = 80;
-
-    const candidateQuery = useMemoFirebase(() => {
-        if (!firestore || !candidateEmail || isUserLoading) return null;
-        return query(
-            collection(firestore, `organizations/${organizationId}/candidates`),
-            where('email', '==', candidateEmail)
-        );
-    }, [firestore, candidateEmail, isUserLoading, organizationId]);
-
-    const { data: candidateData, isLoading: isLoadingCandidate } = useCollection<Candidate>(candidateQuery);
-    const candidate = useMemo(() => candidateData?.[0], [candidateData]);
     
     const isLoading = isUserLoading || isLoadingCandidate;
     
@@ -365,15 +355,7 @@ export default function CandidateDashboardPage() {
 
 
 function AvailableJobsList({ candidate }: { candidate: Candidate | null }) {
-    const { firestore } = useFirebase();
-    const jobsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        // Fetch jobs from a specific organization or use a top-level collection
-        // For now, return null to prevent root-level query
-        return null;
-    }, [firestore]);
-
-    const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
+    const { jobs, isLoading } = useJobs('Candidate');
 
     // AI-powered match score calculation
     const jobsWithScores = useMemo(() => {
@@ -439,14 +421,8 @@ function AvailableJobsList({ candidate }: { candidate: Candidate | null }) {
 }
 
 function AvailableCoursesList() {
-    const { firestore } = useFirebase();
-    const coursesQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        // Prevent root-level query
-        return null;
-    }, [firestore]);
-
-    const { data: courses, isLoading } = useCollection(coursesQuery);
+    const courses: any[] = [];
+    const isLoading = false;
 
     if (isLoading) return <Skeleton className="h-32 w-full" />;
     if (!courses?.length) return (
@@ -487,14 +463,7 @@ function AvailableCoursesList() {
 }
 
 function AvailableChallengesList() {
-    const { firestore } = useFirebase();
-    const challengesQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        // Prevent root-level query
-        return null;
-    }, [firestore]);
-
-    const { data: challenges, isLoading } = useCollection<Challenge>(challengesQuery);
+    const { challenges, isLoading } = useChallenges();
 
     const prizes = ['🏆 $5,000', '💰 $3,000', '🎁 $1,000'];
 

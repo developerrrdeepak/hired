@@ -8,8 +8,8 @@ import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Job } from '@/lib/definitions';
 import { useRouter } from 'next/navigation';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useFirebase } from '@/firebase';
+import { useJobs } from '@/hooks/use-jobs';
 import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Briefcase, MapPin, DollarSign } from 'lucide-react';
@@ -201,17 +201,7 @@ export default function JobsPage() {
 
     const isCandidate = role === 'Candidate';
 
-    const jobsQuery = useMemoFirebase(() => {
-        if (!firestore || !organizationId) return null;
-
-        const jobsCollection = collection(firestore, `organizations/${organizationId}/jobs`);
-        if (isCandidate) {
-            return query(jobsCollection, where('status', '==', 'open'));
-        }
-        return query(jobsCollection);
-    }, [firestore, organizationId, isCandidate]);
-
-    const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
+    const { jobs, isLoading: areJobsLoading } = useJobs(role, organizationId || undefined);
     
     // State for filters is now in the parent component
     const [searchTerm, setSearchTerm] = useState('');
