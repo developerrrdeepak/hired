@@ -13,7 +13,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2 } from "lucide-react";
@@ -225,6 +225,80 @@ function OrganizationSettingsForm({ organization, isOrgLoading }: { organization
     )
 }
 
+function AccountSettings() {
+    const { user, auth } = useFirebase() as any;
+    const { toast } = useToast();
+    const router = useRouter();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+
+    const handlePasswordReset = async () => {
+        if (!auth || !user?.email) return;
+        setIsResetting(true);
+        try {
+            const { sendPasswordResetEmail } = await import('firebase/auth');
+            await sendPasswordResetEmail(auth, user.email);
+            toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for reset instructions.' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to send reset email.' });
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!user || !auth) return;
+        const confirmed = confirm('Are you sure? This action cannot be undone. All your data will be permanently deleted.');
+        if (!confirmed) return;
+        
+        setIsDeleting(true);
+        try {
+            const { deleteUser } = await import('firebase/auth');
+            await deleteUser(auth.currentUser!);
+            toast({ title: 'Account Deleted', description: 'Your account has been permanently deleted.' });
+            router.push('/');
+        } catch (error: any) {
+            if (error.code === 'auth/requires-recent-login') {
+                toast({ variant: 'destructive', title: 'Re-authentication Required', description: 'Please log out and log back in, then try again.' });
+            } else {
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete account.' });
+            }
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Password</CardTitle>
+                    <CardDescription>Reset your account password</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handlePasswordReset} disabled={isResetting} variant="outline">
+                        {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Send Password Reset Email
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card className="border-destructive">
+                <CardHeader>
+                    <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                    <CardDescription>Permanently delete your account and all data</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleDeleteAccount} disabled={isDeleting} variant="destructive">
+                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete Account
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
 export default function SettingsPage() {
     const { firestore } = useFirebase();
     const { organizationId, isUserLoading } = useUserContext();
@@ -243,15 +317,19 @@ export default function SettingsPage() {
             
             <Tabs defaultValue="organization" className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="organization" onClick={() => router.push('/settings')}>Organization</TabsTrigger>
+                    <TabsTrigger value="organization">Organization</TabsTrigger>
                     <TabsTrigger value="team" onClick={() => router.push('/settings/team')}>Team</TabsTrigger>
+                    <TabsTrigger value="account">Account</TabsTrigger>
                 </TabsList>
                 <TabsContent value="organization">
                     <OrganizationSettingsForm organization={organization} isOrgLoading={isUserLoading || isOrgLoading} />
                 </TabsContent>
-                 <TabsContent value="team">
-                    {/* This content will be handled by the team page, but the tab needs to exist */}
-                 </TabsContent>
+                <TabsContent value="team">
+                    {/* This content will be handled by the team page */}
+                </TabsContent>
+                <TabsContent value="account">
+                    <AccountSettings />
+                </TabsContent>
             </Tabs>
         </>
     )

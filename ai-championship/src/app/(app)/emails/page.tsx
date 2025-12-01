@@ -9,6 +9,9 @@ import { collection, addDoc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, Mail } from 'lucide-react';
 

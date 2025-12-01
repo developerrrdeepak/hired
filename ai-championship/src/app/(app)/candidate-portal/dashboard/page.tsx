@@ -204,7 +204,7 @@ export default function CandidateDashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <ActionIconButton title="AI Chat Assistant" icon={MessageSquare} href="/ai-assistant" delay={100} />
               <ActionIconButton title="Smart Resume Analysis" icon={FileText} href="/candidate-portal?role=Candidate" delay={200} />
-              <ActionIconButton title="Voice Mock Interview" icon={Mic} href="/voice-interview" delay={300} />
+              <ActionIconButton title="AI Mock Interview" icon={Mic} href="/voice-interview" delay={300} />
               <ActionIconButton title="AI Interview Prep" icon={GraduationCap} href="/interview-prep" delay={400} />
               <ActionIconButton title="Skill Gap Analysis" icon={Sparkles} href="/smart-recruiter" delay={500} />
               <ActionIconButton title="Career Path AI" icon={Briefcase} href="/startup-agent" delay={600} />
