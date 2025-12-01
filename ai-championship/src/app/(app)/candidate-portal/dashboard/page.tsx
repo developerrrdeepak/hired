@@ -368,11 +368,9 @@ function AvailableJobsList({ candidate }: { candidate: Candidate | null }) {
     const { firestore } = useFirebase();
     const jobsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Use collectionGroup to fetch jobs from ALL organizations
-        return query(
-            collectionGroup(firestore, 'jobs'),
-            where('status', '==', 'open')
-        );
+        // Fetch jobs from a specific organization or use a top-level collection
+        // For now, return null to prevent root-level query
+        return null;
     }, [firestore]);
 
     const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
@@ -444,7 +442,8 @@ function AvailableCoursesList() {
     const { firestore } = useFirebase();
     const coursesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collectionGroup(firestore, 'courses'));
+        // Prevent root-level query
+        return null;
     }, [firestore]);
 
     const { data: courses, isLoading } = useCollection(coursesQuery);
@@ -491,11 +490,8 @@ function AvailableChallengesList() {
     const { firestore } = useFirebase();
     const challengesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Use collectionGroup to fetch challenges from ALL organizations
-        return query(
-            collectionGroup(firestore, 'challenges'),
-            where('status', '==', 'active')
-        );
+        // Prevent root-level query
+        return null;
     }, [firestore]);
 
     const { data: challenges, isLoading } = useCollection<Challenge>(challengesQuery);
