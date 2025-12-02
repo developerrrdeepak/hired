@@ -20,15 +20,18 @@ export default function ChallengeDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const id = params.id as string;
-  const role = useMemo(() => searchParams.get('role'), [searchParams]);
-  const isCandidate = role === 'Candidate';
-
   const { firestore, user } = useFirebase();
   
+  // Get organizationId from URL params or localStorage
   const organizationId = useMemo(() => {
-    if (isCandidate) return 'org-demo-owner-id';
+    const orgIdFromUrl = searchParams.get('orgId');
+    if (orgIdFromUrl) return orgIdFromUrl;
     return user ? localStorage.getItem('userOrgId') : null;
-  }, [user, isCandidate]);
+  }, [searchParams, user]);
+  
+  const isCandidate = useMemo(() => {
+    return searchParams.get('role') === 'Candidate';
+  }, [searchParams]);
 
   const challengeRef = useMemoFirebase(() => {
     if (!firestore || !organizationId || !id) return null;

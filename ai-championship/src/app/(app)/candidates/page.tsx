@@ -83,7 +83,7 @@ const columns: {
 export default function CandidatesPage() {
     const router = useRouter();
     const { firestore } = useFirebase();
-    const { organizationId, isUserLoading, userId } = useUserContext();
+    const { organizationId, isUserLoading, userId, displayName, role } = useUserContext();
     const { toast } = useToast();
 
     const [mounted, setMounted] = useState(false);
@@ -102,12 +102,23 @@ export default function CandidatesPage() {
       return () => clearTimeout(t);
     }, []);
 
+    // Query all public candidate profiles from users collection
     const candidatesQuery = useMemoFirebase(() => {
-        if (!organizationId || !firestore) return null;
-        return query(collection(firestore, `organizations/${organizationId}/candidates`), orderBy('updatedAt', 'desc'));
-    }, [organizationId, firestore]);
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('role', '==', 'Candidate'),
+            orderBy('updatedAt', 'desc')
+        );
+    }, [firestore]);
 
-    const { data: candidates, isLoading: isLoadingCandidates } = useCollection<Candidate>(candidatesQuery);
+    const { data: allUsers, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
+    
+    // Filter to only show public profiles
+    const candidates = useMemo(() => {
+        if (!allUsers) return [];
+        return allUsers.filter(user => user.profileVisibility === 'public' || !user.profileVisibility);
+    }, [allUsers]);
 
     const [applicationsByCandidate, setApplicationsByCandidate] = useState<Map<string, Application>>(new Map());
     const [isLoadingApps, setIsLoadingApps] = useState(true);
@@ -129,7 +140,7 @@ export default function CandidatesPage() {
             try {
                 const querySnapshot = await getDocs(appsQuery);
                 querySnapshot.forEach(doc => {
-                    const app = doc.data() as Application;
+                    const app = { ...doc.data(), id: doc.id } as Application;
                     const existingApp = newAppMap.get(app.candidateId);
                      if (!existingApp || new Date(app.updatedAt) > new Date(existingApp.updatedAt)) {
                         newAppMap.set(app.candidateId, app);
@@ -157,7 +168,7 @@ export default function CandidatesPage() {
     
     const candidatesWithInfo: CandidateWithAppInfo[] = useMemo(() => {
         if (!candidates) return [];
-        if (!jobs && isLoadingJobs) return candidates; 
+        if (!jobs && isLoadingJobs) return candidates.map(c => ({ ...c, isShortlisted: false })); 
 
         const jobsMap = new Map(jobs?.map(job => [job.id, job]));
 
@@ -166,10 +177,17 @@ export default function CandidatesPage() {
             const job = application ? jobsMap.get(application.jobId) : undefined;
             return {
                 ...candidate,
+                name: candidate.displayName || candidate.name || 'Unknown',
+                email: candidate.email || '',
+                currentRole: candidate.currentRole || candidate.role || '',
+                location: candidate.location || '',
+                skills: candidate.skills || [],
+                yearsOfExperience: candidate.yearsOfExperience || 0,
                 jobTitle: job?.title,
                 stage: application?.stage,
                 fitScore: application?.fitScore,
                 isShortlisted: candidate.isShortlisted || false,
+                updatedAt: candidate.updatedAt || candidate.createdAt || new Date().toISOString(),
             };
         });
     }, [candidates, applicationsByCandidate, jobs, isLoadingJobs]);
@@ -227,9 +245,9 @@ export default function CandidatesPage() {
     }, [candidates]);
 
     const handleShortlist = async (candidateId: string, isCurrentlyShortlisted: boolean) => {
-        if (!firestore || !organizationId) return;
+        if (!firestore) return;
         try {
-            await updateDoc(doc(firestore, `organizations/${organizationId}/candidates`, candidateId), {
+            await updateDoc(doc(firestore, 'users', candidateId), {
                 isShortlisted: !isCurrentlyShortlisted,
                 updatedAt: new Date().toISOString(),
             });
@@ -488,6 +506,15 @@ export default function CandidatesPage() {
                     )}
                   </CardContent>
                   <CardFooter className="flex gap-2 pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => router.push(`/public-profile/${candidate.id}`)}
+                      title="View Profile"
+                    >
+                      View Profile
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"

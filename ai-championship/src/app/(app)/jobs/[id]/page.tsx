@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { BrainCircuit, Briefcase, Calendar, DollarSign, Edit, MapPin, PlusCircle, UserCheck, Users, Loader2, HelpCircle, Target, Columns } from "lucide-react";
+import { BrainCircuit, Briefcase, Calendar, DollarSign, Edit, MapPin, PlusCircle, UserCheck, Users, Loader2, HelpCircle, Target, Columns, XCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useMemo, useEffect } from "react";
@@ -18,11 +18,12 @@ import { aiOfferNudge, AiOfferNudgeOutput } from "@/ai/flows/ai-offer-nudge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, collection, query, where, orderBy } from "firebase/firestore";
+import { doc, collection, query, where, orderBy, updateDoc } from "firebase/firestore";
 import type { Job, Candidate, Application } from "@/lib/definitions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { placeholderImages } from '@/lib/placeholder-images';
 import { useUserContext } from "../../layout";
+import { useRouter } from "next/navigation";
 
 type ModalContent = {
     title: string;
@@ -31,16 +32,22 @@ type ModalContent = {
 
 export default function JobDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const { toast } = useToast();
   const { firestore } = useFirebase();
-  const { role, organizationId, isUserLoading: isAppLoading } = useUserContext();
+  const { role, organizationId: userOrgId, isUserLoading: isAppLoading } = useUserContext();
   const isCandidate = role === 'Candidate';
+  
+  // Use orgId from URL params if available, otherwise fall back to user's organizationId
+  const organizationId = searchParams.get('orgId') || userOrgId;
 
+  const router = useRouter();
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent>({title: '', content: ''});
   const [mounted, setMounted] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
     useEffect(() => {
       const t = setTimeout(() => setMounted(true), 10);
       return () => clearTimeout(t);
@@ -73,7 +80,7 @@ export default function JobDetailPage() {
 
   const { data: candidates, isLoading: areCandidatesLoading } = useCollection<Candidate>(candidatesQuery);
 
-  const topCandidates = useMemo(() => {
+  const applicantsList = useMemo(() => {
     if (!applications || !candidates) return [];
 
     const candidateMap = new Map(candidates.map(c => [c.id, c]));
@@ -86,10 +93,10 @@ export default function JobDetailPage() {
           ...candidate,
           fitScore: app.fitScore,
           applicationId: app.id,
+          status: app.status,
         };
       })
-      .filter((c): c is NonNullable<typeof c> => c !== null)
-      .slice(0, 5);
+      .filter((c): c is NonNullable<typeof c> => c !== null);
   }, [applications, candidates]);
 
 
@@ -192,6 +199,49 @@ export default function JobDetailPage() {
         }
     };
 
+  const handleCloseJob = async () => {
+    if (!jobRef || !job) return;
+    setIsClosing(true);
+    try {
+      await updateDoc(jobRef, { status: 'closed', updatedAt: new Date().toISOString() });
+      toast({
+        title: "Success",
+        description: "Job has been closed successfully.",
+      });
+      router.push('/jobs');
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to close job.",
+      });
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  const handleReopenJob = async () => {
+    if (!jobRef || !job) return;
+    setIsClosing(true);
+    try {
+      await updateDoc(jobRef, { status: 'open', updatedAt: new Date().toISOString() });
+      toast({
+        title: "Success",
+        description: "Job has been reopened successfully.",
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reopen job.",
+      });
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
 
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
@@ -227,6 +277,17 @@ export default function JobDetailPage() {
                     Add Candidate
                 </Link>
                 </Button>
+                {job.status === 'open' ? (
+                  <Button variant="destructive" onClick={handleCloseJob} disabled={isClosing}>
+                    {isClosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+                    Close Job
+                  </Button>
+                ) : (
+                  <Button variant="default" onClick={handleReopenJob} disabled={isClosing}>
+                    {isClosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+                    Reopen Job
+                  </Button>
+                )}
             </div>
         )}
       </PageHeader>
@@ -323,27 +384,33 @@ export default function JobDetailPage() {
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top Candidates</CardTitle>
-                        <CardDescription>Highest scoring applicants for this role.</CardDescription>
+                        <CardTitle>Applicants ({applications?.length || 0})</CardTitle>
+                        <CardDescription>All applicants for this role.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        {topCandidates.map(candidate => (
-                            <Link href={`/candidates/${candidate?.id}`} key={candidate?.id} className="flex items-center justify-between p-2 -m-2 rounded-md hover:bg-muted">
-                                <div className="flex items-center gap-3">
+                    <CardContent className="space-y-3 max-h-[500px] overflow-y-auto">
+                        {applicantsList.map(candidate => (
+                            <Link href={`/candidates/${candidate?.id}`} key={candidate?.id} className="flex items-center justify-between p-3 -mx-3 rounded-lg hover:bg-muted transition-colors">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <Avatar>
                                         <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-4')?.imageUrl} data-ai-hint="person face" />
                                         <AvatarFallback>{candidate?.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                        <p className="font-medium">{candidate?.name}</p>
-                                        <p className="text-sm text-muted-foreground">{candidate?.currentRole}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium truncate">{candidate?.name}</p>
+                                        <p className="text-sm text-muted-foreground truncate">{candidate?.currentRole || 'No role specified'}</p>
                                     </div>
                                 </div>
-                                <Badge variant="secondary">{candidate?.fitScore}</Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="shrink-0">{candidate?.fitScore}%</Badge>
+                                </div>
                             </Link>
                         ))}
-                        {topCandidates.length === 0 && (
-                            <p className="text-sm text-muted-foreground text-center py-4">No candidates yet.</p>
+                        {applicantsList.length === 0 && (
+                            <div className="text-center py-8">
+                                <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
+                                <p className="text-sm text-muted-foreground">No applicants yet.</p>
+                                <p className="text-xs text-muted-foreground mt-1">Applications will appear here once candidates apply.</p>
+                            </div>
                         )}
                     </CardContent>
                 </Card>

@@ -9,6 +9,14 @@ export type User = {
   avatarUrl?: string;
   role: UserRole;
   organizationId: string;
+  profileVisibility?: 'public' | 'private';
+  currentRole?: string;
+  location?: string;
+  skills?: string[];
+  yearsOfExperience?: number;
+  isShortlisted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Notification = {

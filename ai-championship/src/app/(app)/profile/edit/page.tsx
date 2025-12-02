@@ -13,15 +13,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Upload, Save, FileText, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProfilePhotoUpload } from '@/components/profile-photo-upload';
 
 export default function ProfileEditPage() {
   const { user, firestore, storage } = useFirebase() as any;
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [photoUrl, setPhotoUrl] = useState<string>('');
   const [profileScore, setProfileScore] = useState(0);
   const [formData, setFormData] = useState({
     displayName: '',
@@ -60,7 +60,7 @@ export default function ProfileEditPage() {
             github: data.github || '',
             portfolio: data.portfolio || '',
           });
-          setPhotoPreview(data.photoURL || user.photoURL || '');
+          setPhotoUrl(data.avatarUrl || data.photoURL || user.photoURL || '');
           calculateProfileScore(data);
         } else {
           setFormData(prev => ({
@@ -68,7 +68,7 @@ export default function ProfileEditPage() {
             displayName: user.displayName || '',
             email: user.email || '',
           }));
-          setPhotoPreview(user.photoURL || '');
+          setPhotoUrl(user.photoURL || '');
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -94,13 +94,23 @@ export default function ProfileEditPage() {
     setProfileScore(score);
   };
 
-  useEffect(() => {
-    if (photoFile) {
-      const url = URL.createObjectURL(photoFile);
-      setPhotoPreview(url);
-      return () => URL.revokeObjectURL(url);
+
+
+  const handlePhotoUpload = async (newPhotoUrl: string) => {
+    if (!user || !firestore) return;
+    
+    try {
+      const userRef = doc(firestore, 'users', user.uid);
+      await updateDoc(userRef, {
+        avatarUrl: newPhotoUrl,
+        photoURL: newPhotoUrl,
+        updatedAt: new Date().toISOString(),
+      });
+      setPhotoUrl(newPhotoUrl);
+    } catch (error) {
+      console.error('Error updating photo in Firestore:', error);
     }
-  }, [photoFile]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,23 +118,16 @@ export default function ProfileEditPage() {
 
     setLoading(true);
     try {
-      let photoURL = photoPreview;
       let resumeURL = '';
 
-      if (photoFile) {
-        const photoRef = ref(storage, `profiles/${user.uid}/photo_${Date.now()}.jpg`);
-        await uploadBytes(photoRef, photoFile);
-        photoURL = await getDownloadURL(photoRef);
-      } else if (photoPreview && !photoFile) {
-        photoURL = photoPreview;
-      }
-
+      // Upload resume to Firebase Storage
       if (resumeFile) {
-        const resumeRef = ref(storage, `profiles/${user.uid}/resume.pdf`);
-        await uploadBytes(resumeRef, resumeFile);
-        resumeURL = await getDownloadURL(resumeRef);
+        const resumeRef = ref(storage, `profiles/${user.uid}/resume_${Date.now()}.pdf`);
+        const uploadResult = await uploadBytes(resumeRef, resumeFile);
+        resumeURL = await getDownloadURL(uploadResult.ref);
       }
 
+      // Prepare profile data
       const userRef = doc(firestore, 'users', user.uid);
       const profileData = {
         displayName: formData.displayName,
@@ -138,11 +141,13 @@ export default function ProfileEditPage() {
         linkedIn: formData.linkedIn,
         github: formData.github,
         portfolio: formData.portfolio,
-        photoURL,
+        avatarUrl: photoUrl,
+        photoURL: photoUrl,
         ...(resumeURL && { resumeURL }),
         updatedAt: new Date().toISOString(),
       };
 
+      // Update or create user document
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         await updateDoc(userRef, profileData);
@@ -150,16 +155,21 @@ export default function ProfileEditPage() {
         await setDoc(userRef, {
           ...profileData,
           uid: user.uid,
+          role: 'Candidate',
+          profileVisibility: 'public',
           createdAt: new Date().toISOString(),
         });
       }
+
+      // Calculate and update profile score
+      calculateProfileScore({ ...profileData, resumeURL });
 
       toast({ 
         title: 'Profile Updated!', 
         description: 'Your profile has been successfully updated.',
       });
       
-      setPhotoFile(null);
+      // Clear file inputs
       setResumeFile(null);
     } catch (error) {
       console.error('Profile update error:', error);
@@ -218,28 +228,14 @@ export default function ProfileEditPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="h-24 w-24 border-2">
-                <AvatarImage src={photoPreview} />
-                <AvatarFallback className="text-2xl">{formData.displayName?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-              <div>
-                <Label htmlFor="photo" className="cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                    <Upload className="h-4 w-4" />
-                    Upload Photo
-                  </div>
-                  <Input 
-                    id="photo" 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} 
-                  />
-                </Label>
-                <p className="text-xs text-muted-foreground mt-2">JPG, PNG (max 5MB)</p>
-              </div>
-            </div>
+            <ProfilePhotoUpload
+              userId={user.uid}
+              currentPhotoUrl={photoUrl}
+              displayName={formData.displayName}
+              storage={storage}
+              onUploadComplete={handlePhotoUpload}
+              size="lg"
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

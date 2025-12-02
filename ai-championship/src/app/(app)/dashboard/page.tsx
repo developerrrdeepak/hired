@@ -6,13 +6,20 @@ import { Loader2, Briefcase, Users, FileText, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useUserContext } from '../layout';
+import { useState, useEffect } from 'react';
 
 export default function DashboardPage() {
   const { role, isLoading } = useUserRole();
   const { firestore } = useFirebase();
   const { organizationId } = useUserContext();
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 10);
+    return () => clearTimeout(t);
+  }, []);
 
   const jobsQuery = useMemoFirebase(() => {
     if (!firestore || !organizationId) return null;
@@ -55,7 +62,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex-1 space-y-8 py-6">
+    <div className={`flex-1 space-y-8 py-6 transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary via-purple-600 to-pink-600 p-8 text-white">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="relative z-10">
