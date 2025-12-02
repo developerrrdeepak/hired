@@ -7,7 +7,7 @@
  * - mockInterview - A function that takes conversation history and a job type, and returns the next interview question.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, geminiPro } from '@/ai/genkit';
 import {
     MockInterviewInput,
     MockInterviewInputSchema,
@@ -24,6 +24,7 @@ const prompt = ai.definePrompt({
   name: 'mockInterviewPrompt',
   input: { schema: MockInterviewInputSchema },
   output: { schema: MockInterviewOutputSchema },
+  model: geminiPro,
   prompt: `You are an expert, friendly interviewer conducting a mock interview for a {{jobType}} role.
 Your goal is to ask relevant behavioral and technical questions, and keep the conversation flowing naturally.
 Keep your responses and questions concise (1-2 sentences). Ask one question at a time.

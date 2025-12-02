@@ -8,7 +8,7 @@
  * - AiCandidateRankingOutput - The return type for the aiCandidateRanking function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AiCandidateRankingInputSchema = z.object({
@@ -36,6 +36,7 @@ const prompt = ai.definePrompt({
   name: 'aiCandidateRankingPrompt',
   input: {schema: AiCandidateRankingInputSchema},
   output: {schema: AiCandidateRankingOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert AI recruiter. Your task is to score a candidate based on their resume against a specific job description.
 
 Provide a fit score from 0 to 100, where 100 is a perfect match.

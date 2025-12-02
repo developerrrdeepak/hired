@@ -9,7 +9,7 @@
  * - AICandidatePrepOutput - The return type for the function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, geminiPro } from '@/ai/genkit';
 import { z } from 'zod';
 
 const AICandidatePrepInputSchema = z.object({
@@ -34,6 +34,7 @@ const prompt = ai.definePrompt({
   name: 'aiCandidatePrepPrompt',
   input: { schema: AICandidatePrepInputSchema },
   output: { schema: AICandidatePrepOutputSchema },
+  model: geminiPro,
   prompt: `You are a friendly and expert career coach. A candidate has provided their resume and a target role.
 Your task is to provide concise, helpful feedback.
 

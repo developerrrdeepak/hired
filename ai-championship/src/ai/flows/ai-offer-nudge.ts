@@ -9,7 +9,7 @@
  * - AiOfferNudgeOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AiOfferNudgeInputSchema = z.object({
@@ -41,6 +41,7 @@ const prompt = ai.definePrompt({
   name: 'aiOfferNudgePrompt',
   input: {schema: AiOfferNudgeInputSchema},
   output: {schema: AiOfferNudgeOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert compensation and benefits strategist with deep knowledge of the tech industry job market.
 Your task is to analyze the details of a job and provide 3-4 specific, actionable "nudges" to make the offer more competitive and attractive to top candidates.
 

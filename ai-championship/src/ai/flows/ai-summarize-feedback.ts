@@ -9,7 +9,7 @@
  * - AiSummarizeFeedbackOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const InterviewerFeedbackSchema = z.object({
@@ -45,6 +45,7 @@ const prompt = ai.definePrompt({
   name: 'aiSummarizeFeedbackPrompt',
   input: {schema: AiSummarizeFeedbackInputSchema},
   output: {schema: AiSummarizeFeedbackOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert HR analyst at a major tech company. Your task is to review the interview feedback for a candidate and produce a balanced, concise, and insightful summary for the hiring committee.
 
 Candidate Name: {{{candidateName}}}

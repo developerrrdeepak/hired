@@ -8,7 +8,7 @@
  * - SuggestSkillsOutput - The return type for the suggestSkills function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiFlash} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SuggestSkillsInputSchema = z.object({
@@ -35,6 +35,7 @@ const prompt = ai.definePrompt({
   name: 'suggestSkillsPrompt',
   input: {schema: SuggestSkillsInputSchema},
   output: {schema: SuggestSkillsOutputSchema},
+  model: geminiFlash,
   prompt: `You are an expert in recruiting, and you are helping to suggest skills for a job description.
 
 Given the following job description, suggest a list of skills that would be relevant for the job.

@@ -9,7 +9,7 @@
  * - AiFounderWeeklySummaryOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 
@@ -46,6 +46,7 @@ const prompt = ai.definePrompt({
   name: 'aiFounderWeeklySummaryPrompt',
   input: {schema: AiFounderWeeklySummaryInputSchema },
   output: {schema: AiFounderWeeklySummaryOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert HR analyst and strategist, reporting directly to the CEO of a fast-growing startup.
 Your task is to analyze the following weekly hiring data and generate a concise, insightful executive summary.
 Focus on what matters to a founder: hiring velocity, pipeline health, risks, and strategic action items.

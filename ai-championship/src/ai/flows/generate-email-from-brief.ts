@@ -9,7 +9,7 @@
  * - GenerateEmailFromBriefOutput - The return type for the generateEmailFromBrief function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateEmailFromBriefInputSchema = z.object({
@@ -37,6 +37,7 @@ const generateEmailFromBriefPrompt = ai.definePrompt({
   name: 'generateEmailFromBriefPrompt',
   input: {schema: GenerateEmailFromBriefInputSchema},
   output: {schema: GenerateEmailFromBriefOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert recruitment email writer. Based on the provided brief, create a professional, empathetic, and effective email.
 
 Keep the tone appropriate for the context (e.g., encouraging for an invite, respectful for a rejection). Ensure the output is only the subject and body.

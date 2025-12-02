@@ -8,7 +8,7 @@
  * - AIImproveJobDescriptionOutput - The return type for the aiImproveJobDescription function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AIImproveJobDescriptionInputSchema = z.object({
@@ -31,6 +31,7 @@ const prompt = ai.definePrompt({
   name: 'aiImproveJobDescriptionPrompt',
   input: {schema: AIImproveJobDescriptionInputSchema},
   output: {schema: AIImproveJobDescriptionOutputSchema},
+  model: geminiPro,
   prompt: `You are an expert at writing job descriptions that attract high-quality candidates.
 
   Please review the following job description and suggest improvements to make it more appealing to potential applicants.

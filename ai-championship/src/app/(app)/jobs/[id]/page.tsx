@@ -15,6 +15,7 @@ import { aiImproveJobDescription } from "@/ai/flows/ai-improve-job-description";
 import { suggestSkills } from "@/ai/flows/ai-suggest-skills";
 import { aiSuggestInterviewQuestions } from "@/ai/flows/ai-suggest-interview-questions";
 import { aiOfferNudge, AiOfferNudgeOutput } from "@/ai/flows/ai-offer-nudge";
+import { sourceCandidatesFlow, CandidateProfile } from "@/ai/flows/ai-source-candidates";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from "@/firebase";
@@ -47,201 +48,228 @@ export default function JobDetailPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<ModalContent>({title: '', content: ''});
   const [mounted, setMounted] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-    useEffect(() => {
-      const t = setTimeout(() => setMounted(true), 10);
-      return () => clearTimeout(t);
-    }, []);
-
-  const jobRef = useMemoFirebase(() => {
-    if (!firestore || !organizationId || !id) return null;
-    return doc(firestore, `organizations/${organizationId}/jobs`, id);
-  }, [firestore, organizationId, id]);
-
-  const applicationsQuery = useMemoFirebase(() => {
+      const [isClosing, setIsClosing] = useState(false);
+      const [sourcedCandidates, setSourcedCandidates] = useState<CandidateProfile[]>([]);
+      useEffect(() => {
+        const t = setTimeout(() => setMounted(true), 10);
+        return () => clearTimeout(t);
+      }, []);
+  
+    const jobRef = useMemoFirebase(() => {
       if (!firestore || !organizationId || !id) return null;
-      return query(
-        collection(firestore, `organizations/${organizationId}/applications`), 
-        where('jobId', '==', id),
-        orderBy('fitScore', 'desc')
-      );
-  }, [firestore, organizationId, id]);
-
-  const { data: job, isLoading: isJobLoading } = useDoc<Job>(jobRef);
-  const { data: applications, isLoading: areApplicationsLoading } = useCollection<Application>(applicationsQuery);
-
-  const candidateIds = useMemo(() => applications?.map(app => app.candidateId) || [], [applications]);
-
-  const candidatesQuery = useMemoFirebase(() => {
-    // Firestore 'in' queries are limited to 30 items.
-    if (!firestore || !organizationId || candidateIds.length === 0) return null;
-    return query(collection(firestore, `organizations/${organizationId}/candidates`), where('__name__', 'in', candidateIds.slice(0, 30)));
-  }, [firestore, organizationId, candidateIds]);
-
-  const { data: candidates, isLoading: areCandidatesLoading } = useCollection<Candidate>(candidatesQuery);
-
-  const applicantsList = useMemo(() => {
-    if (!applications || !candidates) return [];
-
-    const candidateMap = new Map(candidates.map(c => [c.id, c]));
-
-    return applications
-      .map(app => {
-        const candidate = candidateMap.get(app.candidateId);
-        if (!candidate) return null;
-        return {
-          ...candidate,
-          fitScore: app.fitScore,
-          applicationId: app.id,
-          status: app.status,
-        };
-      })
-      .filter((c): c is NonNullable<typeof c> => c !== null);
-  }, [applications, candidates]);
-
-
-  if (isAppLoading || isJobLoading || areApplicationsLoading || areCandidatesLoading) {
-    return <JobDetailSkeleton isCandidateView={isCandidate} />;
-  }
-
-  if (!job) {
-    notFound();
-  }
-
-  const handleImproveDescription = async () => {
-    if(!job.jobDescription) return;
-    setIsLoadingAI(true);
-    setModalContent({ title: "Improving Job Description...", content: ""});
-    setIsModalOpen(true);
-    try {
-      const result = await aiImproveJobDescription({ jobDescription: job.jobDescription });
-      setModalContent({ title: "AI-Improved Job Description", content: result.improvedJobDescription });
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to improve job description.",
-      });
-      setIsModalOpen(false);
-    } finally {
-      setIsLoadingAI(false);
+      return doc(firestore, `organizations/${organizationId}/jobs`, id);
+    }, [firestore, organizationId, id]);
+  
+    const applicationsQuery = useMemoFirebase(() => {
+        if (!firestore || !organizationId || !id) return null;
+        return query(
+          collection(firestore, `organizations/${organizationId}/applications`), 
+          where('jobId', '==', id),
+          orderBy('fitScore', 'desc')
+        );
+    }, [firestore, organizationId, id]);
+  
+    const { data: job, isLoading: isJobLoading } = useDoc<Job>(jobRef);
+    const { data: applications, isLoading: areApplicationsLoading } = useCollection<Application>(applicationsQuery);
+  
+    const candidateIds = useMemo(() => applications?.map(app => app.candidateId) || [], [applications]);
+  
+    const candidatesQuery = useMemoFirebase(() => {
+      // Firestore 'in' queries are limited to 30 items.
+      if (!firestore || !organizationId || candidateIds.length === 0) return null;
+      return query(collection(firestore, `organizations/${organizationId}/candidates`), where('__name__', 'in', candidateIds.slice(0, 30)));
+    }, [firestore, organizationId, candidateIds]);
+  
+    const { data: candidates, isLoading: areCandidatesLoading } = useCollection<Candidate>(candidatesQuery);
+  
+    const applicantsList = useMemo(() => {
+      if (!applications || !candidates) return [];
+  
+      const candidateMap = new Map(candidates.map(c => [c.id, c]));
+  
+      return applications
+        .map(app => {
+          const candidate = candidateMap.get(app.candidateId);
+          if (!candidate) return null;
+          return {
+            ...candidate,
+            fitScore: app.fitScore,
+            applicationId: app.id,
+            status: app.status,
+          };
+        })
+        .filter((c): c is NonNullable<typeof c> => c !== null);
+    }, [applications, candidates]);
+  
+  
+    if (isAppLoading || isJobLoading || areApplicationsLoading || areCandidatesLoading) {
+      return <JobDetailSkeleton isCandidateView={isCandidate} />;
     }
-  };
-
-  const handleSuggestSkills = async () => {
-     if(!job.jobDescription) return;
-    setIsLoadingAI(true);
-    setModalContent({ title: "Suggesting Skills...", content: ""});
-    setIsModalOpen(true);
-    try {
-      const result = await suggestSkills({ jobDescription: job.jobDescription });
-      setModalContent({ title: "AI-Suggested Skills", content: result.suggestedSkills });
-    } catch (error) {
-      console.error(error);
-       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to suggest skills.",
-      });
-      setIsModalOpen(false);
-    } finally {
-      setIsLoadingAI(false);
+  
+    if (!job) {
+      notFound();
     }
-  };
-
-   const handleSuggestQuestions = async () => {
-     if(!job.jobDescription) return;
-    setIsLoadingAI(true);
-    setModalContent({ title: "Generating Interview Questions...", content: ""});
-    setIsModalOpen(true);
-    try {
-      const result = await aiSuggestInterviewQuestions({ jobTitle: job.title, jobDescription: job.jobDescription });
-      setModalContent({ title: "AI-Suggested Interview Questions", content: result.questions });
-    } catch (error) {
-      console.error(error);
-       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to suggest questions.",
-      });
-      setIsModalOpen(false);
-    } finally {
-      setIsLoadingAI(false);
-    }
-  };
-
-    const handleOfferNudge = async () => {
-        if (!job) return;
-        setIsLoadingAI(true);
-        setModalContent({ title: "Generating Offer Nudges...", content: ""});
-        setIsModalOpen(true);
-        try {
-            const result = await aiOfferNudge({
-                jobTitle: job.title,
-                seniorityLevel: job.seniorityLevel,
-                requiredSkills: job.requiredSkills || [],
-                location: job.isRemote ? 'Remote' : `${job.locationCity}, ${job.locationCountry}`,
-                currentMinSalary: job.salaryRangeMin,
-                currentMaxSalary: job.salaryRangeMax,
-            });
-            setModalContent({ title: "AI Offer Nudges", content: result.nudges });
-        } catch (error) {
-            console.error(error);
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to generate offer nudges.",
-            });
-            setIsModalOpen(false);
-        } finally {
-            setIsLoadingAI(false);
-        }
+  
+    const handleImproveDescription = async () => {
+      if(!job.jobDescription) return;
+      setIsLoadingAI(true);
+      setModalContent({ title: "Improving Job Description...", content: ""});
+      setIsModalOpen(true);
+      try {
+        const result = await aiImproveJobDescription({ jobDescription: job.jobDescription });
+        setModalContent({ title: "AI-Improved Job Description", content: result.improvedJobDescription });
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to improve job description.",
+        });
+        setIsModalOpen(false);
+      } finally {
+        setIsLoadingAI(false);
+      }
     };
-
-  const handleCloseJob = async () => {
-    if (!jobRef || !job) return;
-    setIsClosing(true);
-    try {
-      await updateDoc(jobRef, { status: 'closed', updatedAt: new Date().toISOString() });
-      toast({
-        title: "Success",
-        description: "Job has been closed successfully.",
-      });
-      router.push('/jobs');
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to close job.",
-      });
-    } finally {
-      setIsClosing(false);
-    }
-  };
-
-  const handleReopenJob = async () => {
-    if (!jobRef || !job) return;
-    setIsClosing(true);
-    try {
-      await updateDoc(jobRef, { status: 'open', updatedAt: new Date().toISOString() });
-      toast({
-        title: "Success",
-        description: "Job has been reopened successfully.",
-      });
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to reopen job.",
-      });
-    } finally {
-      setIsClosing(false);
-    }
-  };
-
+  
+    const handleSuggestSkills = async () => {
+       if(!job.jobDescription) return;
+      setIsLoadingAI(true);
+      setModalContent({ title: "Suggesting Skills...", content: ""});
+      setIsModalOpen(true);
+      try {
+        const result = await suggestSkills({ jobDescription: job.jobDescription });
+        setModalContent({ title: "AI-Suggested Skills", content: result.suggestedSkills });
+      } catch (error) {
+        console.error(error);
+         toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to suggest skills.",
+        });
+        setIsModalOpen(false);
+      } finally {
+        setIsLoadingAI(false);
+      }
+    };
+  
+     const handleSuggestQuestions = async () => {
+       if(!job.jobDescription) return;
+      setIsLoadingAI(true);
+      setModalContent({ title: "Generating Interview Questions...", content: ""});
+      setIsModalOpen(true);
+      try {
+        const result = await aiSuggestInterviewQuestions({ jobTitle: job.title, jobDescription: job.jobDescription });
+        setModalContent({ title: "AI-Suggested Interview Questions", content: result.questions });
+      } catch (error) {
+        console.error(error);
+         toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to suggest questions.",
+        });
+        setIsModalOpen(false);
+      } finally {
+        setIsLoadingAI(false);
+      }
+    };
+  
+      const handleOfferNudge = async () => {
+          if (!job) return;
+          setIsLoadingAI(true);
+          setModalContent({ title: "Generating Offer Nudges...", content: ""});
+          setIsModalOpen(true);
+          try {
+              const result = await aiOfferNudge({
+                  jobTitle: job.title,
+                  seniorityLevel: job.seniorityLevel,
+                  requiredSkills: job.requiredSkills || [],
+                  location: job.isRemote ? 'Remote' : `${job.locationCity}, ${job.locationCountry}`,
+                  currentMinSalary: job.salaryRangeMin,
+                  currentMaxSalary: job.salaryRangeMax,
+              });
+              setModalContent({ title: "AI Offer Nudges", content: result.nudges });
+          } catch (error) {
+              console.error(error);
+              toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Failed to generate offer nudges.",
+              });
+              setIsModalOpen(false);
+          } finally {
+              setIsLoadingAI(false);
+          }
+      };
+  
+      const handleSourceCandidates = async () => {
+          if (!job || !job.jobDescription) return;
+          setIsLoadingAI(true);
+          setModalContent({ title: "Sourcing Candidates...", content: "" });
+          setIsModalOpen(true);
+          try {
+              const result = await sourceCandidatesFlow(job.jobDescription);
+              setSourcedCandidates(result);
+              setModalContent({ title: "AI-Sourced Candidates", content: "" }); // Modal will be closed and results shown in a card
+              setIsModalOpen(false);
+              toast({
+                  title: "Success",
+                  description: "Successfully sourced potential candidates.",
+              });
+          } catch (error) {
+              console.error(error);
+              toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "Failed to source candidates.",
+              });
+              setIsModalOpen(false);
+          } finally {
+              setIsLoadingAI(false);
+          }
+      };
+  
+    const handleCloseJob = async () => {
+      if (!jobRef || !job) return;
+      setIsClosing(true);
+      try {
+        await updateDoc(jobRef, { status: 'closed', updatedAt: new Date().toISOString() });
+        toast({
+          title: "Success",
+          description: "Job has been closed successfully.",
+        });
+        router.push('/jobs');
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to close job.",
+        });
+      } finally {
+        setIsClosing(false);
+      }
+    };
+  
+    const handleReopenJob = async () => {
+      if (!jobRef || !job) return;
+      setIsClosing(true);
+      try {
+        await updateDoc(jobRef, { status: 'open', updatedAt: new Date().toISOString() });
+        toast({
+          title: "Success",
+          description: "Job has been reopened successfully.",
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to reopen job.",
+        });
+      } finally {
+        setIsClosing(false);
+      }
+    };
 
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
@@ -380,8 +408,34 @@ export default function JobDetailPage() {
                             <Target className="w-4 h-4" />
                             Get Offer Nudges
                         </Button>
+                        <Button variant="outline" className="w-full justify-start gap-2" onClick={handleSourceCandidates} disabled={isLoadingAI}>
+                            <Users className="w-4 h-4" />
+                            Source Candidates
+                        </Button>
                     </CardContent>
                 </Card>
+                {sourcedCandidates.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>AI Sourced Candidates</CardTitle>
+                            <CardDescription>Potential candidates found by AI.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {sourcedCandidates.map((candidate, index) => (
+                                <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-semibold">{candidate.name}</p>
+                                        <Button variant="ghost" size="sm" asChild>
+                                            <a href={candidate.profileUrl} target="_blank" rel="noopener noreferrer">View Profile</a>
+                                        </Button>
+                                    </div>
+                                    {candidate.location && <p className="text-sm text-muted-foreground">{candidate.location}</p>}
+                                    <p className="text-sm text-muted-foreground mt-1 pl-2 border-l-2">{candidate.summary}</p>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
                 <Card>
                     <CardHeader>
                         <CardTitle>Applicants ({applications?.length || 0})</CardTitle>

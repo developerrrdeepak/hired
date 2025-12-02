@@ -10,6 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {geminiPro} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AiAnalyzeCandidateInputSchema = z.object({
@@ -38,6 +39,7 @@ const prompt = ai.definePrompt({
   name: 'aiAnalyzeCandidatePrompt',
   input: {schema: AiAnalyzeCandidateInputSchema},
   output: {schema: ProfileJsonSchema},
+  model: geminiPro,
   prompt: `You are an expert HR analyst. Analyze the following resume text and provide a structured analysis.
 
 Resume:

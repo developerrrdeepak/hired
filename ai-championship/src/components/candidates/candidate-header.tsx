@@ -14,9 +14,10 @@ type CandidateHeaderProps = {
     hasStarred: boolean;
     onToggleStar: () => void;
     isCandidateViewing: boolean;
+    onScheduleInterview: () => void;
 };
 
-export function CandidateHeader({ candidate, hasStarred, onToggleStar, isCandidateViewing }: CandidateHeaderProps) {
+export function CandidateHeader({ candidate, hasStarred, onToggleStar, isCandidateViewing, onScheduleInterview }: CandidateHeaderProps) {
     return (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 md:py-6">
         <div className="flex items-center gap-4">
@@ -48,6 +49,10 @@ export function CandidateHeader({ candidate, hasStarred, onToggleStar, isCandida
                     <Mail className="mr-2 h-4 w-4" />
                     Message
                 </Link>
+            </Button>
+            <Button variant="outline" onClick={onScheduleInterview}>
+                <Calendar className="mr-2 h-4 w-4" />
+                Schedule Interview
             </Button>
         </div>}
       </div>

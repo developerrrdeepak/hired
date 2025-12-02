@@ -15,6 +15,9 @@ import { CandidateSmarterResumeAnalysisTab } from "@/components/candidates/candi
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { scheduleInterviewFlow } from "@/ai/flows/ai-schedule-interview";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function CandidateProfileSkeleton() {
     return (
@@ -45,6 +48,9 @@ export default function CandidateDetailPage() {
     const { toast } = useToast();
 
     const [mounted, setMounted] = useState(false);
+    const [isScheduling, setIsScheduling] = useState(false);
+    const [schedulingModalContent, setSchedulingModalContent] = useState<{ title: string, subject: string, body: string } | null>(null);
+
     useEffect(() => {
       const t = setTimeout(() => setMounted(true), 10);
       return () => clearTimeout(t);

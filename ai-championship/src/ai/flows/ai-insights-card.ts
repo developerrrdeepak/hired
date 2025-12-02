@@ -8,7 +8,7 @@
  * - GenerateDashboardInsightsOutput - The return type for the generateDashboardInsights function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiFlash} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateDashboardInsightsInputSchema = z.object({});
@@ -33,6 +33,7 @@ const prompt = ai.definePrompt({
   name: 'generateDashboardInsightsPrompt',
   input: {schema: GenerateDashboardInsightsInputSchema},
   output: {schema: GenerateDashboardInsightsOutputSchema},
+  model: geminiFlash,
   prompt: `You are an AI assistant that analyzes recruiting data and generates a summary of insights for a hiring manager's dashboard. Focus on trends and key metrics related to jobs, candidates, applications, and interviews.
 `,
 });

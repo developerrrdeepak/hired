@@ -9,7 +9,7 @@
  * - AiEnrichProfileOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, geminiFlash} from '@/ai/genkit';
 import {z} from 'genkit';
 import { Education, Experience, Link } from '@/lib/definitions';
 
@@ -57,6 +57,7 @@ const prompt = ai.definePrompt({
   name: 'aiEnrichProfilePrompt',
   input: {schema: AiEnrichProfileInputSchema},
   output: {schema: AiEnrichProfileOutputSchema},
+  model: geminiFlash,
   prompt: `You are an expert HR data analyst. Analyze the following resume text and extract a structured professional profile.
 The dates should be parsed and returned in a consistent format (e.g., YYYY-MM or YYYY).
 
