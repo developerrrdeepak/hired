@@ -1,6 +1,7 @@
 'use client';
 
-import { VultrNode } from '@vultr/vultr-node';
+// @ts-ignore - Vultr SDK types
+import VultrNode from '@vultr/vultr-node';
 
 // Vultr Client for compute and storage
 export class VultrService {

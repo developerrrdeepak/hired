@@ -1,13 +1,10 @@
 // Raindrop MCP HTTP client (replaces mock-raindrop-sdk usage)
 
 const apiKey = process.env.RAINDROP_API_KEY;
-const baseUrl = process.env.RAINDROP_MCP_BASE_URL;
+const baseUrl = process.env.RAINDROP_MCP_BASE_URL || 'https://api.liquidmetal.ai/v1';
 
 if (!apiKey) {
   console.warn('RAINDROP_API_KEY environment variable not set. Raindrop integration will not work.');
-}
-if (!baseUrl) {
-  console.warn('RAINDROP_MCP_BASE_URL is not set. Configure it to point to your MCP server.');
 }
 
 async function mcpFetch<T>(path: string, options: RequestInit & { json?: any } = {}): Promise<T> {
