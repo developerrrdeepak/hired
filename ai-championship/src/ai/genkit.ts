@@ -1,27 +1,9 @@
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
-import {defineModel} from '@genkit-ai/ai';
+import {GoogleGenerativeAI} from '@google/generative-ai';
 
-export const geminiPro = defineModel(
-  {
-    name: 'googleai/gemini-1.5-pro-latest',
-    config: {
-      temperature: 1,
-    },
-  },
-  googleAI()
-);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY || '');
 
-export const geminiFlash = defineModel(
-  {
-    name: 'googleai/gemini-1.5-flash-latest',
-    config: {
-      temperature: 0.2,
-    },
-  },
-  googleAI()
-);
+export const geminiPro = genAI.getGenerativeModel({model: 'gemini-1.5-pro-latest'});
+export const geminiFlash = genAI.getGenerativeModel({model: 'gemini-1.5-flash-latest'});
 
-export const ai = genkit({
-  plugins: [googleAI()],
-});
+export const ai = genkit({plugins: []});
