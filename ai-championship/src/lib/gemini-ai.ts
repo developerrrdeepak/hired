@@ -1,5 +1,5 @@
 // Google Gemini AI Integration
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'demo-key';
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || 'AIzaSyA9PodAFCpB3EkqsvYPHd0i4ExG9-QPZX4';
 
 export async function analyzeResumeWithAI(resumeText: string, jobDescription?: string) {
   try {
