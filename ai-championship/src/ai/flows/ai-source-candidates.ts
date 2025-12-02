@@ -1,7 +1,15 @@
-import { aif, genkit } from '@genkit-ai/ai';
-import { flow } from '@genkit-ai/flow';
-import { geminiPro } from '@genkit-ai/googleai';
-import * as z from 'zod';
+'use server';
+
+/**
+ * @fileOverview An AI agent that sources candidates for a job description.
+ *
+ * - aiSourceCandidates - A function that sources potential candidates based on a job description.
+ * - AISourceCandidatesInput - The input type for the function.
+ * - AISourceCandidatesOutput - The return type for the function.
+ */
+
+import { ai, geminiPro } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const CandidateProfileSchema = z.object({
   name: z.string().describe('Full name of the candidate'),
@@ -10,44 +18,43 @@ const CandidateProfileSchema = z.object({
   location: z.string().optional().describe('The candidate’s current location'),
 });
 
-const CandidateSourcingOutputSchema = z.array(CandidateProfileSchema);
+const AISourceCandidatesInputSchema = z.object({
+  jobDescription: z.string().describe('The job description to source candidates for'),
+});
+export type AISourceCandidatesInput = z.infer<typeof AISourceCandidatesInputSchema>;
 
-export const sourceCandidatesFlow = flow(
+const AISourceCandidatesOutputSchema = z.object({
+  candidates: z.array(CandidateProfileSchema).describe('A list of potential candidates'),
+});
+export type AISourceCandidatesOutput = z.infer<typeof AISourceCandidatesOutputSchema>;
+
+export async function aiSourceCandidates(input: AISourceCandidatesInput): Promise<AISourceCandidatesOutput> {
+  return aiSourceCandidatesFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'aiSourceCandidatesPrompt',
+  input: { schema: AISourceCandidatesInputSchema },
+  output: { schema: AISourceCandidatesOutputSchema },
+  model: geminiPro,
+  prompt: `You are an expert technical recruiter. Your task is to find the best possible candidates for the following job description.
+Search public platforms like LinkedIn, GitHub, and technical communities for suitable candidates.
+
+Job Description:
+{{{jobDescription}}}
+
+Based on your search, provide a list of at least 5 potential candidates who appear to be a strong match.
+For each candidate, return their full name, a URL to their professional profile, a brief summary of their relevant skills and experience, and their location if available.`,
+});
+
+const aiSourceCandidatesFlow = ai.defineFlow(
   {
-    name: 'sourceCandidates',
-    inputSchema: z.string().describe('The job description to source candidates for'),
-    outputSchema: CandidateSourcingOutputSchema,
+    name: 'aiSourceCandidatesFlow',
+    inputSchema: AISourceCandidatesInputSchema,
+    outputSchema: AISourceCandidatesOutputSchema,
   },
-  async (jobDescription) => {
-    const prompt = `
-      As an expert technical recruiter, your task is to find the best possible candidates for the following job description.
-      Search public platforms like LinkedIn, GitHub, and technical communities for suitable candidates.
-
-      Job Description:
-      ---
-      ${jobDescription}
-      ---
-
-      Based on your search, provide a list of at least 5 potential candidates who appear to be a strong match.
-      For each candidate, return their full name, a URL to their professional profile, a brief summary of their relevant skills and experience, and their location if available.
-    `;
-
-    const llmResponse = await genkit.generate({
-      prompt,
-      model: geminiPro,
-      output: {
-        schema: CandidateSourcingOutputSchema,
-      },
-      config: {
-        temperature: 0.3,
-      },
-    });
-
-    const candidates = llmResponse.output();
-    if (!candidates) {
-      throw new Error('Failed to source candidates.');
-    }
-
-    return candidates;
+  async input => {
+    const { output } = await prompt(input);
+    return output!;
   }
 );
