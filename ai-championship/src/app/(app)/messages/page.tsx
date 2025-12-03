@@ -15,6 +15,7 @@ import type { Conversation, Message } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { mockConversations, mockMessages } from '@/lib/mock-messages';
 
 export default function MessagesPage() {
   const { firestore, storage } = useFirebase();
@@ -47,10 +48,11 @@ export default function MessagesPage() {
   const { data: allConversations } = useCollection<Conversation>(conversationsQuery);
 
   const conversations = useMemo(() => {
-    if (!allConversations || !userId) return [];
-    return allConversations.filter(conv => 
+    if (!allConversations || !userId) return mockConversations;
+    const filtered = allConversations.filter(conv => 
       conv.participants.some(p => p.id === userId)
     );
+    return filtered.length > 0 ? filtered : mockConversations;
   }, [allConversations, userId]);
 
   const messagesQuery = useMemoFirebase(() => {
@@ -62,21 +64,28 @@ export default function MessagesPage() {
   }, [firestore, selectedConversation]);
 
   const { data: messages } = useCollection<Message>(messagesQuery);
+  
+  const displayMessages = useMemo(() => {
+    if (messages && messages.length > 0) return messages;
+    if (selectedConversation) return mockMessages[selectedConversation.id] || [];
+    return [];
+  }, [messages, selectedConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [displayMessages]);
 
   useEffect(() => {
-    if (selectedConversation && messages && userId) {
-      const unreadMessages = messages.filter(m => m.receiverId === userId && !m.isRead);
+    if (selectedConversation && displayMessages && userId && firestore) {
+      const unreadMessages = displayMessages.filter(m => m.receiverId === userId && !m.isRead);
       unreadMessages.forEach(async (msg) => {
-        await updateDoc(doc(firestore!, `conversations/${selectedConversation.id}/messages`, msg.id), {
+        if (msg.id.startsWith('m')) return;
+        await updateDoc(doc(firestore, `conversations/${selectedConversation.id}/messages`, msg.id), {
           isRead: true,
         });
       });
     }
-  }, [messages, selectedConversation, userId, firestore]);
+  }, [displayMessages, selectedConversation, userId, firestore]);
 
   const handleSendMessage = async () => {
     if (!messageText.trim() || !selectedConversation || !userId || !firestore) return;
@@ -349,7 +358,7 @@ export default function MessagesPage() {
               </div>
 
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-[url('/chat-bg.png')] bg-repeat">
-                {messages?.map((msg) => {
+                {displayMessages?.map((msg) => {
                   const isSender = msg.senderId === userId;
                   return (
                     <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>

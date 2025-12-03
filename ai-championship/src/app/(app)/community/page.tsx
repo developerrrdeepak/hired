@@ -174,7 +174,11 @@ export default function CommunityPage() {
                       <p className="font-semibold">{post.authorName}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">{post.authorRole}</Badge>
-                        <span className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {post.createdAt && !isNaN(new Date(post.createdAt).getTime()) 
+                            ? new Date(post.createdAt).toLocaleDateString() 
+                            : 'Recently'}
+                        </span>
                       </div>
                     </div>
                   </div>

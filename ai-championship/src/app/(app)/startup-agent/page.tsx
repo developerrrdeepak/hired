@@ -14,9 +14,11 @@ export default function StartupAgentPage() {
   const [challenge, setChallenge] = useState('');
   const [recommendations, setRecommendations] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setError(null);
     try {
       const response = await fetch('/api/google-ai/chat', {
         method: 'POST',
@@ -28,6 +30,11 @@ export default function StartupAgentPage() {
       });
 
       const data = await response.json();
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to generate recommendations');
+      }
+      
       setRecommendations({
         advice: data.response,
         automations: [
@@ -44,6 +51,7 @@ export default function StartupAgentPage() {
       });
     } catch (error) {
       console.error('Generation error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to connect to AI service. Please check your API configuration.');
     } finally {
       setIsGenerating(false);
     }
@@ -145,6 +153,16 @@ export default function StartupAgentPage() {
         </div>
 
         <div className="space-y-4">
+          {error && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader>
+                <CardTitle className="text-red-800 text-sm">Connection Error</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-red-700 text-sm">{error}</p>
+              </CardContent>
+            </Card>
+          )}
           {recommendations ? (
             <>
               <Card className="border-green-200 bg-green-50">
