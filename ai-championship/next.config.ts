@@ -1,17 +1,6 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    esmExternals: 'loose',
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
-  },
   transpilePackages: ['date-fns', 'react-day-picker'],
   eslint: {
     ignoreDuringBuilds: true,
@@ -19,7 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  swcMinify: true,
+  output: 'standalone',
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true,
   
