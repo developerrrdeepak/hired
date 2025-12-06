@@ -1,91 +1,85 @@
-# 🚀 Deployment Instructions
+# Deployment Guide - HireVision AI
 
-## ✅ Real-Time Messaging Setup
+## Deploy to Vercel
 
-### 1️⃣ Deploy Firestore Rules
-
+### Step 1: Push to GitHub
 ```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Initialize Firebase (if not done)
-firebase init firestore
-
-# Deploy rules
-firebase deploy --only firestore:rules
+git add .
+git commit -m "Prepare for Vercel deployment"
+git push origin main
 ```
 
-### 2️⃣ Environment Variables
+### Step 2: Deploy on Vercel
 
-Add to Netlify Environment Variables:
+1. Go to [Vercel](https://vercel.com)
+2. Click "Add New Project"
+3. Import from GitHub: `https://github.com/developerrrdeepak/hired`
+4. Configure project:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `ai-championship`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+   - **Install Command**: `npm install`
 
-```
-GOOGLE_GENAI_API_KEY=AIzaSyBPWDm8YDXFeDkAC_Drc2zhUGE4TrsHcts
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
+### Step 3: Environment Variables
 
-### 3️⃣ Test Messaging
+Add these environment variables in Vercel dashboard (Settings → Environment Variables):
 
-1. Login as Employer
-2. Go to Messages page
-3. Click on any conversation
-4. Type message and click Send
-5. Message should appear in real-time
+#### Firebase
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-## 🔥 Features Implemented
+#### Raindrop
+- `RAINDROP_API_KEY`
+- `RAINDROP_MCP_BASE_URL`
 
-✅ Real-time messaging with Firestore
-✅ Message send/receive
-✅ Unread count badges
-✅ Last message preview
-✅ Voice messages support
-✅ File attachments support
-✅ Online status indicators
-✅ Read receipts
-✅ Mock data fallback
+#### Vultr
+- `VULTR_POSTGRES_CONNECTION_STRING`
+- `VULTR_API_KEY`
+- `VULTR_OBJECT_STORAGE_BUCKET`
 
-## 📊 Collections Structure
+#### Google Gemini AI
+- `GOOGLE_GENAI_API_KEY`
 
-```
-conversations/
-  └── {conversationId}/
-      ├── participants: [{id, name, role, avatarUrl}]
-      ├── lastMessage: string
-      ├── lastMessageAt: timestamp
-      ├── unreadCount: {userId: number}
-      └── messages/
-          └── {messageId}/
-              ├── senderId
-              ├── receiverId
-              ├── content
-              ├── type: 'text' | 'voice' | 'attachment'
-              ├── isRead: boolean
-              └── createdAt: timestamp
-```
+#### Stripe
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
 
-## 🛠️ Troubleshooting
+#### ElevenLabs
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_VOICE_ID`
 
-### Messages not sending?
-- Check Firestore rules are deployed
-- Verify Firebase config in environment variables
-- Check browser console for errors
+### Step 4: Deploy
 
-### Mock data showing instead of real data?
-- This is expected when no conversations exist
-- Create a conversation by messaging someone
-- Real data will replace mock data automatically
+Click "Deploy" and Vercel will automatically build and deploy your application.
 
-## 🎯 Next Steps
+### Step 5: Custom Domain (Optional)
 
-1. Deploy Firestore rules: `firebase deploy --only firestore:rules`
-2. Add environment variables to Netlify
-3. Redeploy on Netlify
-4. Test messaging functionality
+1. Go to Project Settings → Domains
+2. Add your custom domain
+3. Configure DNS records as instructed
+
+## Troubleshooting
+
+### Build Errors
+- Check environment variables are set correctly
+- Ensure all dependencies are in package.json
+- Review build logs in Vercel dashboard
+
+### Runtime Errors
+- Check Function Logs in Vercel dashboard
+- Verify API keys are valid
+- Ensure database connections are accessible from Vercel IPs
+
+## Post-Deployment
+
+1. Test authentication flow
+2. Verify database connections
+3. Test file uploads to Vultr Object Storage
+4. Check AI features (Gemini, ElevenLabs)
+5. Monitor performance in Vercel Analytics
