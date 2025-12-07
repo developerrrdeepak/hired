@@ -14,7 +14,9 @@ import { PageLoader } from '@/components/page-loader';
 
 // --- User Context ---
 interface UserContextType {
-  user: User | null;
+  user: User | null; // This is the user object from our database
+  userId: string | null; // This is auth.uid, useful for queries
+  displayName: string | null;
   role: UserRoleType | null;
   organizationId: string | null;
   isUserLoading: boolean;
@@ -74,19 +76,26 @@ function UserProvider({ children, roleFromQuery }: { children: React.ReactNode, 
             localStorage.setItem('userOrgId', userData.organizationId);
           }
         } else {
-           // This user is likely a candidate who doesn't have a user doc.
-           // They might have just signed up via a public job posting.
+           // This user is likely a candidate who doesn't have a user doc yet or is new.
+           // Fallback to minimal user object
            const displayName = authUser.displayName || authUser.email?.split('@')[0] || 'User';
-           const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4F46E5&color=fff&size=128`;
-           setRole('Candidate');
+           const avatarUrl = authUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4F46E5&color=fff&size=128`;
+           
+           // If we have a role from query, assume it (e.g. demo mode), else default
+           const assumedRole = roleFromQuery || 'Candidate';
+           
+           setRole(assumedRole);
            setOrganizationId('org-demo-owner-id');
+           
+           // Construct a transient user object so the app functions
            setUser({
               id: authUser.uid,
               displayName,
               email: authUser.email || '',
               avatarUrl,
-              role: 'Candidate',
+              role: assumedRole,
               organizationId: 'org-demo-owner-id',
+              createdAt: new Date().toISOString()
            } as User);
         }
       } catch (error) {
@@ -102,7 +111,14 @@ function UserProvider({ children, roleFromQuery }: { children: React.ReactNode, 
     fetchUserData();
   }, [authUser, isAuthLoading, firestore, roleFromQuery]);
 
-  const value = { user, role, organizationId, isUserLoading };
+  const value = { 
+    user, 
+    userId: authUser?.uid || null,
+    displayName: user?.displayName || authUser?.displayName || 'User',
+    role, 
+    organizationId, 
+    isUserLoading 
+  };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
