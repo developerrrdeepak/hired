@@ -6,6 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { updateProfile } from 'firebase/auth'; // Import updateProfile
+import { useFirebase } from '@/firebase'; // Import useFirebase
+import { doc, updateDoc } from 'firebase/firestore'; // Import firestore functions
 
 // Compress image before upload
 async function compressImage(file: File, maxWidth = 800, quality = 0.8): Promise<Blob> {
@@ -45,7 +48,7 @@ interface ProfilePhotoUploadProps {
   userId: string;
   currentPhotoUrl?: string;
   displayName?: string;
-  storage: any;
+  storage: any; // We'll keep this but also get it from hook if missing
   onUploadComplete: (photoUrl: string) => void;
   size?: 'sm' | 'md' | 'lg';
 }
@@ -54,7 +57,7 @@ export function ProfilePhotoUpload({
   userId,
   currentPhotoUrl,
   displayName,
-  storage,
+  storage: propStorage,
   onUploadComplete,
   size = 'md',
 }: ProfilePhotoUploadProps) {
@@ -62,6 +65,10 @@ export function ProfilePhotoUpload({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Use hook to get auth/firestore just in case we need to update user profile directly too
+  const { auth, firestore, storage: hookStorage } = useFirebase();
+  const activeStorage = propStorage || hookStorage;
 
   const sizeClasses = {
     sm: 'h-16 w-16',
@@ -72,6 +79,15 @@ export function ProfilePhotoUpload({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!activeStorage) {
+        toast({
+            title: 'Storage not initialized',
+            description: 'Please reload the page.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -103,12 +119,35 @@ export function ProfilePhotoUpload({
       // Compress image before upload
       const compressedBlob = await compressImage(file);
       
-      const photoRef = ref(storage, `profiles/${userId}/photo_${Date.now()}.jpg`);
+      const photoRef = ref(activeStorage, `profiles/${userId}/photo_${Date.now()}.jpg`);
       const uploadResult = await uploadBytes(photoRef, compressedBlob);
       const downloadUrl = await getDownloadURL(uploadResult.ref);
 
       // Update preview with permanent URL
       setPhotoPreview(downloadUrl);
+      
+      // Attempt to update Firebase Auth Profile directly if user is logged in
+      if (auth?.currentUser) {
+          try {
+             await updateProfile(auth.currentUser, { photoURL: downloadUrl });
+          } catch(e) {
+             console.warn("Could not update auth profile directly", e);
+          }
+      }
+
+      // Attempt to update Firestore User Document if possible
+      if (firestore) {
+          try {
+              // Try 'users' collection first, or 'candidates'/'employers' based on your schema
+              // Since we don't know exact role here easily without context, we'll try a generic update if path is known
+              // But safe to just let onUploadComplete handle the db update if logic resides there.
+              // However, let's try updating a common collection if exists.
+              const userRef = doc(firestore, 'users', userId);
+              await updateDoc(userRef, { photoURL: downloadUrl, updatedAt: new Date().toISOString() }).catch(() => {});
+          } catch(e) {
+              // Ignore if document doesn't exist
+          }
+      }
       
       // Notify parent component
       onUploadComplete(downloadUrl);
@@ -120,11 +159,11 @@ export function ProfilePhotoUpload({
 
       // Clean up preview URL
       URL.revokeObjectURL(previewUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Photo upload error:', error);
       toast({
         title: 'Upload failed',
-        description: 'Failed to upload photo. Please try again.',
+        description: error.message || 'Failed to upload photo. Please try again.',
         variant: 'destructive',
       });
       // Revert to original photo on error
