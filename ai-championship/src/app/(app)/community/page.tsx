@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand, ThumbsUp, Laugh, TrendingUp } from 'lucide-react';
+import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand, ThumbsUp, Laugh, TrendingUp, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserContext } from '../layout';
 import type { Post, PostType } from '@/lib/definitions';
@@ -21,6 +21,7 @@ import { CommentsSection } from '@/components/community/CommentsSection';
 import { Stories } from '@/components/community/Stories';
 import { PostReactions } from '@/components/community/PostReactions';
 import { TrendingSidebar } from '@/components/community/TrendingSidebar';
+import Link from 'next/link';
 
 export default function CommunityPage() {
   const { firestore } = useFirebase();
@@ -175,9 +176,17 @@ export default function CommunityPage() {
                 <Stories />
             </div>
 
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
-                <p className="text-muted-foreground">Connect with peers and share your professional journey.</p>
+            <div className="mb-8 flex items-end justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
+                    <p className="text-muted-foreground">Connect with peers and share your professional journey.</p>
+                </div>
+                <Button variant="outline" className="hidden sm:flex" asChild>
+                    <Link href="/connections">
+                        <Users className="w-4 h-4 mr-2" />
+                        Find Connections
+                    </Link>
+                </Button>
             </div>
 
             <div className="flex items-center justify-between mb-6">

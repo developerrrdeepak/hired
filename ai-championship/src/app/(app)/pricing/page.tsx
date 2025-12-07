@@ -5,10 +5,16 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, Zap } from 'lucide-react';
+import { Check, Loader2, Zap, HelpCircle } from 'lucide-react';
 import { useUserContext } from '../layout';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 const PRICING_PLANS = [
   {
@@ -57,6 +63,25 @@ const PRICING_PLANS = [
   },
 ];
 
+const FAQS = [
+  {
+    question: "Can I cancel my subscription at any time?",
+    answer: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period."
+  },
+  {
+    question: "Is there a free trial available?",
+    answer: "We offer a 14-day free trial for our Professional plan so you can experience the full power of our AI features."
+  },
+  {
+    question: "How does the AI candidate matching work?",
+    answer: "Our AI analyzes job descriptions and candidate profiles to identify the best matches based on skills, experience, and cultural fit, saving you hours of screening time."
+  },
+  {
+    question: "What payment methods do you accept?",
+    answer: "We accept all major credit cards including Visa, Mastercard, and American Express. Enterprise customers can also pay via invoice."
+  }
+];
+
 export default function PricingPage() {
   const { user, isUserLoading } = useUserContext();
   const { toast } = useToast();
@@ -98,7 +123,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="space-y-8 py-8 container max-w-7xl mx-auto">
+    <div className="space-y-12 py-8 container max-w-7xl mx-auto">
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
           Simple, Transparent Pricing
@@ -108,7 +133,7 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
         {PRICING_PLANS.map((plan) => (
           <Card 
             key={plan.id} 
@@ -156,6 +181,24 @@ export default function PricingPage() {
             </CardFooter>
           </Card>
         ))}
+      </div>
+
+      <div className="max-w-3xl mx-auto pt-12 space-y-8">
+        <div className="text-center space-y-2">
+            <h2 className="text-3xl font-semibold">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground">Have questions? We're here to help.</p>
+        </div>
+        
+        <Accordion type="single" collapsible className="w-full">
+            {FAQS.map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
+                    <AccordionContent>
+                        {faq.answer}
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
       </div>
     </div>
   );

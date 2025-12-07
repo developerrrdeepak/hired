@@ -2,17 +2,26 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertTriangle, CreditCard, Calendar } from 'lucide-react';
+import { CheckCircle, AlertTriangle, CreditCard, Calendar, Download, FileText } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useUserContext } from '../layout';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
 
 export default function BillingPage() {
   const searchParams = useSearchParams();
   const { user } = useUserContext();
   const [subscription, setSubscription] = useState<any>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
   
   // Simulate fetching subscription status
   useEffect(() => {
@@ -26,6 +35,16 @@ export default function BillingPage() {
         nextBilling: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
         amount: plan === 'pro' ? '$99.00' : '$29.00'
       });
+      // Simulate an invoice being generated
+       setInvoices([
+        {
+            id: 'inv_123456789',
+            date: new Date().toLocaleDateString(),
+            amount: plan === 'pro' ? '$99.00' : '$29.00',
+            status: 'Paid',
+            plan: plan.charAt(0).toUpperCase() + plan.slice(1)
+        }
+    ]);
     }
   }, [searchParams]);
 
@@ -45,7 +64,10 @@ export default function BillingPage() {
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <CardTitle>Active Subscription</CardTitle>
                 </div>
-                <Badge className="bg-green-600">Active</Badge>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="bg-white border-green-200 text-green-700 hover:bg-green-50">Manage Subscription</Button>
+                    <Badge className="bg-green-600 hover:bg-green-700">Active</Badge>
+                </div>
               </div>
               <CardDescription>You are currently subscribed to the <strong>{subscription.plan}</strong> plan.</CardDescription>
             </CardHeader>
@@ -87,11 +109,48 @@ export default function BillingPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Billing History</CardTitle>
+                <CardDescription>View and download your past invoices.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-sm text-muted-foreground text-center py-8">
-                    No invoices found.
-                </div>
+                {invoices.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Plan</TableHead>
+                                <TableHead className="text-right">Invoice</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {invoices.map((invoice) => (
+                                <TableRow key={invoice.id}>
+                                    <TableCell>{invoice.date}</TableCell>
+                                    <TableCell>{invoice.amount}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{invoice.status}</Badge>
+                                    </TableCell>
+                                    <TableCell>{invoice.plan}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                            <Download className="h-4 w-4" />
+                                            <span className="sr-only">Download</span>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <div className="bg-muted/50 p-4 rounded-full mb-3">
+                             <FileText className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium">No invoices found</p>
+                        <p className="text-sm text-muted-foreground mt-1">You haven't been billed yet.</p>
+                    </div>
+                )}
             </CardContent>
         </Card>
       </div>
