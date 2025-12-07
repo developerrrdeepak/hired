@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Loader2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { useFirebase } from '@/firebase';
 
 interface CompanyLogoUploadProps {
   organizationId: string;
@@ -51,17 +52,30 @@ async function compressImage(file: File, maxWidth = 400, quality = 0.8): Promise
 export function CompanyLogoUpload({
   organizationId,
   currentLogoUrl,
-  storage,
+  storage: propStorage,
   onUploadComplete,
 }: CompanyLogoUploadProps) {
   const [logoPreview, setLogoPreview] = useState(currentLogoUrl || '');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Use hook to get storage if prop is missing
+  const { storage: hookStorage } = useFirebase();
+  const activeStorage = propStorage || hookStorage;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!activeStorage) {
+         toast({
+            title: 'Storage not initialized',
+            description: 'Please reload the page.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
     if (!file.type.startsWith('image/')) {
       toast({
@@ -90,7 +104,7 @@ export function CompanyLogoUpload({
       const compressedBlob = await compressImage(file);
       
       // Upload to Firebase
-      const logoRef = ref(storage, `organizations/${organizationId}/logo_${Date.now()}.jpg`);
+      const logoRef = ref(activeStorage, `organizations/${organizationId}/logo_${Date.now()}.jpg`);
       const uploadResult = await uploadBytes(logoRef, compressedBlob);
       const downloadUrl = await getDownloadURL(uploadResult.ref);
 
