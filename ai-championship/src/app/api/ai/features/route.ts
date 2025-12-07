@@ -3,6 +3,7 @@ import { aiResumeEnhancer, aiJobFitScore, aiCareerPathAdvisor } from '@/ai/featu
 import { aiJobDescriptionGenerator, aiOfferLetterGenerator } from '@/ai/features/recruitment/recruiter-tools';
 import { aiHackathonIdeaGenerator, aiCodeReviewer } from '@/ai/features/hackathon/challenge-tools';
 import { aiEmotionDetector, aiSpeechCoach } from '@/ai/features/interview/analysis-tools';
+import { aiPitchDeckGenerator, aiCoFounderMatcher } from '@/ai/features/startup/founder-tools';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,6 +51,14 @@ export async function POST(request: NextRequest) {
 
       case 'analyze_interview_speech':
         result = await aiSpeechCoach(data.transcript);
+        break;
+
+      case 'generate_pitch_deck':
+        result = await aiPitchDeckGenerator(data.idea, data.market);
+        break;
+
+      case 'match_cofounder':
+        result = await aiCoFounderMatcher(data.profile, data.ideal);
         break;
 
       default:

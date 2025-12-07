@@ -1,241 +1,204 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/page-header';
-import { Rocket, Users, Target, Zap, Brain, TrendingUp } from 'lucide-react';
+import { Rocket, Users, Target, Presentation, Sparkles, Lightbulb, ArrowRight, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StartupAgentPage() {
-  const [teamSize, setTeamSize] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [challenge, setChallenge] = useState('');
-  const [recommendations, setRecommendations] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [idea, setIdea] = useState('');
+  const [market, setMarket] = useState('');
+  const [pitchDeck, setPitchDeck] = useState<any>(null);
+  const [isGeneratingDeck, setIsGeneratingDeck] = useState(false);
+  
+  const [mySkills, setMySkills] = useState('');
+  const [lookingFor, setLookingFor] = useState('');
+  const [cofounderMatches, setCofounderMatches] = useState<any[]>([]);
+  const [isMatching, setIsMatching] = useState(false);
 
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setError(null);
+  const { toast } = useToast();
+
+  const handleGenerateDeck = async () => {
+    if (!idea.trim()) return;
+    setIsGeneratingDeck(true);
     try {
-      const response = await fetch('/api/google-ai/chat', {
+      const res = await fetch('/api/ai/features', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `Generate startup growth recommendations for a ${teamSize}-person ${industry} startup facing: ${challenge}`,
-          context: 'startup_force_multiplier'
+          action: 'generate_pitch_deck',
+          data: { idea, market }
         })
       });
-
-      const data = await response.json();
-      
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to generate recommendations');
-      }
-      
-      setRecommendations({
-        advice: data.response,
-        automations: [
-          'AI-powered candidate screening (saves 15 hours/week)',
-          'Automated interview scheduling (saves 8 hours/week)', 
-          'Smart job posting optimization (increases applications 40%)',
-          'Voice-enabled candidate communication (improves response rate 60%)'
-        ],
-        metrics: {
-          timesSaved: Math.floor(Math.random() * 20) + 25,
-          costReduction: Math.floor(Math.random() * 30) + 40,
-          efficiencyGain: Math.floor(Math.random() * 25) + 50
-        }
-      });
-    } catch (error) {
-      console.error('Generation error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to connect to AI service. Please check your API configuration.');
+      const json = await res.json();
+      if(json.success) setPitchDeck(json.data);
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate deck.' });
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingDeck(false);
+    }
+  };
+
+  const handleFindCoFounder = async () => {
+    if (!mySkills.trim()) return;
+    setIsMatching(true);
+    try {
+      const res = await fetch('/api/ai/features', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'match_cofounder',
+          data: { 
+            profile: { skills: mySkills.split(',') }, 
+            ideal: lookingFor 
+          }
+        })
+      });
+      const json = await res.json();
+      if(json.success) setCofounderMatches(json.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsMatching(false);
     }
   };
 
   return (
-    <div className="flex-1 space-y-6 py-6">
+    <div className="flex-1 space-y-8 py-8 container max-w-7xl mx-auto">
       <PageHeader
-        title="🎯 Startup Force Multiplier Agent"
-        description="AI agent that helps tiny teams punch way above their weight - Best Small Startup Agents Category"
+        title="AI Startup Architect"
+        description="Build your dream company with AI-powered tools."
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <Card className="border-orange-200 bg-orange-50">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Pitch Deck Generator */}
+        <section className="space-y-6">
+          <Card className="border-t-4 border-t-orange-500 shadow-xl hover:shadow-2xl transition-all duration-300">
             <CardHeader>
-              <CardTitle className="text-orange-800 flex items-center gap-2">
-                <Rocket className="h-5 w-5" />
-                Startup Assessment
+              <CardTitle className="flex items-center gap-2 text-orange-600">
+                <Presentation className="w-6 h-6" />
+                Pitch Deck Generator
               </CardTitle>
-              <CardDescription className="text-orange-700">
-                Tell us about your startup to get personalized AI recommendations
-              </CardDescription>
+              <CardDescription>Turn your napkin idea into an investor-ready presentation structure.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Team Size</label>
-                <Input
-                  placeholder="e.g., 3"
-                  value={teamSize}
-                  onChange={(e) => setTeamSize(e.target.value)}
+                <label className="text-sm font-medium mb-1 block">Your Startup Idea</label>
+                <Textarea 
+                  placeholder="e.g. Uber for dog walking..." 
+                  className="h-24 resize-none"
+                  value={idea}
+                  onChange={(e) => setIdea(e.target.value)}
                 />
               </div>
-              
               <div>
-                <label className="text-sm font-medium">Industry</label>
-                <Input
-                  placeholder="e.g., SaaS, E-commerce, FinTech"
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
+                <label className="text-sm font-medium mb-1 block">Target Market</label>
+                <Input 
+                  placeholder="e.g. Urban pet owners in US" 
+                  value={market}
+                  onChange={(e) => setMarket(e.target.value)}
                 />
               </div>
-              
-              <div>
-                <label className="text-sm font-medium">Biggest Challenge</label>
-                <Input
-                  placeholder="e.g., Finding qualified developers"
-                  value={challenge}
-                  onChange={(e) => setChallenge(e.target.value)}
-                />
-              </div>
-
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating || !teamSize || !industry || !challenge}
-                className="w-full"
+              <Button 
+                onClick={handleGenerateDeck} 
+                disabled={isGeneratingDeck} 
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2"
               >
-                {isGenerating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Generating AI Strategy...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Get AI Force Multiplier Plan
-                  </>
-                )}
+                {isGeneratingDeck ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
+                Generate Pitch Structure
               </Button>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Force Multiplier Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
-                <Badge variant="secondary">AI Screening</Badge>
-                <span className="text-sm">Automate 90% of resume reviews</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
-                <Badge variant="secondary">Voice AI</Badge>
-                <span className="text-sm">24/7 candidate communication</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
-                <Badge variant="secondary">Smart Matching</Badge>
-                <span className="text-sm">Find perfect candidates instantly</span>
-              </div>
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
-                <Badge variant="secondary">Auto Scheduling</Badge>
-                <span className="text-sm">Eliminate coordination overhead</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-4">
-          {error && (
-            <Card className="border-red-200 bg-red-50">
-              <CardHeader>
-                <CardTitle className="text-red-800 text-sm">Connection Error</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-red-700 text-sm">{error}</p>
-              </CardContent>
-            </Card>
-          )}
-          {recommendations ? (
-            <>
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader>
-                  <CardTitle className="text-green-800 flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    AI Recommendations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-green-700 whitespace-pre-wrap mb-4">
-                    {recommendations.advice}
-                  </p>
-                  
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center p-3 bg-white rounded-lg border">
-                      <div className="text-2xl font-bold text-green-600">
-                        {recommendations.metrics.timesSaved}x
+              {pitchDeck && (
+                <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <h3 className="font-bold text-lg border-b pb-2">Deck Outline</h3>
+                  <div className="grid gap-3">
+                    {pitchDeck.slides?.map((slide: any, i: number) => (
+                      <div key={i} className="p-3 bg-orange-50 rounded-lg border border-orange-100 hover:border-orange-300 transition-colors">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-orange-800 text-sm">Slide {i+1}: {slide.title}</span>
+                            <Badge variant="outline" className="bg-white text-xs">Visual: {slide.visual?.substring(0, 15)}...</Badge>
+                        </div>
+                        <ul className="list-disc list-inside text-xs text-orange-900 space-y-1 pl-1">
+                            {slide.content?.map((point: string, j: number) => <li key={j}>{point}</li>)}
+                        </ul>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Time Multiplier
-                      </div>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg border">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {recommendations.metrics.costReduction}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Cost Reduction
-                      </div>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg border">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {recommendations.metrics.efficiencyGain}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Efficiency Gain
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Recommended Automations</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {recommendations.automations.map((automation: string, index: number) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm">{automation}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>🏆 Hackathon Category</CardTitle>
-                <CardDescription>Best Small Startup Agents</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <p><strong>Mission:</strong> Help tiny teams punch way above their weight</p>
-                  <p><strong>Solution:</strong> AI-powered recruitment automation that acts as a force multiplier</p>
-                  <p><strong>Impact:</strong> Transform 2-3 person startups into recruitment powerhouses</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Co-Founder Matcher */}
+        <section className="space-y-6">
+          <Card className="border-t-4 border-t-cyan-500 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-cyan-600">
+                <Users className="w-6 h-6" />
+                AI Co-Founder Matcher
+              </CardTitle>
+              <CardDescription>Find the Steve Wozniak to your Steve Jobs.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Your Skills (comma separated)</label>
+                <Input 
+                  placeholder="Marketing, Sales, Vision..." 
+                  value={mySkills}
+                  onChange={(e) => setMySkills(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Looking For</label>
+                <Textarea 
+                  placeholder="Technical lead, MVP builder, AI expert..." 
+                  className="h-24 resize-none"
+                  value={lookingFor}
+                  onChange={(e) => setLookingFor(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={handleFindCoFounder} 
+                disabled={isMatching} 
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-2"
+              >
+                {isMatching ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Target className="w-4 h-4 mr-2" />}
+                Analyze & Find Matches
+              </Button>
+
+              {cofounderMatches.length > 0 && (
+                <div className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <h3 className="font-bold text-lg border-b pb-2">Recommended Personas</h3>
+                  <div className="space-y-4">
+                    {cofounderMatches.map((match: any, i: number) => (
+                      <div key={i} className="flex gap-4 p-4 bg-cyan-50 rounded-xl border border-cyan-100 hover:shadow-md transition-shadow">
+                        <div className="flex-shrink-0 w-12 h-12 bg-white rounded-full flex items-center justify-center border-2 border-cyan-200">
+                            <span className="text-xl font-bold text-cyan-600">{match.role?.[0]}</span>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-cyan-900">{match.role}</h4>
+                            <p className="text-xs text-cyan-700 mt-1 mb-2 italic">"{match.traits}"</p>
+                            <div className="flex flex-wrap gap-1">
+                                {match.skills?.map((s: string, k: number) => (
+                                    <Badge key={k} variant="secondary" className="bg-white text-cyan-800 text-[10px]">{s}</Badge>
+                                ))}
+                            </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus } from 'lucide-react';
+import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus, FileText, MapPin, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Candidate, Application, Job } from '@/lib/definitions';
@@ -15,7 +15,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
 import { useUserContext } from '../layout';
-import { MOCK_CANDIDATES } from '@/lib/mock-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,9 +102,11 @@ export default function CandidatesPage() {
       return () => clearTimeout(t);
     }, []);
 
-    // Query all public candidate profiles from users collection
+    // Query real candidates from Firestore
     const candidatesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
+        // Fetch users who are candidates
+        // In a real app with many users, this needs server-side filtering or Algolia
         return query(
             collection(firestore, 'users'),
             where('role', '==', 'Candidate'),
@@ -115,18 +116,9 @@ export default function CandidatesPage() {
 
     const { data: allUsers, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
     
-    // Filter to only show public profiles, fallback to mock data
     const candidates = useMemo(() => {
-        if (!allUsers || allUsers.length === 0) {
-            // Use mock data if no real data
-            return MOCK_CANDIDATES.map(c => ({
-                ...c,
-                displayName: c.name,
-                profileVisibility: 'public',
-                updatedAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-            }));
-        }
+        if (!allUsers) return [];
+        // No more mock data fallback. Only real data.
         return allUsers.filter(user => user.profileVisibility === 'public' || !user.profileVisibility);
     }, [allUsers]);
 
@@ -306,28 +298,6 @@ export default function CandidatesPage() {
         }
     };
 
-    const handleFindSimilar = (candidate: CandidateWithAppInfo) => {
-        // Set filters based on candidate profile
-        if (candidate.skills && candidate.skills.length > 0) {
-            setSkillFilter(candidate.skills[0]);
-        }
-        if (candidate.yearsOfExperience) {
-            const exp = candidate.yearsOfExperience;
-            if (exp <= 2) setExperienceFilter('0-2');
-            else if (exp <= 5) setExperienceFilter('3-5');
-            else if (exp <= 10) setExperienceFilter('6-10');
-            else setExperienceFilter('10+');
-        }
-        if (candidate.location) {
-            setLocationFilter(candidate.location);
-        }
-        toast({
-            title: "Filters applied",
-            description: `Showing candidates similar to ${candidate.name}`,
-        });
-    };
-
-
     const handleRowClick = (row: CandidateWithAppInfo) => {
         router.push(`/candidates/${row.id}`);
     };
@@ -337,8 +307,8 @@ export default function CandidatesPage() {
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <PageHeader
-        title="Search Candidates"
-        description="Find and connect with top talent using AI-powered search."
+        title="Talent Pool"
+        description="Connect with qualified candidates."
       >
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}>
@@ -364,7 +334,7 @@ export default function CandidatesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, email..."
+                  placeholder="Search candidates..."
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -440,14 +410,14 @@ export default function CandidatesPage() {
             </CardContent>
           </Card>
 
-          {/* Top 10 Matched */}
+          {/* Top Matches */}
           <Card className="glassmorphism">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-amber-500" />
-                Top 10 Matches
+                Smart Matches
               </CardTitle>
-              <CardDescription>AI-ranked candidates</CardDescription>
+              <CardDescription>Ranked by AI Fit Score</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {topMatchedCandidates.slice(0, 5).map((candidate, idx) => (
@@ -467,7 +437,9 @@ export default function CandidatesPage() {
                     <p className="text-sm font-medium truncate">{candidate.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{candidate.currentRole}</p>
                   </div>
-                  <Badge variant="outline" className="text-xs">{candidate.fitScore}</Badge>
+                  <Badge variant="outline" className="text-xs border-amber-200 text-amber-700 bg-amber-50">
+                    {candidate.fitScore}%
+                  </Badge>
                 </div>
               ))}
               {topMatchedCandidates.length === 0 && (
@@ -482,60 +454,54 @@ export default function CandidatesPage() {
           {viewMode === 'cards' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCandidates.map((candidate, i) => (
-                <Card key={candidate.id} className="hover:shadow-md transition-shadow">
+                <Card key={candidate.id} className="hover:shadow-md transition-shadow group flex flex-col h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-12 w-12 border border-border">
                         <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} />
                         <AvatarFallback>{candidate.name?.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base truncate cursor-pointer hover:text-primary" onClick={() => router.push(`/candidates/${candidate.id}`)}>
+                        <CardTitle className="text-base truncate cursor-pointer hover:text-primary transition-colors" onClick={() => router.push(`/candidates/${candidate.id}`)}>
                           {candidate.name}
                         </CardTitle>
-                        <CardDescription className="text-sm truncate">{candidate.currentRole}</CardDescription>
+                        <CardDescription className="text-sm truncate flex items-center gap-1">
+                           <Briefcase className="w-3 h-3" />
+                           {candidate.currentRole || 'Open to work'}
+                        </CardDescription>
                       </div>
                       {candidate.fitScore && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
+                        <Badge variant="secondary" className="flex items-center gap-1 bg-amber-50 text-amber-700 border-amber-200">
                           {candidate.fitScore} <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                         </Badge>
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="pb-3 space-y-2">
-                    <p className="text-sm text-muted-foreground">{candidate.email}</p>
-                    {candidate.location && <p className="text-sm">📍 {candidate.location}</p>}
-                    {candidate.yearsOfExperience && <p className="text-sm">💼 {candidate.yearsOfExperience} years exp</p>}
+                  <CardContent className="pb-3 space-y-3 flex-1">
+                    {candidate.location && <p className="text-sm flex items-center gap-2 text-muted-foreground"><MapPin className="w-3 h-3" /> {candidate.location}</p>}
+                    {candidate.yearsOfExperience && <p className="text-sm flex items-center gap-2 text-muted-foreground"><Briefcase className="w-3 h-3" /> {candidate.yearsOfExperience} years exp</p>}
+                    
                     {candidate.skills && candidate.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-2">
+                      <div className="flex flex-wrap gap-1 pt-1">
                         {candidate.skills.slice(0, 3).map(skill => (
-                          <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>
+                          <Badge key={skill} variant="secondary" className="text-xs font-normal">{skill}</Badge>
                         ))}
-                        {candidate.skills.length > 3 && <Badge variant="outline" className="text-xs">+{candidate.skills.length - 3}</Badge>}
+                        {candidate.skills.length > 3 && <Badge variant="secondary" className="text-xs font-normal">+{candidate.skills.length - 3}</Badge>}
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex gap-2 pt-3">
+                  <CardFooter className="flex gap-2 pt-3 border-t bg-muted/20">
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="ghost"
                       className="flex-1"
                       onClick={() => router.push(`/public-profile/${candidate.id}`)}
-                      title="View Profile"
                     >
-                      View Profile
+                      <FileText className="h-4 w-4 mr-2" /> Profile
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleShortlist(candidate.id, candidate.isShortlisted || false)}
-                    >
-                      <Bookmark className={`h-4 w-4 ${candidate.isShortlisted ? 'fill-current' : ''}`} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
+                      variant="ghost"
                       className="flex-1"
                       onClick={async () => {
                         if (!firestore || !userId) return;
@@ -557,63 +523,27 @@ export default function CandidatesPage() {
                           console.error(error);
                         }
                       }}
-                      title="Send Message"
                     >
-                      <Mail className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={async () => {
-                        if (!firestore || !userId) return;
-                        try {
-                          await addDoc(collection(firestore, 'connections'), {
-                            requesterId: userId,
-                            requesterName: displayName,
-                            requesterRole: role,
-                            receiverId: candidate.id,
-                            receiverName: candidate.name,
-                            receiverRole: 'Candidate',
-                            status: 'pending',
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                          });
-                          await updateDoc(doc(firestore, 'users', candidate.id), {
-                            notifications: arrayUnion({
-                              id: `conn-req-${Date.now()}`,
-                              type: 'connection_request',
-                              message: `${displayName} sent you a connection request`,
-                              timestamp: new Date().toISOString(),
-                              read: false,
-                            })
-                          });
-                          toast({
-                            title: 'Connection request sent',
-                            description: `Request sent to ${candidate.name}`,
-                          });
-                        } catch (error) {
-                          console.error(error);
-                        }
-                      }}
-                      title="Connect"
-                    >
-                      <UserPlus className="h-4 w-4" />
+                      <Mail className="h-4 w-4 mr-2" /> Message
                     </Button>
                   </CardFooter>
                 </Card>
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+            <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
               <DataTable columns={columns} data={filteredCandidates} searchKey="name" onRowClick={handleRowClick} />
             </div>
           )}
           
           {filteredCandidates.length === 0 && !isLoading && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No candidates match your filters.</p>
-              <Button variant="link" onClick={() => {
+            <div className="text-center py-16 px-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <UserPlus className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">No candidates found</h3>
+              <p className="text-muted-foreground mb-4">No candidates match your current filters. Try adjusting them.</p>
+              <Button variant="outline" onClick={() => {
                 setSearchTerm('');
                 setSkillFilter('');
                 setExperienceFilter('all');
@@ -627,7 +557,6 @@ export default function CandidatesPage() {
         </main>
       </div>
 
-      {/* Invite to Apply Dialog */}
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent>
           <DialogHeader>
