@@ -337,7 +337,7 @@ export type Connection = {
   updatedAt: string;
 };
 
-export type PostType = 'achievement' | 'project' | 'job' | 'article';
+export type PostType = 'achievement' | 'project' | 'job' | 'article' | 'discussion'; // Added discussion
 
 export type Post = {
   id: string;
