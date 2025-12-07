@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { aiResumeEnhancer, aiJobFitScore, aiCareerPathAdvisor } from '@/ai/features/recruitment/candidate-tools';
 import { aiJobDescriptionGenerator, aiOfferLetterGenerator } from '@/ai/features/recruitment/recruiter-tools';
 import { aiHackathonIdeaGenerator, aiCodeReviewer } from '@/ai/features/hackathon/challenge-tools';
+import { aiEmotionDetector, aiSpeechCoach } from '@/ai/features/interview/analysis-tools';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,14 @@ export async function POST(request: NextRequest) {
 
       case 'review_code_submission':
         result = await aiCodeReviewer(data.code, data.language);
+        break;
+
+      case 'analyze_interview_emotion':
+        result = await aiEmotionDetector(data.image);
+        break;
+
+      case 'analyze_interview_speech':
+        result = await aiSpeechCoach(data.transcript);
         break;
 
       default:
