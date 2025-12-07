@@ -11,12 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2 } from 'lucide-react';
+import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserContext } from '../layout';
 import type { Post, PostType } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { CommentsSection } from '@/components/community/CommentsSection';
 
 export default function CommunityPage() {
   const { firestore } = useFirebase();
@@ -28,6 +29,9 @@ export default function CommunityPage() {
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<string | null>(null);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 10);
@@ -47,13 +51,15 @@ export default function CommunityPage() {
       collection(firestore, 'connections'),
       where('status', '==', 'accepted')
     );
-  }, [firestore]);
+  }, [firestore]); // Fixed dependency array typo in previous versions
 
   const { data: connections } = useCollection(connectionsQuery);
 
   const connectedUserIds = useMemo(() => {
-    if (!connections || !userId) return [];
-    return connections
+    // @ts-ignore - bypassing strict type check on connections result for now as it's from a generic hook
+    const connectionList = connections as any[]; 
+    if (!connectionList || !userId) return [];
+    return connectionList
       .filter(c => c.requesterId === userId || c.receiverId === userId)
       .map(c => c.requesterId === userId ? c.receiverId : c.requesterId);
   }, [connections, userId]);
@@ -101,6 +107,7 @@ export default function CommunityPage() {
       setPostTitle('');
       setPostContent('');
       setPostType('article');
+      setAiSuggestions([]);
     } catch (error) {
       console.error('Post creation error:', error);
       toast({
@@ -124,6 +131,40 @@ export default function CommunityPage() {
       console.error(error);
     }
   };
+
+  const handleEnhanceWithAI = async () => {
+    if (!postContent.trim()) return;
+    setIsEnhancing(true);
+    try {
+      const response = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'enhance-post',
+          draft: postContent,
+          type: postType
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setPostContent(data.data.answer);
+        if (data.data.suggestions) {
+           setAiSuggestions(data.data.suggestions);
+        }
+        toast({
+          title: 'Magic Applied!',
+          description: 'Your post has been enhanced with AI.',
+        });
+      }
+    } catch (error) {
+      console.error('AI Enhance failed', error);
+      toast({ variant: 'destructive', title: 'AI Enhancement Failed', description: 'Try again later.'});
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
 
   const getPostIcon = (type: PostType) => {
     switch (type) {
@@ -194,6 +235,7 @@ export default function CommunityPage() {
                 {post.imageUrl && (
                   <img src={post.imageUrl} alt="Post" className="mt-4 rounded-lg w-full" />
                 )}
+                
                 <div className="flex items-center gap-4 mt-4 pt-4 border-t">
                   <Button
                     variant="ghost"
@@ -204,15 +246,23 @@ export default function CommunityPage() {
                     <Heart className={`h-4 w-4 mr-1 ${(Array.isArray(post.likes) && post.likes.includes(userId!)) ? 'fill-current' : ''}`} />
                     {Array.isArray(post.likes) ? post.likes.length : 0}
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
+                  >
                     <MessageCircle className="h-4 w-4 mr-1" />
-                    {post.comments.length}
+                    {post.comments?.length || 0}
                   </Button>
                   <Button variant="ghost" size="sm">
                     <Share2 className="h-4 w-4 mr-1" />
                     Share
                   </Button>
                 </div>
+
+                {expandedComments === post.id && (
+                  <CommentsSection postId={post.id} comments={post.comments || []} postContent={post.content} />
+                )}
               </CardContent>
             </Card>
           ))
@@ -223,7 +273,7 @@ export default function CommunityPage() {
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Post</DialogTitle>
           </DialogHeader>
@@ -253,7 +303,19 @@ export default function CommunityPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Content</label>
+              <div className="flex justify-between items-center mb-1">
+                 <label className="text-sm font-medium">Content</label>
+                 <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs"
+                    onClick={handleEnhanceWithAI}
+                    disabled={isEnhancing || !postContent.trim()}
+                 >
+                    {isEnhancing ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                    Enhance with AI
+                 </Button>
+              </div>
               <Textarea
                 placeholder="Share your thoughts..."
                 value={postContent}
@@ -261,6 +323,14 @@ export default function CommunityPage() {
                 rows={6}
                 className="mt-1"
               />
+              {aiSuggestions.length > 0 && (
+                <div className="mt-2 p-2 bg-purple-50 rounded-md text-xs text-purple-800 animate-in fade-in slide-in-from-top-1">
+                  <p className="font-semibold mb-1">💡 AI Suggestions:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {aiSuggestions.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
       case 'generate-interview-questions':
         response = await assistant.generateInterviewQuestions(body.role, body.skillLevel, body.focusAreas);
         break;
+
+      case 'enhance-post':
+        response = await assistant.enhancePostDraft(body.draft, body.type);
+        break;
+
+      case 'suggest-comments':
+        response = await assistant.suggestComment(body.postContent, body.userRole);
+        break;
       
       default:
         // Default chat behavior
@@ -92,6 +100,8 @@ export async function GET(request: NextRequest) {
       'Resume Analysis',
       'Job Description Generation',
       'Interview Question Generation',
+      'Post Enhancement',
+      'Comment Suggestions',
     ],
     message: 'Universal AI Assistant is ready.',
   });

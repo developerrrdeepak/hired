@@ -139,6 +139,11 @@ Provide a comprehensive, helpful response:`;
       suggestions.push('How can I improve this profile?');
       suggestions.push('What interview questions should I ask?');
     }
+
+    if (answer.includes('post') || answer.includes('community')) {
+      suggestions.push('Help me draft a better post');
+      suggestions.push('Suggest engaging topics');
+    }
     
     suggestions.push('Can you elaborate on this?');
     suggestions.push('What are alternative approaches?');
@@ -286,6 +291,43 @@ For each question, briefly mention what a "Good Answer" looks like.`;
     return this.ask(prompt);
   }
 
+  // --- NEW COMMUNITY FEATURES ---
+
+  async enhancePostDraft(draft: string, type: string): Promise<AIResponse> {
+    const prompt = `Enhance this draft for a community post of type "${type}":
+
+DRAFT:
+"${draft}"
+
+Instructions:
+1. Improve clarity and engagement.
+2. Fix grammar and typos.
+3. Suggest 3 relevant hashtags.
+4. Make the tone professional yet approachable.
+5. Suggest a catchy title.
+
+Return the improved version and the suggestions separately.`;
+
+    return this.ask(prompt);
+  }
+
+  async suggestComment(postContent: string, userRole: string): Promise<AIResponse> {
+    const prompt = `Suggest 3 thoughtful comments for this post as a "${userRole}":
+
+POST CONTENT:
+"${postContent.substring(0, 1000)}"
+
+Criteria:
+1. Professional and constructive.
+2. One appreciative comment.
+3. One question-based comment to start a discussion.
+4. One insight-sharing comment.
+
+Keep them concise.`;
+
+    return this.ask(prompt);
+  }
+
   clearHistory(userId?: string): void {
     if (userId) {
       this.conversationHistory.delete(userId);
@@ -302,10 +344,7 @@ For each question, briefly mention what a "Good Answer" looks like.`;
 export const createAIAssistant = (apiKey?: string) => {
   const key = apiKey || process.env.GOOGLE_GENAI_API_KEY;
   if (!key) {
-    // If running in browser and no key, we might need to handle this gracefully
-    // But this function is likely called server-side.
     console.warn('Google AI API key is missing. AI features will fail.');
-    // Return a dummy or throw. Throwing is safer to alert the user.
     throw new Error('Google AI API key is required');
   }
   return new UniversalAIAssistant(key);
