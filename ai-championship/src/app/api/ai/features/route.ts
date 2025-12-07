@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeCandidateProfile } from '@/ai/features/analysis/candidate-analyzer';
-import { generateJobDescription } from '@/ai/features/generation/job-description';
-import { matchCandidateToJob } from '@/ai/features/matching/candidate-matcher';
+import { aiResumeEnhancer, aiJobFitScore, aiCareerPathAdvisor } from '@/ai/features/recruitment/candidate-tools';
+import { aiJobDescriptionGenerator, aiOfferLetterGenerator } from '@/ai/features/recruitment/recruiter-tools';
+import { aiHackathonIdeaGenerator, aiCodeReviewer } from '@/ai/features/hackathon/challenge-tools';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,15 +11,38 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (action) {
-      case 'analyze_candidate':
-        result = await analyzeCandidateProfile(data.resumeText, data.jobDescription);
+      case 'analyze_candidate_comprehensive':
+        const [enhancer, fit, career] = await Promise.all([
+            aiResumeEnhancer(data.resumeText),
+            data.jobDescription ? aiJobFitScore(data.resumeText, data.jobDescription) : Promise.resolve(null),
+            aiCareerPathAdvisor(data.resumeText)
+        ]);
+        
+        result = {
+            ...enhancer,
+            fitScore: fit?.score,
+            fitReason: fit?.reasoning,
+            nextRole: career?.nextRole,
+            skillsToLearn: career?.skillsToLearn
+        };
         break;
+
       case 'generate_jd':
-        result = await generateJobDescription(data.title, data.requirements, data.companyContext);
+        result = await aiJobDescriptionGenerator(data.role, data.keyPoints);
         break;
-      case 'match_candidate':
-        result = await matchCandidateToJob(data.candidateProfile, data.jobDescription);
+        
+      case 'generate_offer_letter':
+        result = await aiOfferLetterGenerator(data);
         break;
+
+      case 'generate_hackathon_idea':
+        result = await aiHackathonIdeaGenerator(data.topic, data.difficulty);
+        break;
+
+      case 'review_code_submission':
+        result = await aiCodeReviewer(data.code, data.language);
+        break;
+
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
