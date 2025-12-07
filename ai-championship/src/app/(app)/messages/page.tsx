@@ -6,9 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image, Phone, Video } from 'lucide-react';
+import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image, Phone, Video, Sparkles } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useUserContext } from '../layout';
 import type { Conversation, Message } from '@/lib/definitions';
@@ -28,6 +28,7 @@ export default function MessagesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [smartReplies, setSmartReplies] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -87,7 +88,21 @@ export default function MessagesPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [displayMessages]);
+    
+    // Generate smart replies when new message arrives from OTHER person
+    const lastMsg = displayMessages[displayMessages.length - 1];
+    if (lastMsg && lastMsg.senderId !== userId) {
+      // Simulate API call for smart replies (to avoid real API cost in loop)
+      // In production, call /api/ai/smart-reply
+      setSmartReplies([
+        "That sounds great!",
+        "Could you send more details?",
+        "I'll get back to you shortly."
+      ]);
+    } else {
+      setSmartReplies([]);
+    }
+  }, [displayMessages, userId]);
 
   useEffect(() => {
     if (selectedConversation && displayMessages && userId && firestore) {
@@ -119,6 +134,7 @@ export default function MessagesPage() {
       );
 
       setMessageText('');
+      setSmartReplies([]);
       
       toast({
         title: 'Message sent',
@@ -132,6 +148,11 @@ export default function MessagesPage() {
         description: 'Failed to send message.',
       });
     }
+  };
+
+  const handleSmartReply = (reply: string) => {
+    setMessageText(reply);
+    // Optional: Auto-send or let user edit? Let's let them edit/send.
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -385,6 +406,21 @@ export default function MessagesPage() {
               </CardContent>
 
               <div className="p-4 border-t bg-muted/30">
+                {smartReplies.length > 0 && (
+                  <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                    {smartReplies.map((reply, i) => (
+                      <Badge 
+                        key={i} 
+                        variant="secondary" 
+                        className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors py-1 px-3 whitespace-nowrap"
+                        onClick={() => handleSmartReply(reply)}
+                      >
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {reply}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <input
                     type="file"

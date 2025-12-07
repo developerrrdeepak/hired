@@ -36,7 +36,7 @@ interface CommentsSectionProps {
 }
 
 export function CommentsSection({ postId, comments, onCommentAdded, postContent }: CommentsSectionProps) {
-  const { user, displayName, role } = useUserContext();
+  const { user, userId, displayName, role } = useUserContext(); // Fixed user context access
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState('');
@@ -47,13 +47,13 @@ export function CommentsSection({ postId, comments, onCommentAdded, postContent 
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   const handleSubmit = async () => {
-    if (!newComment.trim() || !user || !firestore) return;
+    if (!newComment.trim() || !userId || !firestore) return;
 
     setIsSubmitting(true);
     try {
       const comment: Comment = {
         id: crypto.randomUUID(),
-        authorId: user.uid,
+        authorId: userId,
         authorName: displayName || 'Anonymous',
         content: newComment.trim(),
         createdAt: new Date().toISOString(),
@@ -69,13 +69,14 @@ export function CommentsSection({ postId, comments, onCommentAdded, postContent 
       if (onCommentAdded) onCommentAdded();
     } catch (error) {
       console.error('Failed to add comment:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not post comment.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (comment: Comment) => {
-    if (!user || !firestore) return;
+    if (!userId || !firestore) return;
     try {
       await updateDoc(doc(firestore, 'posts', postId), {
         comments: arrayRemove(comment),
@@ -87,7 +88,7 @@ export function CommentsSection({ postId, comments, onCommentAdded, postContent 
   };
 
   const handleEdit = async (oldComment: Comment) => {
-    if (!user || !firestore || !editContent.trim()) return;
+    if (!userId || !firestore || !editContent.trim()) return;
     try {
       const newComment = { ...oldComment, content: editContent };
       await handleDelete(oldComment);
@@ -173,7 +174,7 @@ export function CommentsSection({ postId, comments, onCommentAdded, postContent 
                 <p className="text-sm">{comment.content}</p>
               )}
 
-              {user?.uid === comment.authorId && !editingCommentId && (
+              {userId === comment.authorId && !editingCommentId && (
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { PageHeader } from "@/components/page-header";
@@ -33,6 +32,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { differenceInDays } from "date-fns";
 import { useUserContext } from '../../layout';
+import { DashboardAnalytics } from '@/components/dashboard/analytics'; // Import the new component
 
 function FounderWeeklyReport({ dashboardData, jobs }: { dashboardData: any, jobs: Job[] | null }) {
     const [summary, setSummary] = useState<AiFounderWeeklySummaryOutput | null>(null);
@@ -184,23 +184,11 @@ export default function FounderDashboard() {
         title={`Hello, ${user?.displayName?.split(' ')[0] || 'Founder'}!`}
         description="Here's a high-level view of your hiring performance."
       />
-      
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-0">
-            <StatCard title="Open Roles" value={dashboardData.openRoles.toString()} icon={Briefcase} description={`${dashboardData.totalJobs} total jobs`}/>
-        </div>
-        <div className="animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-100">
-            <StatCard title="Total Candidates" value={dashboardData.totalCandidates.toString()} icon={Users} description={`${dashboardData.totalHires} hires`}/>
-        </div>
-        <div className="animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-200">
-            <StatCard title="Pipeline Health" value={`${dashboardData.pipelineHealth.score}%`} icon={Gauge} trend={dashboardData.pipelineHealth.trend} description="Hire to applicant ratio" />
-        </div>
-        <div className="animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-300">
-            <StatCard title="Avg. Time to Hire" value={`${dashboardData.hiringVelocity.days} days`} icon={Clock} description="From application to hire"/>
-        </div>
-      </div>
 
-       <div className="grid gap-4 md:grid-cols-2 mt-6">
+      {/* NEW ANALYTICS SECTION */}
+      <DashboardAnalytics />
+
+      <div className="grid gap-4 md:grid-cols-2 mt-6">
           <Card className="flex flex-col items-center justify-center p-6 hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400" onClick={() => router.push('/jobs/new')}>
               <PlusCircle className="w-10 h-10 text-muted-foreground mb-2" />
               <h3 className="text-lg font-semibold">Create New Job</h3>
