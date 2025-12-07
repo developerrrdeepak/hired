@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
+    "@google/generative-ai": "^0.24.1",
     "@vultr/vultr-node": "^2.8.0"
   }
 }

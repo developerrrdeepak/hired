@@ -59,6 +59,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+        { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
@@ -78,6 +79,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+        { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
@@ -96,6 +98,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'My Jobs' },
         { href: '/candidates', icon: Users, label: 'Talent Pool' },
         { href: '/interviews', icon: List, label: 'Interviews' },
+        { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
       ]
     }
   ],
@@ -112,6 +115,7 @@ const navConfig: Record<string, NavSection[]> = {
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
             { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
             { href: '/challenges', icon: Trophy, label: 'Challenges' },
             { href: '/community', icon: Users, label: 'Community' },
             { href: '/connections', icon: UserPlus, label: 'Connections' },

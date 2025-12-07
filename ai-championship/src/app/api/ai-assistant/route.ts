@@ -6,8 +6,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { question, userId, context, action } = body;
 
-    if (!question && !action) {
-      return NextResponse.json(
+    // Validate that we have enough information to proceed
+    if (!action && !question) {
+       return NextResponse.json(
         { error: 'Question or action is required' },
         { status: 400 }
       );
@@ -38,7 +39,20 @@ export async function POST(request: NextRequest) {
         response = await assistant.solveProblems(body.problem);
         break;
       
+      case 'analyze-resume':
+        response = await assistant.analyzeResume(body.resumeText);
+        break;
+      
+      case 'generate-jd':
+        response = await assistant.generateJobDescription(body.role, body.companyContext);
+        break;
+      
+      case 'generate-interview-questions':
+        response = await assistant.generateInterviewQuestions(body.role, body.skillLevel, body.focusAreas);
+        break;
+      
       default:
+        // Default chat behavior
         response = await assistant.ask(question, userId, context);
     }
 
@@ -50,11 +64,15 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('AI Assistant API Error:', error);
+    
+    // Check for specific error types (e.g., API key missing)
+    const errorMessage = error.message || 'Failed to process request';
+    
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to process request',
-        fallback: 'I encountered an issue, but I\'m here to help. Please try rephrasing your question.',
+        error: errorMessage,
+        fallback: 'I encountered an issue. Please try again later or check system configuration.',
       },
       { status: 500 }
     );
@@ -71,10 +89,10 @@ export async function GET(request: NextRequest) {
       'Concept Explanation',
       'Brainstorming',
       'Problem Solving',
-      'Technical Guidance',
-      'Creative Writing',
-      'Research Assistance',
+      'Resume Analysis',
+      'Job Description Generation',
+      'Interview Question Generation',
     ],
-    message: 'Universal AI Assistant is ready to help with any question!',
+    message: 'Universal AI Assistant is ready.',
   });
 }

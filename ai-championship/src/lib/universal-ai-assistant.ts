@@ -94,6 +94,7 @@ CAPABILITIES:
 - Career and business advice
 - Personal development guidance
 - Research and analysis
+- Recruitment and Hiring expert (Resume analysis, Job Descriptions, Interview Prep)
 
 RESPONSE STYLE:
 - Direct and actionable
@@ -132,6 +133,11 @@ Provide a comprehensive, helpful response:`;
     if (answer.includes('step') || answer.includes('process')) {
       suggestions.push('What are the best practices?');
       suggestions.push('What common mistakes should I avoid?');
+    }
+
+    if (answer.includes('resume') || answer.includes('candidate')) {
+      suggestions.push('How can I improve this profile?');
+      suggestions.push('What interview questions should I ask?');
     }
     
     suggestions.push('Can you elaborate on this?');
@@ -206,10 +212,10 @@ Include:
     const prompt = `Generate ${count} creative and practical ideas for: "${topic}"
 
 For each idea provide:
-- Brief description
-- Potential benefits
-- Implementation difficulty
-- Unique aspects
+1. Brief description
+2. Potential benefits
+3. Implementation difficulty
+4. Unique aspects
 
 Be innovative and think outside the box.`;
 
@@ -230,6 +236,56 @@ Provide:
     return this.ask(prompt);
   }
 
+  async analyzeResume(resumeText: string): Promise<AIResponse> {
+    const prompt = `Analyze the following resume text for a candidate:
+
+RESUME CONTENT:
+"${resumeText.substring(0, 5000)}"
+
+Provide a comprehensive analysis including:
+1. **Candidate Summary**: A brief 2-3 sentence overview.
+2. **Key Skills**: Identify technical and soft skills.
+3. **Experience Highlights**: Notable achievements and roles.
+4. **Strengths**: What makes this candidate stand out?
+5. **Areas for Improvement**: Missing skills or weak points for typical roles in their field.
+6. **Suggested Roles**: Job titles this candidate is best suited for.
+7. **Interview Starters**: 3 questions to ask this candidate based on their resume.`;
+
+    return this.ask(prompt);
+  }
+
+  async generateJobDescription(role: string, companyContext?: string): Promise<AIResponse> {
+    const prompt = `Generate a professional job description for the role of "${role}"${companyContext ? ` at ${companyContext}` : ''}.
+
+Include:
+1. **Job Title**: Engaging title.
+2. **Role Summary**: Exciting introduction to the role.
+3. **Key Responsibilities**: Bullet points of what they will do.
+4. **Required Qualifications**: Essential skills and experience.
+5. **Preferred Qualifications**: Nice-to-have skills.
+6. **Benefits & Perks**: Standard tech company benefits (or specific if known).
+7. **Call to Action**: Encouraging closing statement.
+
+Tone: Professional, inclusive, and exciting.`;
+
+    return this.ask(prompt);
+  }
+
+  async generateInterviewQuestions(role: string, skillLevel: string = 'Intermediate', focusAreas: string[] = []): Promise<AIResponse> {
+    const prompt = `Generate interview questions for a ${skillLevel} ${role} position.
+${focusAreas.length > 0 ? `Focus areas: ${focusAreas.join(', ')}` : ''}
+
+Provide:
+1. **3 Technical Questions**: Specific to the role/tech stack.
+2. **2 Behavioral Questions**: Situation-based (STAR method).
+3. **1 Problem-Solving Scenario**: A mini-case study or coding challenge idea.
+4. **1 Cultural Fit Question**: To assess team compatibility.
+
+For each question, briefly mention what a "Good Answer" looks like.`;
+
+    return this.ask(prompt);
+  }
+
   clearHistory(userId?: string): void {
     if (userId) {
       this.conversationHistory.delete(userId);
@@ -246,6 +302,10 @@ Provide:
 export const createAIAssistant = (apiKey?: string) => {
   const key = apiKey || process.env.GOOGLE_GENAI_API_KEY;
   if (!key) {
+    // If running in browser and no key, we might need to handle this gracefully
+    // But this function is likely called server-side.
+    console.warn('Google AI API key is missing. AI features will fail.');
+    // Return a dummy or throw. Throwing is safer to alert the user.
     throw new Error('Google AI API key is required');
   }
   return new UniversalAIAssistant(key);

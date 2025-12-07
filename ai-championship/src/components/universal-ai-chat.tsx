@@ -4,7 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Send, Sparkles, Code, Bug, Lightbulb, Brain, Loader2 } from 'lucide-react';
+import { 
+  Send, Sparkles, Code, Bug, Lightbulb, Brain, Loader2, 
+  FileText, Briefcase, UserCheck 
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,23 +22,25 @@ interface Message {
   suggestions?: string[];
 }
 
+type Mode = 'chat' | 'code' | 'debug' | 'explain' | 'brainstorm' | 'resume' | 'jd' | 'interview';
+
 export function UniversalAIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'नमस्ते! मैं आपका Universal AI Assistant हूं। मुझसे कुछ भी पूछें - कोई भी सवाल, कोई भी टॉपिक। मैं हर सवाल का जवाब दूंगा! 🚀',
+      content: 'Hello! I am your Universal AI Assistant. How can I help you today? I can assist with coding, debugging, recruitment tasks, and more.',
       timestamp: new Date(),
       suggestions: [
-        'Code analyze करो',
-        'Bug fix करने में help करो',
-        'Koi concept explain करो',
-        'Ideas brainstorm करो',
+        'Analyze code',
+        'Debug an error',
+        'Generate Job Description',
+        'Analyze Resume',
       ],
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'chat' | 'code' | 'debug' | 'explain' | 'brainstorm'>('chat');
+  const [mode, setMode] = useState<Mode>('chat');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -59,21 +70,42 @@ export function UniversalAIChat() {
         userId: 'user-' + Date.now(),
       };
 
-      if (mode === 'code') {
-        payload.action = 'analyze-code';
-        payload.code = input;
-        payload.language = 'javascript';
-      } else if (mode === 'debug') {
-        payload.action = 'debug';
-        payload.error = input;
-      } else if (mode === 'explain') {
-        payload.action = 'explain';
-        payload.concept = input;
-        payload.level = 'intermediate';
-      } else if (mode === 'brainstorm') {
-        payload.action = 'brainstorm';
-        payload.topic = input;
-        payload.count = 10;
+      // Set action based on mode
+      switch (mode) {
+        case 'code':
+          payload.action = 'analyze-code';
+          payload.code = input;
+          payload.language = 'javascript'; // Default, could be improved to auto-detect
+          break;
+        case 'debug':
+          payload.action = 'debug';
+          payload.error = input;
+          break;
+        case 'explain':
+          payload.action = 'explain';
+          payload.concept = input;
+          payload.level = 'intermediate';
+          break;
+        case 'brainstorm':
+          payload.action = 'brainstorm';
+          payload.topic = input;
+          payload.count = 10;
+          break;
+        case 'resume':
+          payload.action = 'analyze-resume';
+          payload.resumeText = input;
+          break;
+        case 'jd':
+          payload.action = 'generate-jd';
+          payload.role = input;
+          break;
+        case 'interview':
+          payload.action = 'generate-interview-questions';
+          payload.role = input;
+          break;
+        default:
+          // Default chat
+          break;
       }
 
       const response = await fetch('/api/ai-assistant', {
@@ -96,9 +128,10 @@ export function UniversalAIChat() {
         throw new Error(data.error);
       }
     } catch (error: any) {
+      console.error(error);
       const errorMessage: Message = {
         role: 'assistant',
-        content: `मुझे एक technical issue आया, लेकिन मैं फिर भी help करने की कोशिश करूंगा। कृपया अपना सवाल दोबारा पूछें या थोड़ा और context दें।`,
+        content: `I encountered an issue processing your request. Please try again or rephrase.`,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -118,6 +151,19 @@ export function UniversalAIChat() {
     setInput(suggestion);
   };
 
+  const getModePlaceholder = (m: Mode) => {
+    switch (m) {
+      case 'chat': return 'Ask anything...';
+      case 'code': return 'Paste code to analyze...';
+      case 'debug': return 'Paste error message...';
+      case 'brainstorm': return 'Enter topic to brainstorm...';
+      case 'resume': return 'Paste resume text...';
+      case 'jd': return 'Enter job title (e.g. Senior React Developer)...';
+      case 'interview': return 'Enter job role for questions...';
+      default: return 'Type your message...';
+    }
+  };
+
   return (
     <div className="flex flex-col h-[600px] max-w-4xl mx-auto">
       <Card className="flex-1 flex flex-col p-4 space-y-4">
@@ -126,39 +172,73 @@ export function UniversalAIChat() {
             <Sparkles className="w-6 h-6 text-purple-500" />
             <h2 className="text-xl font-bold">Universal AI Assistant</h2>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={mode === 'chat' ? 'default' : 'outline'}
-              onClick={() => setMode('chat')}
-            >
-              <Brain className="w-4 h-4 mr-1" />
-              Chat
-            </Button>
-            <Button
-              size="sm"
-              variant={mode === 'code' ? 'default' : 'outline'}
-              onClick={() => setMode('code')}
-            >
-              <Code className="w-4 h-4 mr-1" />
-              Code
-            </Button>
-            <Button
-              size="sm"
-              variant={mode === 'debug' ? 'default' : 'outline'}
-              onClick={() => setMode('debug')}
-            >
-              <Bug className="w-4 h-4 mr-1" />
-              Debug
-            </Button>
-            <Button
-              size="sm"
-              variant={mode === 'brainstorm' ? 'default' : 'outline'}
-              onClick={() => setMode('brainstorm')}
-            >
-              <Lightbulb className="w-4 h-4 mr-1" />
-              Ideas
-            </Button>
+          
+          <div className="flex gap-2 items-center">
+            {/* Core Modes */}
+            <div className="flex gap-1">
+               <Button
+                size="sm"
+                variant={mode === 'chat' ? 'default' : 'ghost'}
+                onClick={() => setMode('chat')}
+                title="General Chat"
+              >
+                <Brain className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={mode === 'code' ? 'default' : 'ghost'}
+                onClick={() => setMode('code')}
+                title="Code Analysis"
+              >
+                <Code className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="h-4 w-[1px] bg-gray-300 mx-1"></div>
+
+            {/* Recruitment Modes Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant={['resume', 'jd', 'interview'].includes(mode) ? 'default' : 'outline'}>
+                   <Briefcase className="w-4 h-4 mr-2" />
+                   Recruit
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setMode('resume')}>
+                  <FileText className="w-4 h-4 mr-2" /> Resume Analysis
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode('jd')}>
+                  <Briefcase className="w-4 h-4 mr-2" /> Generate JD
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode('interview')}>
+                  <UserCheck className="w-4 h-4 mr-2" /> Interview Qs
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+             {/* Other Modes Dropdown */}
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant={['debug', 'brainstorm'].includes(mode) ? 'default' : 'outline'}>
+                   More
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                 <DropdownMenuItem onClick={() => setMode('debug')}>
+                  <Bug className="w-4 h-4 mr-2" /> Debug
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode('brainstorm')}>
+                  <Lightbulb className="w-4 h-4 mr-2" /> Brainstorm
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {mode !== 'chat' && (
+               <span className="text-xs font-semibold px-2 py-1 bg-gray-100 rounded-full ml-2">
+                 {mode.toUpperCase()}
+               </span>
+            )}
           </div>
         </div>
 
@@ -166,7 +246,7 @@ export function UniversalAIChat() {
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-lg p-3`}>
-                <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                <div className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</div>
                 {message.suggestions && message.suggestions.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-xs opacity-70">Suggestions:</p>
@@ -175,7 +255,7 @@ export function UniversalAIChat() {
                         key={idx}
                         size="sm"
                         variant="outline"
-                        className="w-full text-left justify-start text-xs"
+                        className="w-full text-left justify-start text-xs h-auto py-2 whitespace-normal"
                         onClick={() => useSuggestion(suggestion)}
                       >
                         {suggestion}
@@ -201,13 +281,7 @@ export function UniversalAIChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={
-              mode === 'chat' ? 'कुछ भी पूछें...' :
-              mode === 'code' ? 'Code paste करें...' :
-              mode === 'debug' ? 'Error describe करें...' :
-              mode === 'brainstorm' ? 'Topic बताएं...' :
-              'Type your message...'
-            }
+            placeholder={getModePlaceholder(mode)}
             disabled={loading}
             className="flex-1"
           />
