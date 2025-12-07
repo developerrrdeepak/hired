@@ -231,13 +231,15 @@ export default function CommunityPage() {
                         </Badge>
                         </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="cursor-pointer" onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}>
                         <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
                         <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
                         {post.imageUrl && (
                         <img src={post.imageUrl} alt="Post" className="mt-4 rounded-lg w-full object-cover max-h-[400px]" />
                         )}
+                    </CardContent>
                         
+                    <CardContent>
                         <div className="flex items-center justify-between mt-4 pt-4 border-t">
                             <div className="flex gap-1">
                                 <PostReactions initialCount={Array.isArray(post.likes) ? post.likes.length : 0} />
@@ -245,7 +247,10 @@ export default function CommunityPage() {
                                     variant="ghost" 
                                     size="sm"
                                     className="gap-2 text-muted-foreground hover:text-foreground"
-                                    onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedComments(expandedComments === post.id ? null : post.id)
+                                    }}
                                 >
                                     <MessageCircle className="h-4 w-4" />
                                     {post.comments?.length || 0} Comments

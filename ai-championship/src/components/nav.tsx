@@ -48,24 +48,37 @@ type NavItem = {
 };
 
 type NavSection = {
+    title?: string; // Optional section title
     items: NavItem[];
 };
 
 const navConfig: Record<string, NavSection[]> = {
   'Owner': [
     {
+      title: 'Platform',
       items: [
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
+      ]
+    },
+    {
+       title: 'Intelligence',
+       items: [
         { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+       ]
+    },
+    {
+       title: 'Network',
+       items: [
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
-      ],
+       ]
     },
     {
+        title: 'Settings',
         items: [
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
             { href: '/settings', icon: Settings, label: 'Settings' },
@@ -74,16 +87,27 @@ const navConfig: Record<string, NavSection[]> = {
   ],
   'Recruiter': [
     {
+      title: 'Recruitment',
       items: [
         { href: '/recruiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
         { href: '/candidates', icon: Users, label: 'Candidates' },
-        { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
-        { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+      ]
+    },
+    {
+        title: 'Intelligence',
+        items: [
+            { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        ]
+    },
+    {
+       title: 'Network',
+       items: [
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
-      ]
+       ]
     },
     {
       items: [
@@ -111,16 +135,27 @@ const navConfig: Record<string, NavSection[]> = {
   ],
   'Candidate': [
     {
+        title: 'Career',
         items: [
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
-            { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
-            { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-            { href: '/challenges', icon: Trophy, label: 'Challenges' },
+             { href: '/challenges', icon: Trophy, label: 'Challenges' },
+        ]
+    },
+    {
+        title: 'Growth',
+        items: [
+             { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
+             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        ]
+    },
+    {
+       title: 'Community',
+       items: [
             { href: '/community', icon: Users, label: 'Community' },
             { href: '/connections', icon: UserPlus, label: 'Connections' },
             { href: '/messages', icon: MessageCircle, label: 'Messages' },
-        ]
+       ]
     },
     {
         items: [
@@ -158,13 +193,16 @@ function NavItem({ item }: { item: NavItem }) {
         const orgPath = `/organization/${organizationId}`;
         isActive = pathname === orgPath;
         return (
-            <Link href={`${orgPath}?role=${role}`}>
+            <Link href={`${orgPath}?role=${role}`} passHref legacyBehavior>
                  <SidebarMenuButton
+                    asChild
                     isActive={isActive}
                     tooltip={item.label}
-                    variant="ghost"
                 >
-                    <item.icon className="h-5 w-5" />
+                    <a href={`${orgPath}?role=${role}`}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </a>
                 </SidebarMenuButton>
             </Link>
         )
@@ -173,13 +211,16 @@ function NavItem({ item }: { item: NavItem }) {
 
 
     return (
-        <Link href={linkHref}>
+        <Link href={linkHref} passHref legacyBehavior>
             <SidebarMenuButton
+                asChild
                 isActive={isActive}
                 tooltip={item.label}
-                variant="ghost"
             >
-                <item.icon className="h-5 w-5" />
+                 <a href={linkHref}>
+                    <item.icon />
+                    <span>{item.label}</span>
+                </a>
             </SidebarMenuButton>
         </Link>
     );
@@ -197,7 +238,12 @@ export function Nav({ role }: { role: string | null }) {
   return (
     <SidebarMenu>
       {navSections.map((section, index) => (
-        <SidebarGroup key={index} className={index > 0 ? 'mt-auto' : ''}>
+        <SidebarGroup key={index} className={index > 0 ? 'mt-4' : ''}>
+            {section.title && (
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground/70 group-data-[collapsible=icon]:hidden">
+                    {section.title}
+                </div>
+            )}
             {section.items.map(item => (
                  <SidebarMenuItem key={item.href}>
                     <NavItem item={item} />

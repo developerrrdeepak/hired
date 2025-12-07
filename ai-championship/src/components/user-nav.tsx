@@ -18,8 +18,9 @@ import { useFirebase } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { placeholderImages } from "@/lib/placeholder-images";
 import { signOut } from "firebase/auth";
-import { LogOut } from "lucide-react";
+import { LogOut, ChevronsUpDown, Sparkles, User, Settings, CreditCard } from "lucide-react";
 import { useUserContext } from "@/app/(app)/layout";
+import { SidebarMenuButton } from "./ui/sidebar";
 
 export function UserNav() {
   const { auth } = useFirebase();
@@ -45,8 +46,9 @@ export function UserNav() {
   
   if (!user) {
     return (
-        <Button variant="outline" onClick={() => router.push('/login')}>
-            Login
+        <Button variant="outline" onClick={() => router.push('/login')} className="w-full justify-start">
+             <User className="mr-2 h-4 w-4" />
+             Login
         </Button>
     )
   };
@@ -58,22 +60,57 @@ export function UserNav() {
   return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                        <AvatarImage src={avatarUrl} alt={displayName} />
-                        <AvatarFallback>{userInitial}</AvatarFallback>
+                 <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  >
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src={avatarUrl} alt={displayName} />
+                      <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
                     </Avatar>
-                </Button>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">{displayName}</span>
+                      <span className="truncate text-xs">{user.email}</span>
+                    </div>
+                    <ChevronsUpDown className="ml-auto size-4" />
+                  </SidebarMenuButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
-                    </p>
+            <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side="bottom"
+                align="end"
+                sideOffset={4}
+            >
+                <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={avatarUrl} alt={displayName} />
+                    <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{displayName}</span>
+                    <span className="truncate text-xs">{user.email}</span>
+                    </div>
                 </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
+                     <Sparkles className="mr-2 h-4 w-4" />
+                     Upgrade to Pro
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
+                     <User className="mr-2 h-4 w-4" />
+                     Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/billing')}>
+                     <CreditCard className="mr-2 h-4 w-4" />
+                     Billing
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                     <Settings className="mr-2 h-4 w-4" />
+                     Settings
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                  <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
