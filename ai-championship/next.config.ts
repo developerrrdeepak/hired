@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true,
   
