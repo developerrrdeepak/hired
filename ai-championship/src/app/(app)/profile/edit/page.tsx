@@ -14,6 +14,7 @@ import { Upload, Save, FileText, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfilePhotoUpload } from '@/components/profile-photo-upload';
+import { updateProfile } from 'firebase/auth';
 
 export default function ProfileEditPage() {
   const { user, firestore, storage } = useFirebase() as any;
@@ -60,7 +61,8 @@ export default function ProfileEditPage() {
             github: data.github || '',
             portfolio: data.portfolio || '',
           });
-          setPhotoUrl(data.avatarUrl || data.photoURL || user.photoURL || '');
+          // Prioritize photoURL from user data, fallback to auth
+          setPhotoUrl(data.photoURL || data.avatarUrl || user.photoURL || '');
           calculateProfileScore(data);
         } else {
           setFormData(prev => ({
@@ -94,8 +96,6 @@ export default function ProfileEditPage() {
     setProfileScore(score);
   };
 
-
-
   const handlePhotoUpload = async (newPhotoUrl: string) => {
     if (!user || !firestore) {
       toast({ 
@@ -107,39 +107,45 @@ export default function ProfileEditPage() {
     }
     
     try {
+      // 1. Update Firestore User Document
       const userRef = doc(firestore, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       
+      const updateData = {
+        avatarUrl: newPhotoUrl,
+        photoURL: newPhotoUrl,
+        updatedAt: new Date().toISOString(),
+      };
+
       if (userSnap.exists()) {
-        await updateDoc(userRef, {
-          avatarUrl: newPhotoUrl,
-          photoURL: newPhotoUrl,
-          updatedAt: new Date().toISOString(),
-        });
+        await updateDoc(userRef, updateData);
       } else {
-        // Create user document if it doesn't exist
         await setDoc(userRef, {
           uid: user.uid,
+          id: user.uid, // Ensure ID is set for queries
           displayName: user.displayName || '',
           email: user.email || '',
-          avatarUrl: newPhotoUrl,
-          photoURL: newPhotoUrl,
+          ...updateData,
           role: 'Candidate',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         });
       }
+
+      // 2. Update Firebase Auth Profile (critical for immediate UI updates elsewhere)
+      await updateProfile(user, { photoURL: newPhotoUrl });
       
       setPhotoUrl(newPhotoUrl);
+      
+      // Force reload to update context if necessary, though state update handles local view
       toast({ 
         title: 'Success!', 
         description: 'Profile photo updated successfully' 
       });
     } catch (error) {
-      console.error('Error updating photo in Firestore:', error);
+      console.error('Error updating photo:', error);
       toast({ 
         title: 'Error', 
-        description: 'Failed to save photo to database', 
+        description: 'Failed to save photo completely', 
         variant: 'destructive' 
       });
     }
@@ -174,8 +180,8 @@ export default function ProfileEditPage() {
         linkedIn: formData.linkedIn,
         github: formData.github,
         portfolio: formData.portfolio,
+        photoURL: photoUrl, // Ensure photo persists
         avatarUrl: photoUrl,
-        photoURL: photoUrl,
         ...(resumeURL && { resumeURL }),
         updatedAt: new Date().toISOString(),
       };
@@ -188,10 +194,16 @@ export default function ProfileEditPage() {
         await setDoc(userRef, {
           ...profileData,
           uid: user.uid,
+          id: user.uid,
           role: 'Candidate',
           profileVisibility: 'public',
           createdAt: new Date().toISOString(),
         });
+      }
+      
+      // Also update auth profile display name
+      if (formData.displayName !== user.displayName) {
+          await updateProfile(user, { displayName: formData.displayName });
       }
 
       // Calculate and update profile score

@@ -11,13 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand } from 'lucide-react';
+import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand, ThumbsUp, Laugh, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserContext } from '../layout';
 import type { Post, PostType } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { CommentsSection } from '@/components/community/CommentsSection';
+import { Stories } from '@/components/community/Stories';
+import { PostReactions } from '@/components/community/PostReactions';
+import { TrendingSidebar } from '@/components/community/TrendingSidebar';
 
 export default function CommunityPage() {
   const { firestore } = useFirebase();
@@ -51,12 +54,12 @@ export default function CommunityPage() {
       collection(firestore, 'connections'),
       where('status', '==', 'accepted')
     );
-  }, [firestore]); // Fixed dependency array typo in previous versions
+  }, [firestore]); 
 
   const { data: connections } = useCollection(connectionsQuery);
 
   const connectedUserIds = useMemo(() => {
-    // @ts-ignore - bypassing strict type check on connections result for now as it's from a generic hook
+    // @ts-ignore
     const connectionList = connections as any[]; 
     if (!connectionList || !userId) return [];
     return connectionList
@@ -120,18 +123,6 @@ export default function CommunityPage() {
     }
   };
 
-  const handleLike = async (postId: string, currentLikes: string[]) => {
-    if (!firestore || !userId) return;
-    try {
-      const isLiked = currentLikes.includes(userId);
-      await updateDoc(doc(firestore, 'posts', postId), {
-        likes: isLiked ? arrayRemove(userId) : arrayUnion(userId),
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const handleEnhanceWithAI = async () => {
     if (!postContent.trim()) return;
     setIsEnhancing(true);
@@ -177,99 +168,118 @@ export default function CommunityPage() {
 
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Community Feed</h1>
-        <p className="text-muted-foreground">Connect with peers and share your professional journey.</p>
-      </div>
+      <div className="flex gap-6">
+        {/* Main Feed Area */}
+        <div className="flex-1 min-w-0">
+            <div className="mb-6">
+                <Stories />
+            </div>
 
-      <div className="flex items-center justify-between mb-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">All Posts</TabsTrigger>
-            <TabsTrigger value="following">Following</TabsTrigger>
-            <TabsTrigger value="achievement">Achievements</TabsTrigger>
-            <TabsTrigger value="project">Projects</TabsTrigger>
-            <TabsTrigger value="job">Jobs</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Post
-        </Button>
-      </div>
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
+                <p className="text-muted-foreground">Connect with peers and share your professional journey.</p>
+            </div>
 
-      <div className="max-w-2xl mx-auto space-y-6">
-        {isLoading ? (
-          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64" />)
-        ) : (
-          filteredPosts.map((post) => (
-            <Card key={post.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={post.authorAvatar || placeholderImages[0].imageUrl} />
-                      <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{post.authorName}</p>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">{post.authorRole}</Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {post.createdAt && !isNaN(new Date(post.createdAt).getTime()) 
-                            ? new Date(post.createdAt).toLocaleDateString() 
-                            : 'Recently'}
-                        </span>
-                      </div>
+            <div className="flex items-center justify-between mb-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                    <TabsTrigger value="all">Feed</TabsTrigger>
+                    <TabsTrigger value="following">Following</TabsTrigger>
+                    <TabsTrigger value="project">Projects</TabsTrigger>
+                    <TabsTrigger value="job">Jobs</TabsTrigger>
+                </TabsList>
+                </Tabs>
+                <Button onClick={() => setIsModalOpen(true)} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-md">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Post
+                </Button>
+            </div>
+
+            <div className="space-y-6">
+                {isLoading ? (
+                [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+                ) : (
+                filteredPosts.map((post) => (
+                    <Card key={post.id} className="hover:shadow-lg transition-all duration-300 border-border/50">
+                    <CardHeader>
+                        <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="relative group cursor-pointer">
+                                <Avatar className="h-10 w-10 ring-2 ring-background">
+                                    <AvatarImage src={post.authorAvatar || placeholderImages[0].imageUrl} />
+                                    <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                            </div>
+                            <div>
+                            <p className="font-semibold text-sm hover:underline cursor-pointer">{post.authorName}</p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                {post.createdAt && !isNaN(new Date(post.createdAt).getTime()) 
+                                    ? new Date(post.createdAt).toLocaleDateString() 
+                                    : 'Recently'}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal bg-muted text-muted-foreground">
+                                    {post.authorRole}
+                                </Badge>
+                            </div>
+                            </div>
+                        </div>
+                        <Badge variant="outline" className="flex items-center gap-1 font-normal text-xs">
+                            {getPostIcon(post.type)}
+                            {post.type}
+                        </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                        <p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
+                        {post.imageUrl && (
+                        <img src={post.imageUrl} alt="Post" className="mt-4 rounded-lg w-full object-cover max-h-[400px]" />
+                        )}
+                        
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                            <div className="flex gap-1">
+                                <PostReactions initialCount={Array.isArray(post.likes) ? post.likes.length : 0} />
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="gap-2 text-muted-foreground hover:text-foreground"
+                                    onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
+                                >
+                                    <MessageCircle className="h-4 w-4" />
+                                    {post.comments?.length || 0} Comments
+                                </Button>
+                                <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
+                                    <Share2 className="h-4 w-4" />
+                                    Share
+                                </Button>
+                            </div>
+                        </div>
+
+                        {expandedComments === post.id && (
+                        <CommentsSection postId={post.id} comments={post.comments || []} postContent={post.content} />
+                        )}
+                    </CardContent>
+                    </Card>
+                ))
+                )}
+                {filteredPosts.length === 0 && !isLoading && (
+                <div className="text-center py-16">
+                    <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <TrendingUp className="w-8 h-8 text-muted-foreground" />
                     </div>
-                  </div>
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    {getPostIcon(post.type)}
-                    {post.type}
-                  </Badge>
+                    <h3 className="text-lg font-medium">No posts yet</h3>
+                    <p className="text-muted-foreground text-sm mt-1">Be the first to share something with the community!</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{post.content}</p>
-                {post.imageUrl && (
-                  <img src={post.imageUrl} alt="Post" className="mt-4 rounded-lg w-full" />
                 )}
-                
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleLike(post.id, Array.isArray(post.likes) ? post.likes : [])}
-                    className={(Array.isArray(post.likes) && post.likes.includes(userId!)) ? 'text-red-500' : ''}
-                  >
-                    <Heart className={`h-4 w-4 mr-1 ${(Array.isArray(post.likes) && post.likes.includes(userId!)) ? 'fill-current' : ''}`} />
-                    {Array.isArray(post.likes) ? post.likes.length : 0}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    {post.comments?.length || 0}
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Share2 className="h-4 w-4 mr-1" />
-                    Share
-                  </Button>
-                </div>
+            </div>
+        </div>
 
-                {expandedComments === post.id && (
-                  <CommentsSection postId={post.id} comments={post.comments || []} postContent={post.content} />
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-        {filteredPosts.length === 0 && !isLoading && (
-          <p className="text-center text-muted-foreground py-12">No posts yet</p>
-        )}
+        {/* Right Sidebar - Trending */}
+        <div className="hidden lg:block w-80 min-w-[320px]">
+            <TrendingSidebar />
+        </div>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

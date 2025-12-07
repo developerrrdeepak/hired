@@ -1,142 +1,162 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { PRICING_PLANS } from '@/lib/stripe'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle } from 'lucide-react'
-import { useAuth } from '@/firebase'
+import { useState } from 'react';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Check, Loader2, Zap } from 'lucide-react';
+import { useUserContext } from '../layout';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+
+const PRICING_PLANS = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfect for small teams and startups.',
+    price: 29,
+    interval: 'month',
+    features: [
+      'Up to 10 active job postings',
+      'Basic AI Candidate Matching',
+      'Community Access',
+      'Email Support',
+    ],
+    highlight: false,
+  },
+  {
+    id: 'pro',
+    name: 'Professional',
+    description: 'For growing companies with active hiring needs.',
+    price: 99,
+    interval: 'month',
+    features: [
+      'Unlimited job postings',
+      'Advanced AI Matching & Screening',
+      'AI Interview Copilot',
+      'Video Interview Recording',
+      'Priority Support',
+    ],
+    highlight: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'Custom solutions for large organizations.',
+    price: 299,
+    interval: 'month',
+    features: [
+      'Everything in Pro',
+      'Dedicated Account Manager',
+      'Custom AI Model Fine-tuning',
+      'SSO & Advanced Security',
+      'SLA & 24/7 Support',
+    ],
+    highlight: false,
+  },
+];
 
 export default function PricingPage() {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, isUserLoading } = useUserContext();
+  const { toast } = useToast();
+  const router = useRouter();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const handleSelectPlan = async (planId: string) => {
+  const handleSubscribe = async (planId: string) => {
     if (!user) {
-      window.location.href = '/login'
-      return
+      toast({ title: 'Login Required', description: 'Please login to subscribe.' });
+      router.push('/login');
+      return;
     }
 
-    setLoading(true)
-    setError(null)
-    setSelectedPlan(planId)
-
+    setLoadingPlan(planId);
     try {
-      const token = await user.getIdToken()
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
-
-      const response = await fetch('/api/stripe/checkout', {
+      const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          planId,
-          successUrl: `${origin}/dashboard?payment=success`,
-          cancelUrl: `${origin}/pricing?payment=canceled`,
-        }),
-      })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, userId: user.uid, email: user.email }),
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session')
-      }
+      const data = await response.json();
 
-      const { url } = await response.json()
-      if (url) {
-        window.location.href = url
+      if (!response.ok) throw new Error(data.error || 'Failed to start checkout');
+
+      if (data.url) {
+        window.location.href = data.url;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-      setSelectedPlan(null)
+    } catch (error: any) {
+      console.error('Subscription error:', error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Error', 
+        description: error.message || 'Could not initiate checkout.' 
+      });
     } finally {
-      setLoading(false)
+      setLoadingPlan(null);
     }
-  }
+  };
 
   return (
-    <div className="container max-w-6xl mx-auto py-12 px-4">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
-        <p className="text-xl text-gray-600">
-          Choose the perfect plan for your hiring needs
+    <div className="space-y-8 py-8 container max-w-7xl mx-auto">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          Simple, Transparent Pricing
+        </h1>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Choose the plan that best fits your hiring needs. Upgrade or cancel at any time.
         </p>
       </div>
 
-      {error && (
-        <div className="mb-8 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {PRICING_PLANS.map(plan => (
-          <Card key={plan.id} className="flex flex-col relative">
-            {plan.id === 'professional' && (
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                Most Popular
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8">
+        {PRICING_PLANS.map((plan) => (
+          <Card 
+            key={plan.id} 
+            className={`relative flex flex-col ${plan.highlight ? 'border-primary shadow-lg scale-105 z-10' : 'border-border'}`}
+          >
+            {plan.highlight && (
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <Badge className="bg-primary text-primary-foreground hover:bg-primary px-4 py-1 text-sm font-medium uppercase tracking-wide">
+                  Most Popular
+                </Badge>
               </div>
             )}
             <CardHeader>
-              <CardTitle>{plan.name}</CardTitle>
+              <CardTitle className="text-2xl">{plan.name}</CardTitle>
               <CardDescription>{plan.description}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="mb-6">
+            <CardContent className="flex-1 space-y-6">
+              <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold">${plan.price}</span>
-                <span className="text-gray-600 ml-2">/{plan.interval}</span>
+                <span className="text-muted-foreground">/{plan.interval}</span>
               </div>
-
-              <ul className="mb-8 space-y-3 flex-1">
-                {plan.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center">
-                    <CheckCircle className="w-5 h-5 mr-3 text-green-600 flex-shrink-0" />
-                    <span className="text-gray-700">{feature}</span>
+              <ul className="space-y-3">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
-
-              <Button
-                onClick={() => handleSelectPlan(plan.id)}
-                disabled={loading && selectedPlan === plan.id}
-                className={`w-full ${
-                  plan.id === 'professional'
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
-                }`}
-              >
-                {loading && selectedPlan === plan.id ? 'Processing...' : 'Get Started'}
-              </Button>
             </CardContent>
+            <CardFooter>
+              <Button 
+                className={`w-full ${plan.highlight ? 'bg-primary hover:bg-primary/90' : ''}`}
+                variant={plan.highlight ? 'default' : 'outline'}
+                disabled={!!loadingPlan || isUserLoading}
+                onClick={() => handleSubscribe(plan.id)}
+              >
+                {loadingPlan === plan.id ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="mr-2 h-4 w-4" />
+                )}
+                {loadingPlan === plan.id ? 'Processing...' : `Get ${plan.name}`}
+              </Button>
+            </CardFooter>
           </Card>
         ))}
       </div>
-
-      <div className="mt-12 p-6 bg-gray-100 rounded-lg">
-        <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-semibold mb-2">Can I change my plan anytime?</h4>
-            <p className="text-gray-700">
-              Yes! You can upgrade or downgrade your plan anytime. Changes will take effect on your next billing cycle.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Do you offer annual billing?</h4>
-            <p className="text-gray-700">
-              Contact our sales team for custom annual billing options and enterprise pricing.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">What payment methods do you accept?</h4>
-            <p className="text-gray-700">
-              We accept all major credit cards through Stripe. No setup fees or hidden charges.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
-  )
+  );
 }

@@ -4,6 +4,7 @@ import { aiJobDescriptionGenerator, aiOfferLetterGenerator } from '@/ai/features
 import { aiHackathonIdeaGenerator, aiCodeReviewer } from '@/ai/features/hackathon/challenge-tools';
 import { aiEmotionDetector, aiSpeechCoach } from '@/ai/features/interview/analysis-tools';
 import { aiPitchDeckGenerator, aiCoFounderMatcher } from '@/ai/features/startup/founder-tools';
+import { aiSkillGapAnalysis, aiProjectGenerator } from '@/ai/features/learning/skill-gap-tools';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,6 +60,14 @@ export async function POST(request: NextRequest) {
 
       case 'match_cofounder':
         result = await aiCoFounderMatcher(data.profile, data.ideal);
+        break;
+
+      case 'analyze_skill_gap':
+        result = await aiSkillGapAnalysis(data.currentSkills, data.targetRole);
+        break;
+
+      case 'generate_project_idea':
+        result = await aiProjectGenerator(data.skills);
         break;
 
       default:

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { GoogleLogo, HireVisionLogo } from '@/components/icons';
-import { Loader2, CheckCircle2, AlertCircle, Sparkles, Users, Briefcase } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Sparkles, Users, Briefcase, Building2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
 import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
@@ -160,6 +160,32 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
     }
   };
 
+  const handleWorkOSAuth = async () => {
+    // In production, initiate WorkOS OAuth flow
+    // For now, simulate or redirect to API
+    const clientId = process.env.NEXT_PUBLIC_WORKOS_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/api/auth/workos/callback`;
+    const state = `${userType}:${Math.random().toString(36).substring(7)}`;
+    
+    // Construct the authorization URL
+    // Since we don't have the WorkOS URL builder client-side easily without a library,
+    // we can construct it manually or call an API to get it.
+    // Standard WorkOS URL: https://api.workos.com/sso/authorize?response_type=code&client_id=...&redirect_uri=...
+    
+    const workosUrl = `https://api.workos.com/sso/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&provider=google`; // Defaulting to Google provider for WorkOS, or let user choose via 'provider' param or 'organization'
+    
+    // Ideally, prompt for Organization domain first for Enterprise SSO
+    // But for "Continue with WorkOS", we often want Google/Microsoft.
+    
+    toast({ title: 'WorkOS Integration', description: 'Redirecting to Enterprise SSO...' });
+    // window.location.href = workosUrl; // Uncomment when Client ID is set
+    
+    // Fallback simulation for demo
+    setTimeout(() => {
+        toast({ title: 'Demo Mode', description: 'WorkOS requires Client ID. Using simulation.' });
+    }, 1000);
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !firestore) return;
@@ -257,23 +283,35 @@ export function EnhancedAuth({ mode, userType, onSuccess }: EnhancedAuthProps) {
 
       <CardContent className="space-y-4">
         {/* Google Authentication */}
-        <Button
-          variant="outline"
-          className="w-full h-12"
-          onClick={handleGoogleAuth}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <GoogleLogo className="mr-2 h-4 w-4" />
-          )}
-          Continue with Google
-          <Badge variant="secondary" className="ml-2 text-xs">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Recommended
-          </Badge>
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+            <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleAuth}
+            disabled={isLoading}
+            >
+            {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <GoogleLogo className="mr-2 h-4 w-4" />
+            )}
+            Google
+            </Button>
+
+            <Button
+            variant="outline"
+            className="w-full bg-[#6363f1] text-white hover:bg-[#4b4bc9] hover:text-white border-0"
+            onClick={handleWorkOSAuth}
+            disabled={isLoading}
+            >
+            {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <Building2 className="mr-2 h-4 w-4" />
+            )}
+            SSO
+            </Button>
+        </div>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

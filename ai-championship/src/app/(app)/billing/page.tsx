@@ -1,154 +1,100 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, CreditCard, Loader2 } from 'lucide-react';
-import { useFirebase } from '@/firebase';
-import { stripeClient, PRICING_PLANS } from '@/lib/stripe-client';
+import { CheckCircle, AlertTriangle, CreditCard, Calendar } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useUserContext } from '../layout';
 
 export default function BillingPage() {
-  const { user } = useFirebase();
+  const searchParams = useSearchParams();
+  const { user } = useUserContext();
   const [subscription, setSubscription] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-
+  
+  // Simulate fetching subscription status
   useEffect(() => {
-    if (!user) return;
-
-    const loadSubscription = async () => {
-      const data = await stripeClient.getSubscription(user.uid);
-      setSubscription(data.subscription);
-      setLoading(false);
-    };
-
-    loadSubscription();
-  }, [user]);
-
-  const handleSubscribe = async (priceId: string, planId: string) => {
-    if (!user) return;
-
-    setCheckoutLoading(planId);
-    const result = await stripeClient.createCheckoutSession(priceId, user.uid);
+    const success = searchParams.get('success');
+    const plan = searchParams.get('plan');
     
-    if (result.url) {
-      window.location.href = result.url;
-    } else {
-      setCheckoutLoading(null);
+    if (success && plan) {
+      setSubscription({
+        plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+        status: 'active',
+        nextBilling: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+        amount: plan === 'pro' ? '$99.00' : '$29.00'
+      });
     }
-  };
-
-  const handleManageBilling = async () => {
-    if (!subscription?.customerId) return;
-
-    const result = await stripeClient.createPortalSession(subscription.customerId);
-    if (result.url) {
-      window.location.href = result.url;
-    }
-  };
-
-  const currentPlan = subscription?.items?.data?.[0]?.price?.id || 'free';
+  }, [searchParams]);
 
   return (
-    <div className="space-y-8 py-6">
+    <div className="space-y-8 py-8 container max-w-5xl mx-auto">
       <PageHeader
         title="Billing & Subscription"
-        description="Manage your subscription and payment methods"
+        description="Manage your plan and payment methods."
       />
 
-      {subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Subscription</CardTitle>
-            <CardDescription>Your active plan and billing details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">
-                  {Object.values(PRICING_PLANS).find(p => p.priceId === currentPlan)?.name || 'Free'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Status: <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'}>
-                    {subscription.status}
-                  </Badge>
-                </p>
-              </div>
-              <Button onClick={handleManageBilling}>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Manage Billing
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {Object.values(PRICING_PLANS).map((plan) => (
-          <Card key={plan.id} className={plan.id === 'pro' ? 'border-primary shadow-lg' : ''}>
+      <div className="grid gap-6">
+        {subscription ? (
+          <Card className="border-green-200 bg-green-50/30">
             <CardHeader>
-              {plan.id === 'pro' && (
-                <Badge className="w-fit mb-2">Most Popular</Badge>
-              )}
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>
-                <span className="text-3xl font-bold">${plan.price}</span>
-                {plan.price > 0 && <span className="text-muted-foreground">/month</span>}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CardTitle>Active Subscription</CardTitle>
+                </div>
+                <Badge className="bg-green-600">Active</Badge>
+              </div>
+              <CardDescription>You are currently subscribed to the <strong>{subscription.plan}</strong> plan.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              {plan.id === 'free' ? (
-                <Button variant="outline" className="w-full" disabled>
-                  Current Plan
-                </Button>
-              ) : (
-                <Button
-                  className="w-full"
-                  onClick={() => handleSubscribe(plan.priceId, plan.id)}
-                  disabled={checkoutLoading === plan.id || currentPlan === plan.priceId}
-                >
-                  {checkoutLoading === plan.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : currentPlan === plan.priceId ? (
-                    'Current Plan'
-                  ) : (
-                    'Subscribe'
-                  )}
-                </Button>
-              )}
+            <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="flex items-center gap-3 p-4 bg-white rounded-lg border">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                        <p className="text-sm font-medium">Payment Method</p>
+                        <p className="text-xs text-muted-foreground">Visa ending in 4242</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-white rounded-lg border">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                        <p className="text-sm font-medium">Next Billing Date</p>
+                        <p className="text-xs text-muted-foreground">{subscription.nextBilling} ({subscription.amount})</p>
+                    </div>
+                </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>No Active Subscription</CardTitle>
+              <CardDescription>You are currently on the free tier.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-md mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm">Upgrade to unlock unlimited job postings and AI features.</span>
+              </div>
+              <Button asChild>
+                <a href="/pricing">View Plans</a>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Enterprise Plan</CardTitle>
-          <CardDescription>
-            Need custom features, dedicated support, or SSO? Contact us for enterprise pricing.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline">
-            Contact Sales
-          </Button>
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Billing History</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-sm text-muted-foreground text-center py-8">
+                    No invoices found.
+                </div>
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
