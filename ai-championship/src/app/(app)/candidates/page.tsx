@@ -137,14 +137,15 @@ export default function CandidatesPage() {
       }
     ];
 
-    // Query real candidates from Firestore
+    // Query all candidates who have created profiles (users with role=Candidate)
     const candidatesQuery = useMemoFirebase(() => {
-        if (!firestore || !organizationId) return null;
+        if (!firestore) return null;
         return query(
-            collection(firestore, `organizations/${organizationId}/candidates`),
-            orderBy('updatedAt', 'desc')
+            collection(firestore, 'users'),
+            where('role', '==', 'Candidate'),
+            orderBy('createdAt', 'desc')
         );
-    }, [firestore, organizationId]);
+    }, [firestore]);
 
     const { data: candidates, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
 
