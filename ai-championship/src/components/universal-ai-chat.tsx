@@ -8,6 +8,7 @@ import {
   Send, Sparkles, Code, Bug, Lightbulb, Brain, Loader2, 
   FileText, Briefcase, UserCheck 
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -246,7 +247,13 @@ export function UniversalAIChat() {
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-lg p-3`}>
-                <div className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</div>
+                {message.role === 'user' ? (
+                  <div className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</div>
+                ) : (
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                )}
                 {message.suggestions && message.suggestions.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-xs opacity-70">Suggestions:</p>
