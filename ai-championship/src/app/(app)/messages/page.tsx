@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image, Phone, Video, Sparkles } from 'lucide-react';
+import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image as ImageIcon, Phone, Video, Sparkles } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -167,14 +167,17 @@ export default function MessagesPage() {
       const receiver = selectedConversation.participants.find(p => p.id !== userId);
       if (!receiver) return;
 
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+
       await addDoc(collection(firestore, `conversations/${selectedConversation.id}/messages`), {
         conversationId: selectedConversation.id,
         senderId: userId,
         senderName: displayName,
         senderRole: role,
         receiverId: receiver.id,
-        type: 'attachment',
-        content: `Sent ${file.name}`,
+        type: isImage ? 'image' : isVideo ? 'video' : 'attachment',
+        content: isImage ? 'Sent an image' : isVideo ? 'Sent a video' : `Sent ${file.name}`,
         attachmentUrl: downloadURL,
         attachmentName: file.name,
         isRead: false,
@@ -182,13 +185,13 @@ export default function MessagesPage() {
       });
 
       await updateDoc(doc(firestore, 'conversations', selectedConversation.id), {
-        lastMessage: `📎 ${file.name}`,
+        lastMessage: isImage ? '📷 Photo' : isVideo ? '🎥 Video' : `📎 ${file.name}`,
         lastMessageAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
       toast({
-        title: 'File sent',
+        title: isImage ? 'Image sent' : isVideo ? 'Video sent' : 'File sent',
         description: 'Your file has been sent successfully.',
       });
     } catch (error) {
@@ -365,10 +368,26 @@ export default function MessagesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="hover:bg-primary/10"
+                    onClick={() => {
+                      toast({ title: 'Voice Call', description: 'Starting voice call...' });
+                      window.open(`/call?type=voice&convId=${selectedConversation.id}`, '_blank');
+                    }}
+                  >
                     <Phone className="h-5 w-5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="hover:bg-primary/10">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="hover:bg-primary/10"
+                    onClick={() => {
+                      toast({ title: 'Video Call', description: 'Starting video call...' });
+                      window.open(`/call?type=video&convId=${selectedConversation.id}`, '_blank');
+                    }}
+                  >
                     <Video className="h-5 w-5" />
                   </Button>
                   <Button variant="ghost" size="icon" className="hover:bg-primary/10">
@@ -384,6 +403,18 @@ export default function MessagesPage() {
                     <div key={msg.id} className={`flex ${isSender ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                       <div className={`max-w-[70%] ${isSender ? 'bg-primary text-primary-foreground' : 'bg-white border'} rounded-2xl ${isSender ? 'rounded-br-sm' : 'rounded-bl-sm'} p-3 shadow-sm`}>
                         {msg.type === 'text' && <p className="text-sm leading-relaxed break-words">{msg.content}</p>}
+                        {msg.type === 'image' && (
+                          <div>
+                            <img src={msg.attachmentUrl} alt="Shared image" className="rounded-lg max-w-xs" />
+                            <p className="text-xs mt-1 opacity-70">{msg.content}</p>
+                          </div>
+                        )}
+                        {msg.type === 'video' && (
+                          <div>
+                            <video controls src={msg.attachmentUrl} className="rounded-lg max-w-xs" />
+                            <p className="text-xs mt-1 opacity-70">{msg.content}</p>
+                          </div>
+                        )}
                         {msg.type === 'attachment' && (
                           <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm hover:underline">
                             <Paperclip className="h-4 w-4" />
@@ -426,6 +457,7 @@ export default function MessagesPage() {
                     type="file"
                     ref={fileInputRef}
                     className="hidden"
+                    accept="image/*,video/*,application/*"
                     onChange={handleFileUpload}
                   />
                   <Button 
@@ -433,8 +465,9 @@ export default function MessagesPage() {
                     size="icon" 
                     onClick={() => fileInputRef.current?.click()}
                     className="hover:bg-primary/10"
+                    title="Send image, video or file"
                   >
-                    <Paperclip className="h-5 w-5" />
+                    <ImageIcon className="h-5 w-5" />
                   </Button>
                   <div className="flex-1 relative">
                     <Input

@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Plus, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Plus, X, Image as ImageIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useUserContext } from '@/app/(app)/layout';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { useFirebase } from '@/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useToast } from '@/hooks/use-toast';
 
 const MOCK_STORIES = [
   { id: '1', user: 'Sarah Wilson', avatar: placeholderImages[1]?.imageUrl, hasStory: true, viewed: false },
@@ -16,24 +19,56 @@ const MOCK_STORIES = [
 ];
 
 export function Stories() {
-  const { user, displayName } = useUserContext();
+  const { user, displayName, userId } = useUserContext();
+  const { storage } = useFirebase();
+  const { toast } = useToast();
   const [selectedStory, setSelectedStory] = useState<any>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [storyImage, setStoryImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setStoryImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateStory = async () => {
+    if (!storyImage || !storage || !userId) return;
+    try {
+      const file = fileInputRef.current?.files?.[0];
+      if (!file) return;
+      const storageRef = ref(storage, `stories/${userId}/${Date.now()}.jpg`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      toast({ title: 'Story created!' });
+      setShowCreateDialog(false);
+      setStoryImage(null);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Failed to create story' });
+    }
+  };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-      {/* Create Story */}
-      <div className="flex flex-col items-center gap-2 min-w-[70px] cursor-pointer group">
-        <div className="relative">
-          <Avatar className="w-16 h-16 border-2 border-dashed border-gray-300 p-0.5 group-hover:border-primary transition-colors">
-            <AvatarImage src={user?.avatarUrl} />
-            <AvatarFallback>{displayName?.[0]}</AvatarFallback>
-          </Avatar>
-          <div className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1 border-2 border-background">
-            <Plus className="w-3 h-3" />
+    <>
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageSelect} />
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {/* Create Story */}
+        <div className="flex flex-col items-center gap-2 min-w-[70px] cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
+          <div className="relative">
+            <Avatar className="w-16 h-16 border-2 border-dashed border-gray-300 p-0.5 group-hover:border-primary transition-colors">
+              <AvatarImage src={user?.avatarUrl} />
+              <AvatarFallback>{displayName?.[0]}</AvatarFallback>
+            </Avatar>
+            <div className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1 border-2 border-background">
+              <Plus className="w-3 h-3" />
+            </div>
           </div>
+          <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">Your Story</span>
         </div>
-        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">Your Story</span>
-      </div>
 
       {/* Viewing Stories */}
       {MOCK_STORIES.map((story) => (
@@ -53,6 +88,23 @@ export function Stories() {
           </span>
         </div>
       ))}
+
+      </div>
+
+      <Dialog open={!!storyImage} onOpenChange={() => { setStoryImage(null); setShowCreateDialog(false); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Story</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {storyImage && <img src={storyImage} alt="Story" className="w-full rounded-lg" />}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setStoryImage(null); setShowCreateDialog(false); }}>Cancel</Button>
+            <Button onClick={handleCreateStory}>Post Story</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selectedStory} onOpenChange={() => setSelectedStory(null)}>
         <DialogContent className="sm:max-w-md h-[80vh] p-0 overflow-hidden bg-black text-white border-none">

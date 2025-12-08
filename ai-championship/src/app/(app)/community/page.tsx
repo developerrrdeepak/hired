@@ -194,12 +194,14 @@ export default function CommunityPage() {
                     <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
                     <p className="text-muted-foreground">Connect with peers and share your professional journey.</p>
                 </div>
-                <Button variant="outline" className="hidden sm:flex" asChild>
-                    <Link href="/connections">
-                        <Users className="w-4 h-4 mr-2" />
-                        Find Connections
-                    </Link>
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" className="hidden sm:flex" asChild>
+                        <Link href="/connections">
+                            <Users className="w-4 h-4 mr-2" />
+                            Add Connections
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <div className="flex items-center justify-between mb-6">
