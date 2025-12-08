@@ -11,12 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand, ThumbsUp, Laugh, TrendingUp, Users } from 'lucide-react';
+import { Plus, Heart, MessageCircle, Share2, Briefcase, Award, FileText, Lightbulb, Loader2, Sparkles, MagicWand, ThumbsUp, Laugh, TrendingUp, Users, Trash2, MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUserContext } from '../layout';
 import type { Post, PostType } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { deleteDoc } from 'firebase/firestore';
 import { CommentsSection } from '@/components/community/CommentsSection';
 import { Stories } from '@/components/community/Stories';
 import { PostReactions } from '@/components/community/PostReactions';
@@ -76,6 +78,16 @@ export default function CommunityPage() {
   }, [allPosts, activeTab, connectedUserIds]);
 
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const handleDeletePost = async (postId: string) => {
+    if (!firestore || !confirm('Delete this post?')) return;
+    try {
+      await deleteDoc(doc(firestore, 'posts', postId));
+      toast({ title: 'Post deleted' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Failed to delete' });
+    }
+  };
 
   const handleCreatePost = async () => {
     if (!firestore || !userId || !postTitle.trim() || !postContent.trim()) {
@@ -213,7 +225,7 @@ export default function CommunityPage() {
                     <Card key={post.id} className="hover:shadow-lg transition-all duration-300 border-border/50">
                     <CardHeader>
                         <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1">
                             <div className="relative group cursor-pointer">
                                 <Avatar className="h-10 w-10 ring-2 ring-background">
                                     <AvatarImage src={post.authorAvatar || placeholderImages[0].imageUrl} />
@@ -235,10 +247,27 @@ export default function CommunityPage() {
                             </div>
                             </div>
                         </div>
-                        <Badge variant="outline" className="flex items-center gap-1 font-normal text-xs">
-                            {getPostIcon(post.type)}
-                            {post.type}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="flex items-center gap-1 font-normal text-xs">
+                              {getPostIcon(post.type)}
+                              {post.type}
+                          </Badge>
+                          {post.authorId === userId && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleDeletePost(post.id)} className="text-destructive">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Post
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                         </div>
                     </CardHeader>
                     <CardContent className="cursor-pointer" onClick={() => setExpandedComments(expandedComments === post.id ? null : post.id)}>

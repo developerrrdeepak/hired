@@ -98,6 +98,26 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleSendRequest = async (receiverId: string, receiverName: string, receiverRole: string) => {
+    if (!firestore || !userId) return;
+    try {
+      await addDoc(collection(firestore, 'connections'), {
+        requesterId: userId,
+        requesterName: displayName || 'User',
+        requesterRole: role || 'User',
+        receiverId,
+        receiverName,
+        receiverRole,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      toast({ title: 'Connection request sent!' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Failed to send request' });
+    }
+  };
+
   const handleRejectRequest = async (connectionId: string) => {
     if (!firestore) return;
     try {
@@ -161,11 +181,40 @@ export default function ConnectionsPage() {
 
       <Tabs defaultValue="all" className="mt-6">
         <TabsList>
+          <TabsTrigger value="discover">Discover People</TabsTrigger>
           <TabsTrigger value="all">All Connections ({acceptedConnections.length})</TabsTrigger>
           <TabsTrigger value="followers">Followers ({followers.length})</TabsTrigger>
           <TabsTrigger value="following">Following ({following.length})</TabsTrigger>
           <TabsTrigger value="pending">Pending ({pendingRequests.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="discover" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {['Alice Johnson', 'Bob Smith', 'Carol Davis'].map((name, i) => (
+              <Card key={i}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold truncate">{name}</p>
+                      <Badge variant="secondary" className="text-xs">Software Engineer</Badge>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    size="sm"
+                    onClick={() => handleSendRequest(`user-${i}`, name, 'Software Engineer')}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Connect
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
         <TabsContent value="all" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
