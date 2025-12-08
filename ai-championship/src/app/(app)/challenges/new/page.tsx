@@ -123,7 +123,7 @@ export default function NewChallengePage() {
                 control={form.control}
                 name="deadline"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem className="flex flex-col justify-end">
                     <FormLabel>Submission Deadline</FormLabel>
                      <Popover>
                         <PopoverTrigger asChild>
@@ -131,7 +131,7 @@ export default function NewChallengePage() {
                             <Button
                                 variant={"outline"}
                                 className={cn(
-                                "w-full pl-3 text-left font-normal",
+                                "w-full pl-3 text-left font-normal justify-start",
                                 !field.value && "text-muted-foreground"
                                 )}
                             >
@@ -149,7 +149,7 @@ export default function NewChallengePage() {
                                 mode="single"
                                 selected={field.value}
                                 onSelect={field.onChange}
-                                disabled={(date) => date < new Date()}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
                             />
                         </PopoverContent>
