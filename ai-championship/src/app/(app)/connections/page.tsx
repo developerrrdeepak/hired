@@ -187,33 +187,36 @@ export default function ConnectionsPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Connections</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{acceptedConnections.length}</div>
+            <div className="text-2xl font-bold animate-in fade-in zoom-in duration-500">{acceptedConnections.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active connections</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
+            <UserPlus className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingRequests.length}</div>
+            <div className="text-2xl font-bold animate-in fade-in zoom-in duration-500">{pendingRequests.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Awaiting response</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Mutual Connections</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
+            <UserCheck className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mutualConnections.length}</div>
+            <div className="text-2xl font-bold animate-in fade-in zoom-in duration-500">{mutualConnections.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Two-way connections</p>
           </CardContent>
         </Card>
       </div>
@@ -228,12 +231,12 @@ export default function ConnectionsPage() {
         </TabsList>
 
         <TabsContent value="discover" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {allUsers?.filter(u => u.id !== userId && !connections.some(c => 
               (c.requesterId === userId && c.receiverId === u.id) || 
               (c.receiverId === userId && c.requesterId === u.id)
             )).map((user: any) => (
-              <Card key={user.id}>
+              <Card key={user.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar className="h-12 w-12">
@@ -247,7 +250,7 @@ export default function ConnectionsPage() {
                     </div>
                   </div>
                   <Button 
-                    className="w-full" 
+                    className="w-full group" 
                     size="sm"
                     onClick={() => handleSendRequest(
                       user.id, 
@@ -255,7 +258,7 @@ export default function ConnectionsPage() {
                       user.role || user.title || 'User'
                     )}
                   >
-                    <UserPlus className="h-4 w-4 mr-2" />
+                    <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
                     Connect
                   </Button>
                 </CardContent>
@@ -351,10 +354,10 @@ export default function ConnectionsPage() {
         </TabsContent>
 
         <TabsContent value="pending" className="mt-6">
-          <div className="space-y-4">
-            {pendingRequests.map((conn) => (
-              <Card key={conn.id}>
-                <CardContent className="pt-6">
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {pendingRequests.map((conn, index) => (
+              <Card key={conn.id} className="animate-in fade-in slide-in-from-left-4 duration-500" style={{ animationDelay: `${index * 100}ms` }}>
+                <CardContent className="pt-6 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
@@ -369,6 +372,7 @@ export default function ConnectionsPage() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => handleAcceptRequest(conn.id, conn.requesterId, conn.requesterName)}
                       >
                         <Check className="h-4 w-4 mr-1" />
@@ -377,6 +381,7 @@ export default function ConnectionsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="hover:bg-red-50 hover:text-red-600 hover:border-red-600"
                         onClick={() => handleRejectRequest(conn.id)}
                       >
                         <X className="h-4 w-4 mr-1" />
