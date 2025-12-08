@@ -1,8 +1,6 @@
-
 import { defineFlow } from '@genkit-ai/flow';
 import { z } from 'zod';
-import { generate } from '@genkit-ai/ai';
-import { geminiPro } from '../../ai/genkit';
+import { geminiPro } from '../genkit';
 
 export const negotiationPracticeFlow = defineFlow(
   {
@@ -18,14 +16,30 @@ export const negotiationPracticeFlow = defineFlow(
     outputSchema: z.string(),
   },
   async ({ role, userResponse, history }) => {
-    const prompt = `You are a helpful AI assistant acting as a hiring manager in a salary negotiation practice session. The candidate is applying for the role of ${role}. Your goal is to challenge the candidate, ask for justifications for their salary expectations, and respond realistically. You can present counter-offers. The candidate just said: "${userResponse}"`;
+    const conversationHistory = history?.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    })) || [];
 
-    const response = await generate({
-      model: geminiPro,
-      prompt: prompt,
-      history: history,
+    const systemPrompt = `You are an experienced hiring manager conducting a salary negotiation practice session. The candidate is applying for: ${role}.
+
+Your role:
+- Challenge the candidate professionally
+- Ask for justifications on salary expectations
+- Present realistic counter-offers
+- Provide constructive feedback
+- Keep responses concise (2-3 sentences)
+
+Be professional but firm in negotiations.`;
+
+    const result = await geminiPro.generateContent({
+      contents: [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        ...conversationHistory,
+        { role: 'user', parts: [{ text: userResponse }] }
+      ],
     });
 
-    return response.text();
+    return result.response.text();
   },
 );

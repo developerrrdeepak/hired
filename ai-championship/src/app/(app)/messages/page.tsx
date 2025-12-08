@@ -16,7 +16,7 @@ import type { Conversation, Message } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { mockConversations, mockMessages } from '@/lib/mock-messages';
+
 import { sendMessage, subscribeToMessages } from '@/lib/messaging-service';
 
 export default function MessagesPage() {
@@ -59,11 +59,10 @@ export default function MessagesPage() {
   const { data: allConversations } = useCollection<Conversation>(conversationsQuery);
 
   const conversations = useMemo(() => {
-    if (!allConversations || !userId) return mockConversations;
-    const filtered = allConversations.filter(conv => 
+    if (!allConversations || !userId) return [];
+    return allConversations.filter(conv => 
       conv.participants.some(p => p.id === userId)
     );
-    return filtered.length > 0 ? filtered : mockConversations;
   }, [allConversations, userId]);
 
   const messagesQuery = useMemoFirebase(() => {
@@ -90,10 +89,8 @@ export default function MessagesPage() {
   }, [firestore, selectedConversation]);
   
   const displayMessages = useMemo(() => {
-    if (realTimeMessages && realTimeMessages.length > 0) return realTimeMessages;
-    if (selectedConversation) return mockMessages[selectedConversation.id] || [];
-    return [];
-  }, [realTimeMessages, selectedConversation]);
+    return realTimeMessages || [];
+  }, [realTimeMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { RotateCcw } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'model';
@@ -19,9 +20,16 @@ export default function NegotiationPracticePage() {
   const [history, setHistory] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history]);
 
   const handleSendMessage = async () => {
-    if (!role || !userResponse) {
+    if (!role || !userResponse.trim()) {
       toast({
         title: 'Error',
         description: 'Please enter a role and your message.',
@@ -41,7 +49,7 @@ export default function NegotiationPracticePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role, userResponse, history: newHistory }),
+        body: JSON.stringify({ role, userResponse, history }),
       });
 
       if (!res.ok) {
@@ -57,16 +65,31 @@ export default function NegotiationPracticePage() {
         description: 'An error occurred. Please try again.',
         variant: 'destructive',
       });
+      setHistory(history);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setRole('');
+    setUserResponse('');
+    setHistory([]);
   };
 
   return (
     <div className="container mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Salary Negotiation Practice</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Salary Negotiation Practice</CardTitle>
+            {history.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -77,7 +100,12 @@ export default function NegotiationPracticePage() {
               disabled={history.length > 0}
             />
           </div>
-          <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-4">
+          <ScrollArea className="h-[400px] w-full rounded-md border p-4 mb-4" ref={scrollRef}>
+            {history.length === 0 && (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                Enter a role and start your negotiation practice
+              </div>
+            )}
             {history.map((message, index) => (
               <div key={index} className={`flex items-start gap-4 my-2 ${message.role === 'user' ? 'justify-end' : ''}`}>
                 {message.role === 'model' && (
@@ -85,7 +113,7 @@ export default function NegotiationPracticePage() {
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                 )}
-                <div className={`rounded-lg p-3 ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                <div className={`rounded-lg p-3 max-w-[80%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                   {message.content}
                 </div>
                 {message.role === 'user' && (
