@@ -26,7 +26,10 @@ import {
   Heart,
   Sparkles,
   UserPlus,
-  MessageCircle
+  MessageCircle,
+  KanbanSquare,
+  FileEdit,
+  CheckCircle2
 } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -60,6 +63,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/admin/dashboard', icon: BarChart3, label: 'Admin' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
+        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
       ]
@@ -92,6 +96,7 @@ const navConfig: Record<string, NavSection[]> = {
       items: [
         { href: '/recruiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
+        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
       ]
@@ -123,6 +128,7 @@ const navConfig: Record<string, NavSection[]> = {
       items: [
         { href: '/hiring-manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs' },
+        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/interviews', icon: List, label: 'Interviews' },
       ]
@@ -161,6 +167,7 @@ const navConfig: Record<string, NavSection[]> = {
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
             { href: '/challenges', icon: Trophy, label: 'Challenges' },
+            { href: '/assessments', icon: CheckCircle2, label: 'Skill Assessments' },
             { href: '/courses', icon: GraduationCap, label: 'Courses' },
         ]
     },
@@ -168,6 +175,7 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'Intelligence',
         items: [
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+             { href: '/resume-builder', icon: FileEdit, label: 'AI Resume Builder' },
              { href: '/negotiation-practice', icon: Brain, label: 'Negotiation' },
         ]
     },

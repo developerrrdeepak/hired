@@ -11,7 +11,7 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { doc, collection, query, where, setDoc } from "firebase/firestore";
 import type { Challenge } from "@/lib/definitions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Trophy, Sparkles, Users } from "lucide-react";
+import { Calendar, Trophy, Sparkles, Users, Code } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -112,10 +112,19 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
     <>
       <PageHeader title={challenge.title} description={<Badge variant="secondary">{challenge.type}</Badge>}>
         {isCandidate && (
-            <Button size="lg" onClick={handleJoin} disabled={isJoining || hasJoined}>
-              <Sparkles className="mr-2 h-4 w-4" />
-              {hasJoined ? 'Already Joined' : isJoining ? 'Joining...' : 'Join Now'}
-            </Button>
+            <div className="flex gap-2">
+                {!hasJoined ? (
+                    <Button size="lg" onClick={handleJoin} disabled={isJoining}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {isJoining ? 'Joining...' : 'Join Now'}
+                    </Button>
+                ) : (
+                    <Button size="lg" onClick={() => router.push(`/challenges/${challenge.id}/solve?orgId=${organizationId}`)} className="bg-green-600 hover:bg-green-700">
+                        <Code className="mr-2 h-4 w-4" />
+                        Open Editor
+                    </Button>
+                )}
+            </div>
         )}
       </PageHeader>
 
