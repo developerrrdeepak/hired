@@ -139,6 +139,17 @@ export default function ConnectionsPage() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+
+      // Send notification to receiver
+      await addDoc(collection(firestore, `users/${receiverId}/notifications`), {
+        title: 'New Connection Request',
+        message: `${displayName || 'Someone'} wants to connect with you`,
+        type: 'connection_request',
+        link: '/connections?tab=pending',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      });
+
       toast({ title: 'Connection request sent!' });
     } catch (error) {
       console.error('Connection error:', error);
