@@ -21,6 +21,13 @@ export default function ConnectionsPage() {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !userId) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore, userId]);
+
+  const { data: allUsers } = useCollection(usersQuery);
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 10);
     return () => clearTimeout(t);
@@ -190,22 +197,27 @@ export default function ConnectionsPage() {
 
         <TabsContent value="discover" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {['Alice Johnson', 'Bob Smith', 'Carol Davis'].map((name, i) => (
-              <Card key={i}>
+            {allUsers?.filter(u => u.id !== userId && !connections.some(c => 
+              (c.requesterId === userId && c.receiverId === u.id) || 
+              (c.receiverId === userId && c.requesterId === u.id)
+            )).map((user: any) => (
+              <Card key={user.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={user.avatarUrl || placeholderImages[0].imageUrl} />
+                      <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{name}</p>
-                      <Badge variant="secondary" className="text-xs">Software Engineer</Badge>
+                      <p className="font-semibold truncate">{user.name || 'User'}</p>
+                      <Badge variant="secondary" className="text-xs">{user.title || user.role || 'User'}</Badge>
+                      {user.location && <p className="text-xs text-muted-foreground mt-1">{user.location}</p>}
                     </div>
                   </div>
                   <Button 
                     className="w-full" 
                     size="sm"
-                    onClick={() => handleSendRequest(`user-${i}`, name, 'Software Engineer')}
+                    onClick={() => handleSendRequest(user.id, user.name, user.role || user.title || 'User')}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Connect
@@ -214,6 +226,9 @@ export default function ConnectionsPage() {
               </Card>
             ))}
           </div>
+          {allUsers?.filter(u => u.id !== userId).length === 0 && (
+            <p className="text-center text-muted-foreground py-12">No users to discover</p>
+          )}
         </TabsContent>
 
         <TabsContent value="all" className="mt-6">
