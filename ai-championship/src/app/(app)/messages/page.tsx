@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image as ImageIcon, Phone, Video, Sparkles } from 'lucide-react';
+import { Send, Paperclip, Mic, Search, MoreVertical, Smile, Image as ImageIcon, Phone, Video, Sparkles, Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -22,6 +23,14 @@ export default function MessagesPage() {
   const { firestore, storage } = useFirebase();
   const { userId, role, displayName } = useUserContext();
   const { toast } = useToast();
+  const [showNewConversation, setShowNewConversation] = useState(false);
+
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore || !userId) return null;
+    return query(collection(firestore, 'users'));
+  }, [firestore, userId]);
+
+  const { data: allUsers } = useCollection(usersQuery);
   
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -300,10 +309,16 @@ export default function MessagesPage() {
 
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
-      <PageHeader
-        title="Messages"
-        description="Connect with candidates and employers."
-      />
+      <div className="flex items-center justify-between mb-6">
+        <PageHeader
+          title="Messages"
+          description="Connect with candidates and employers."
+        />
+        <Button onClick={() => setShowNewConversation(true)} className="bg-primary">
+          <Plus className="h-4 w-4 mr-2" />
+          New Message
+        </Button>
+      </div>
 
       <div className="grid grid-cols-12 gap-6 mt-6 h-[calc(100vh-200px)]">
         <Card className="col-span-12 md:col-span-4 flex flex-col">
@@ -513,6 +528,64 @@ export default function MessagesPage() {
           )}
         </Card>
       </div>
+
+      <Dialog open={showNewConversation} onOpenChange={setShowNewConversation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start New Conversation</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {allUsers?.filter(u => u.id !== userId).map((user: any) => (
+              <div
+                key={user.id}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                onClick={async () => {
+                  if (!firestore) return;
+                  try {
+                    const existingConv = conversations?.find(c => 
+                      c.participants.some(p => p.id === user.id)
+                    );
+                    
+                    if (existingConv) {
+                      setSelectedConversation(existingConv);
+                      setShowNewConversation(false);
+                      return;
+                    }
+
+                    const convRef = await addDoc(collection(firestore, 'conversations'), {
+                      participants: [
+                        { id: userId, name: displayName, role: role, avatarUrl: '' },
+                        { id: user.id, name: user.name || user.displayName, role: user.role, avatarUrl: user.avatarUrl || '' }
+                      ],
+                      participantIds: [userId, user.id],
+                      lastMessage: '',
+                      lastMessageAt: new Date().toISOString(),
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                      unreadCount: { [userId!]: 0, [user.id]: 0 }
+                    });
+
+                    toast({ title: 'Conversation started!' });
+                    setShowNewConversation(false);
+                  } catch (error) {
+                    console.error(error);
+                    toast({ variant: 'destructive', title: 'Failed to start conversation' });
+                  }
+                }}
+              >
+                <Avatar>
+                  <AvatarImage src={user.avatarUrl || placeholderImages[0].imageUrl} />
+                  <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{user.name || user.displayName || 'User'}</p>
+                  <p className="text-xs text-muted-foreground">{user.role || user.title || 'User'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
