@@ -61,29 +61,25 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
-        { href: '/diversity-hiring', icon: Heart, label: 'Diversity' },
       ]
     },
     {
        title: 'Intelligence',
        items: [
-        { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        { href: '/analytics', icon: BarChart3, label: 'Analytics' },
        ]
     },
     {
        title: 'Network',
        items: [
         { href: '/community', icon: Users, label: 'Community' },
-        { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
        ]
     },
     {
-        title: 'Settings',
+        title: 'Account',
         items: [
-            { href: '/analytics', icon: BarChart3, label: 'Analytics' },
-            { href: '/reports', icon: LineChart, label: 'Reports' },
             { href: '/billing', icon: CreditCard, label: 'Billing' },
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
@@ -91,82 +87,98 @@ const navConfig: Record<string, NavSection[]> = {
   ],
   'Recruiter': [
     {
-      title: 'Recruitment',
+      title: 'Platform',
       items: [
         { href: '/recruiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
-        { href: '/diversity-hiring', icon: Heart, label: 'Diversity' },
       ]
     },
     {
         title: 'Intelligence',
         items: [
-            { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/analytics', icon: BarChart3, label: 'Analytics' },
         ]
     },
     {
        title: 'Network',
        items: [
         { href: '/community', icon: Users, label: 'Community' },
-        { href: '/connections', icon: UserPlus, label: 'Connections' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
        ]
     },
     {
-      items: [
-        { href: '/reports', icon: LineChart, label: 'Reports' },
-        { href: '/settings', icon: Settings, label: 'Settings' },
-      ]
+        title: 'Account',
+        items: [
+            { href: '/settings', icon: Settings, label: 'Settings' },
+        ]
     }
   ],
   'Hiring Manager': [
     {
+      title: 'Platform',
       items: [
         { href: '/hiring-manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/jobs', icon: Briefcase, label: 'My Jobs' },
-        { href: '/candidates', icon: Users, label: 'Talent Pool' },
+        { href: '/jobs', icon: Briefcase, label: 'Jobs' },
+        { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/interviews', icon: List, label: 'Interviews' },
+      ]
+    },
+    {
+      title: 'Intelligence',
+      items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
+        { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
   ],
   'Interviewer': [
     {
+      title: 'Platform',
       items: [
-        { href: '/interviews', icon: List, label: 'My Interviews' },
+        { href: '/interviews', icon: List, label: 'Interviews' },
+      ]
+    },
+    {
+      title: 'Account',
+      items: [
+        { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
   ],
   'Candidate': [
     {
-        title: 'Career',
+        title: 'Platform',
         items: [
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
-             { href: '/challenges', icon: Trophy, label: 'Challenges' },
+            { href: '/challenges', icon: Trophy, label: 'Challenges' },
+            { href: '/courses', icon: GraduationCap, label: 'Courses' },
         ]
     },
     {
-        title: 'Growth',
+        title: 'Intelligence',
         items: [
-             { href: '/courses', icon: GraduationCap, label: 'Courses' },
-             { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-             { href: '/negotiation-practice', icon: Brain, label: 'Negotiation Practice' },
+             { href: '/negotiation-practice', icon: Brain, label: 'Negotiation' },
         ]
     },
     {
-       title: 'Community',
+       title: 'Network',
        items: [
             { href: '/community', icon: Users, label: 'Community' },
-            { href: '/connections', icon: UserPlus, label: 'Connections' },
             { href: '/messages', icon: MessageCircle, label: 'Messages' },
        ]
     },
     {
+        title: 'Account',
         items: [
             { href: '/profile/edit', icon: User, label: 'Profile' },
             { href: '/settings', icon: Settings, label: 'Settings' },
@@ -245,19 +257,21 @@ export function Nav({ role }: { role: string | null }) {
   };
 
   return (
-    <SidebarMenu>
+    <SidebarMenu className="h-full">
       {navSections.map((section, index) => (
-        <SidebarGroup key={index} className={index > 0 ? 'mt-4' : ''}>
+        <SidebarGroup key={index} className={index > 0 ? 'mt-6' : ''}>
             {section.title && (
-                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground/70 group-data-[collapsible=icon]:hidden">
+                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
                     {section.title}
                 </div>
             )}
-            {section.items.map(item => (
-                 <SidebarMenuItem key={item.href}>
-                    <NavItem item={item} />
-                </SidebarMenuItem>
-            ))}
+            <div className="space-y-1">
+              {section.items.map(item => (
+                  <SidebarMenuItem key={item.href}>
+                      <NavItem item={item} />
+                  </SidebarMenuItem>
+              ))}
+            </div>
         </SidebarGroup>
       ))}
     </SidebarMenu>
