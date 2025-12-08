@@ -7,18 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, MapPin, Briefcase, Calendar, Link as LinkIcon, Github, Linkedin, Globe, UserPlus, MessageSquare } from 'lucide-react';
+import { Mail, MapPin, Briefcase, Calendar, Link as LinkIcon, Github, Linkedin, Globe, UserPlus, MessageSquare, Lock } from 'lucide-react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, addDoc, collection, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useUserContext } from '@/app/(app)/layout';
 
 export default function PublicProfilePage() {
   const params = useParams();
   const userId = params.userId as string;
-  const { firestore, user } = useFirebase();
+  const { firestore } = useFirebase();
+  const { user, role } = useUserContext(); // Use context for role
   const { toast } = useToast();
   const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -104,8 +106,29 @@ export default function PublicProfilePage() {
     return <PublicProfileSkeleton />;
   }
 
-  if (!profile || profile.profileVisibility === 'private') {
-    notFound();
+  if (!profile) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <h2 className="text-2xl font-bold mb-2">User Not Found</h2>
+            <p className="text-muted-foreground">The profile you are looking for does not exist.</p>
+        </div>
+    )
+  }
+
+  // Logic: Owner can always see. Recruiters can always see (if in talent pool). 
+  // Private only blocks other candidates or guests.
+  // For now, let's allow Recruiters/Owners to see "private" profiles too, or show a restricted view.
+  const isViewerOwner = user?.uid === profile.id;
+  const isViewerRecruiter = role === 'Recruiter' || role === 'Owner' || role === 'Hiring Manager';
+  
+  if (profile.profileVisibility === 'private' && !isViewerOwner && !isViewerRecruiter) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+            <Lock className="w-16 h-16 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Private Profile</h2>
+            <p className="text-muted-foreground">This user has set their profile to private.</p>
+        </div>
+    );
   }
 
   return (
@@ -115,14 +138,23 @@ export default function PublicProfilePage() {
         description={profile.currentRole || 'Professional'}
       >
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleMessage}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Message
-          </Button>
-          <Button onClick={handleConnect} disabled={isConnecting}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            {isConnecting ? 'Connecting...' : 'Connect'}
-          </Button>
+          {!isViewerOwner && (
+              <>
+                <Button variant="outline" onClick={handleMessage}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Message
+                </Button>
+                <Button onClick={handleConnect} disabled={isConnecting}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    {isConnecting ? 'Connecting...' : 'Connect'}
+                </Button>
+              </>
+          )}
+          {isViewerOwner && (
+              <Button variant="outline" onClick={() => router.push('/profile/edit')}>
+                  Edit Profile
+              </Button>
+          )}
         </div>
       </PageHeader>
 
@@ -200,7 +232,7 @@ export default function PublicProfilePage() {
                 <CardTitle>Experience</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {profile.experience.map((exp: any, idx: number) => (
+                {Array.isArray(profile.experience) ? profile.experience.map((exp: any, idx: number) => (
                   <div key={idx} className="flex gap-4">
                     <div className="flex-shrink-0">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -208,17 +240,19 @@ export default function PublicProfilePage() {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold">{exp.title}</h3>
+                      <h3 className="font-semibold">{exp.title || exp.role}</h3>
                       <p className="text-sm text-muted-foreground">{exp.company}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {exp.startDate} - {exp.endDate || 'Present'}
+                        {exp.startDate || exp.date} - {exp.endDate || 'Present'}
                       </p>
                       {exp.description && (
                         <p className="text-sm mt-2">{exp.description}</p>
                       )}
                     </div>
                   </div>
-                ))}
+                )) : (
+                    <p className="text-sm">{profile.experience}</p>
+                )}
               </CardContent>
             </Card>
           )}

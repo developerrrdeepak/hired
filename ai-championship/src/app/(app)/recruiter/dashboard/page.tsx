@@ -6,7 +6,12 @@ import {
   Users, 
   UserCheck, 
   BrainCircuit,
-  CalendarCheck
+  CalendarCheck,
+  Bot,
+  FileText,
+  Sparkles,
+  RefreshCcw,
+  MessageSquare
 } from "lucide-react";
 import { 
   Card, 
@@ -92,10 +97,23 @@ function AiInsightsCard() {
 function ActionCard({ title, icon: Icon, href, delay }: { title: string, icon: React.ElementType, href: string, delay: number }) {
     return (
         <Link href={href}>
-            <Card className="text-center p-4 hover:bg-muted/50 cursor-pointer h-full flex flex-col items-center justify-center hover:shadow-md hover:-translate-y-0.5 animate-in fade-in-0 slide-in-from-top-4" style={{ animationDelay: `${delay}ms`}}>
+            <Card className="text-center p-4 hover:bg-muted/50 cursor-pointer h-full flex flex-col items-center justify-center hover:shadow-md hover:-translate-y-0.5 animate-in fade-in-0 slide-in-from-top-4 transition-all duration-200" style={{ animationDelay: `${delay}ms`}}>
                 <Icon className="h-8 w-8 mx-auto text-primary mb-2" />
                 <h3 className="font-semibold text-sm">{title}</h3>
             </Card>
+        </Link>
+    );
+}
+
+function AIActionIconButton({ title, icon: Icon, href, delay }: { title: string, icon: React.ElementType, href: string, delay: number }) {
+    return (
+        <Link href={href} className="group animate-in fade-in-0 zoom-in-50 duration-500" style={{animationDelay: `${delay}ms`}}>
+            <div className="flex flex-col items-center gap-2 text-center text-muted-foreground group-hover:text-foreground transition-colors duration-200">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 group-hover:bg-primary/10 border border-primary/10 transition-all">
+                    <Icon className="h-7 w-7 text-primary" />
+                </div>
+                <span className="text-xs font-semibold">{title}</span>
+            </div>
         </Link>
     );
 }
@@ -160,7 +178,7 @@ export default function RecruiterDashboardPage() {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
         title={`Hello, ${user?.displayName?.split(' ')[0] || 'Recruiter'}!`}
         description="Here's what's happening in your hiring pipeline today."
@@ -179,7 +197,27 @@ export default function RecruiterDashboardPage() {
         <ActionCard title="Schedule Interview" icon={CalendarCheck} href="/interviews/new" delay={300} />
       </div>
 
-      <div className="grid gap-4 mt-6 md:grid-cols-2">
+      {/* AI Tools Section - Added */}
+      <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Recruiter Toolkit
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+              <AIActionIconButton title="AI Assistant" icon={Bot} href="/ai-assistant" delay={100} />
+              <AIActionIconButton title="Offer Generator" icon={FileText} href="/offer-letter" delay={200} />
+              <AIActionIconButton title="Smart Screening" icon={BrainCircuit} href="/candidates" delay={300} />
+              <AIActionIconButton title="Interview Qs" icon={MessageSquare} href="/ai-assistant" delay={400} />
+              <AIActionIconButton title="JD Generator" icon={Briefcase} href="/jobs/new" delay={500} />
+              <AIActionIconButton title="Match Analysis" icon={RefreshCcw} href="/candidates" delay={600} />
+            </div>
+          </CardContent>
+        </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
         <AiInsightsCard />
         <Card className="animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-600 hover:shadow-md hover:-translate-y-0.5">
           <CardHeader>
@@ -212,7 +250,7 @@ export default function RecruiterDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   );
 }
 

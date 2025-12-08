@@ -11,7 +11,7 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { doc, collection, query, where, setDoc } from "firebase/firestore";
 import type { Challenge } from "@/lib/definitions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Trophy, Sparkles, Users, Code } from "lucide-react";
+import { Calendar, Trophy, Sparkles, Users, Code, Info } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ export default function ChallengeDetailPage() {
   // Get organizationId from URL params or localStorage
   const organizationId = useMemo(() => {
     const orgIdFromUrl = searchParams.get('orgId');
-    if (orgIdFromUrl) return orgIdFromUrl;
+    if (orgIdFromUrl && orgIdFromUrl !== 'undefined') return orgIdFromUrl;
     return user ? localStorage.getItem('userOrgId') : null;
   }, [searchParams, user]);
   
@@ -55,9 +55,17 @@ export default function ChallengeDetailPage() {
     return <ChallengeDetailSkeleton />;
   }
 
-  // If the challenge isn't found in the derived org, we can't display it.
   if (!challenge) {
-    notFound();
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+             <Info className="w-12 h-12 text-muted-foreground" />
+             <h2 className="text-xl font-semibold">Challenge Not Found</h2>
+             <p className="text-muted-foreground">The challenge you are looking for does not exist or has been removed.</p>
+             <Button asChild variant="outline">
+                 <a href="/challenges">Back to Challenges</a>
+             </Button>
+        </div>
+    );
   }
 
   return <ChallengeContent challenge={challenge} isCandidate={isCandidate} participants={participants || []} organizationId={organizationId || ''} />;
@@ -75,7 +83,12 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
     }, [participants, user]);
 
     const handleJoin = async () => {
-      if (!user || !firestore || !organizationId) return;
+      if (!user) {
+         toast({ title: "Login Required", description: "Please login to join challenges." });
+         router.push('/login');
+         return;
+      }
+      if (!firestore || !organizationId) return;
 
       setIsJoining(true);
       try {
@@ -114,14 +127,14 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
         {isCandidate && (
             <div className="flex gap-2">
                 {!hasJoined ? (
-                    <Button size="lg" onClick={handleJoin} disabled={isJoining}>
+                    <Button size="lg" onClick={handleJoin} disabled={isJoining} className="bg-gradient-to-r from-blue-600 to-indigo-600">
                         <Sparkles className="mr-2 h-4 w-4" />
-                        {isJoining ? 'Joining...' : 'Join Now'}
+                        {isJoining ? 'Joining...' : 'Join Challenge'}
                     </Button>
                 ) : (
                     <Button size="lg" onClick={() => router.push(`/challenges/${challenge.id}/solve?orgId=${organizationId}`)} className="bg-green-600 hover:bg-green-700">
                         <Code className="mr-2 h-4 w-4" />
-                        Open Editor
+                        Open Code Editor
                     </Button>
                 )}
             </div>
@@ -130,12 +143,12 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
-            <Card className={cn(isCandidate && 'glassmorphism')}>
+            <Card className={cn(isCandidate && 'glassmorphism border-primary/20 shadow-lg')}>
                 <CardHeader>
                     <CardTitle>Challenge Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{challenge.description}</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">{challenge.description}</p>
                 </CardContent>
             </Card>
         </div>
@@ -146,21 +159,21 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                     <div className="flex items-start gap-2">
-                        <Trophy className="w-4 h-4 mt-1 text-muted-foreground" />
+                        <Trophy className="w-4 h-4 mt-1 text-yellow-500" />
                         <div>
                             <p className="font-semibold">Reward</p>
                             <p className="text-muted-foreground">{challenge.reward || 'Recognition and glory!'}</p>
                         </div>
                     </div>
                      <div className="flex items-start gap-2">
-                        <Calendar className="w-4 h-4 mt-1 text-muted-foreground" />
+                        <Calendar className="w-4 h-4 mt-1 text-blue-500" />
                         <div>
                             <p className="font-semibold">Deadline</p>
                             <p className="text-muted-foreground">{new Date(challenge.deadline).toLocaleString()}</p>
                         </div>
                     </div>
                     <div className="flex items-start gap-2">
-                        <Users className="w-4 h-4 mt-1 text-muted-foreground" />
+                        <Users className="w-4 h-4 mt-1 text-green-500" />
                         <div>
                             <p className="font-semibold">Participants</p>
                             <p className="text-muted-foreground">{participants.length} joined</p>
@@ -179,6 +192,7 @@ function ChallengeContent({ challenge, isCandidate, participants, organizationId
                       {participants.slice(0, 10).map((participant) => (
                         <div key={participant.id} className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
+                            <AvatarImage src={participant.userAvatar} />
                             <AvatarFallback className="text-xs">
                               {participant.userName?.charAt(0) || 'P'}
                             </AvatarFallback>

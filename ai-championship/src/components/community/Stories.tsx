@@ -1,31 +1,33 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Plus, X, Image as ImageIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useUserContext } from '@/app/(app)/layout';
 import { placeholderImages } from '@/lib/placeholder-images';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, query, orderBy, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-
-const MOCK_STORIES = [
-  { id: '1', user: 'Sarah Wilson', avatar: placeholderImages[1]?.imageUrl, hasStory: true, viewed: false },
-  { id: '2', user: 'Tech Corp', avatar: placeholderImages[2]?.imageUrl, hasStory: true, viewed: false },
-  { id: '3', user: 'David Chen', avatar: placeholderImages[3]?.imageUrl, hasStory: true, viewed: true },
-  { id: '4', user: 'Innovate Inc', avatar: placeholderImages[4]?.imageUrl, hasStory: true, viewed: false },
-];
 
 export function Stories() {
   const { user, displayName, userId } = useUserContext();
   const { storage, firestore } = useFirebase();
   const { toast } = useToast();
   const [selectedStory, setSelectedStory] = useState<any>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [storyImage, setStoryImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch real stories
+  const storiesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'stories'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
+  const { data: realStories } = useCollection(storiesQuery);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,21 +40,23 @@ export function Stories() {
 
   const handleCreateStory = async () => {
     if (!storyImage || !storage || !userId || !firestore) return;
+    setIsUploading(true);
     try {
       const file = fileInputRef.current?.files?.[0];
       if (!file) return;
+      
       const storageRef = ref(storage, `stories/${userId}/${Date.now()}.jpg`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       
-      const { addDoc, collection } = await import('firebase/firestore');
       await addDoc(collection(firestore, 'stories'), {
         userId,
-        userName: displayName,
-        userAvatar: user?.photoURL,
+        userName: displayName || 'User',
+        userAvatar: user?.photoURL || '',
         imageUrl: url,
         createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        viewedBy: []
       });
       
       toast({ title: 'Story created!' });
@@ -60,8 +64,13 @@ export function Stories() {
     } catch (error) {
       console.error('Story error:', error);
       toast({ variant: 'destructive', title: 'Failed to create story' });
+    } finally {
+        setIsUploading(false);
     }
   };
+
+  // Merge Real Stories
+  const displayStories = realStories || [];
 
   return (
     <>
@@ -71,7 +80,7 @@ export function Stories() {
         <div className="flex flex-col items-center gap-2 min-w-[70px] cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
           <div className="relative">
             <Avatar className="w-16 h-16 border-2 border-dashed border-gray-300 p-0.5 group-hover:border-primary transition-colors">
-              <AvatarImage src={user?.avatarUrl} />
+              <AvatarImage src={user?.photoURL || undefined} />
               <AvatarFallback>{displayName?.[0]}</AvatarFallback>
             </Avatar>
             <div className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1 border-2 border-background">
@@ -82,7 +91,7 @@ export function Stories() {
         </div>
 
       {/* Viewing Stories */}
-      {MOCK_STORIES.map((story) => (
+      {displayStories.map((story: any) => (
         <div 
           key={story.id} 
           className="flex flex-col items-center gap-2 min-w-[70px] cursor-pointer group"
@@ -90,29 +99,43 @@ export function Stories() {
         >
           <div className={`p-[2px] rounded-full ${story.viewed ? 'bg-gray-200' : 'bg-gradient-to-tr from-yellow-400 to-purple-600'}`}>
             <Avatar className="w-16 h-16 border-2 border-background">
-              <AvatarImage src={story.avatar} />
-              <AvatarFallback>{story.user[0]}</AvatarFallback>
+              <AvatarImage src={story.userAvatar} />
+              <AvatarFallback>{story.userName?.[0]}</AvatarFallback>
             </Avatar>
           </div>
           <span className="text-xs font-medium text-muted-foreground truncate w-full text-center group-hover:text-foreground">
-            {story.user.split(' ')[0]}
+            {story.userName?.split(' ')[0]}
           </span>
         </div>
+      ))}
+      
+      {/* Mock Stories for visual filler if empty */}
+      {displayStories.length === 0 && [1,2,3].map(i => (
+         <div key={i} className="flex flex-col items-center gap-2 min-w-[70px] opacity-50 grayscale">
+            <div className="p-[2px] rounded-full bg-gray-200">
+                <Avatar className="w-16 h-16 border-2 border-background">
+                    <AvatarFallback>?</AvatarFallback>
+                </Avatar>
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">Demo</span>
+         </div>
       ))}
 
       </div>
 
-      <Dialog open={!!storyImage} onOpenChange={() => { setStoryImage(null); setShowCreateDialog(false); }}>
+      <Dialog open={!!storyImage} onOpenChange={() => { setStoryImage(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create Story</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4">
-            {storyImage && <img src={storyImage} alt="Story" className="w-full rounded-lg" />}
+            {storyImage && <img src={storyImage} alt="Story" className="w-full rounded-lg max-h-[400px] object-cover" />}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setStoryImage(null); setShowCreateDialog(false); }}>Cancel</Button>
-            <Button onClick={handleCreateStory}>Post Story</Button>
+            <Button variant="outline" onClick={() => { setStoryImage(null); }} disabled={isUploading}>Cancel</Button>
+            <Button onClick={handleCreateStory} disabled={isUploading}>
+                {isUploading ? 'Posting...' : 'Post Story'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -128,23 +151,25 @@ export function Stories() {
                 <div className="p-4 flex items-center justify-between absolute top-4 w-full z-10">
                     <div className="flex items-center gap-2">
                         <Avatar className="w-8 h-8 border border-white/20">
-                            <AvatarImage src={selectedStory?.avatar} />
-                            <AvatarFallback>{selectedStory?.user[0]}</AvatarFallback>
+                            <AvatarImage src={selectedStory?.userAvatar} />
+                            <AvatarFallback>{selectedStory?.userName?.[0]}</AvatarFallback>
                         </Avatar>
-                        <span className="font-semibold text-sm">{selectedStory?.user}</span>
-                        <span className="text-xs text-gray-300">• 2h</span>
+                        <span className="font-semibold text-sm">{selectedStory?.userName}</span>
+                        <span className="text-xs text-gray-300">• Recently</span>
                     </div>
                     <Button variant="ghost" size="icon" className="text-white" onClick={() => setSelectedStory(null)}>
                         <X className="w-6 h-6" />
                     </Button>
                 </div>
 
-                <div className="flex-1 bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-                    {/* Placeholder content for story */}
-                    <div className="text-center p-8">
-                        <h2 className="text-2xl font-bold mb-4">🚀 Just shipped a new feature!</h2>
-                        <p className="text-gray-300">Super excited to share our latest update with the community. #BuildingInPublic</p>
-                    </div>
+                <div className="flex-1 bg-black flex items-center justify-center relative">
+                    {selectedStory?.imageUrl ? (
+                        <img src={selectedStory.imageUrl} alt="Story" className="max-w-full max-h-full object-contain" />
+                    ) : (
+                        <div className="text-center p-8">
+                             <p className="text-gray-300">Content unavailable</p>
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-4 absolute bottom-0 w-full bg-gradient-to-t from-black/80 to-transparent">

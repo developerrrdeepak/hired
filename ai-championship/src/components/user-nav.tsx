@@ -99,7 +99,9 @@ export function UserNav() {
                      <Sparkles className="mr-2 h-4 w-4" />
                      Upgrade to Pro
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
+                <DropdownMenuSeparator />
+                {/* Fixed Profile Link */}
+                <DropdownMenuItem onClick={() => router.push('/profile/edit')}>
                      <User className="mr-2 h-4 w-4" />
                      Profile
                 </DropdownMenuItem>

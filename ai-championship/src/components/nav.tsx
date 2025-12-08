@@ -86,6 +86,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
         title: 'Account',
         items: [
+            { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
             { href: '/billing', icon: CreditCard, label: 'Billing' },
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
@@ -120,6 +121,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
         title: 'Account',
         items: [
+            { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
     }
@@ -144,6 +146,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
       title: 'Account',
       items: [
+        { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
         { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
@@ -158,6 +161,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
       title: 'Account',
       items: [
+        { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
         { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }

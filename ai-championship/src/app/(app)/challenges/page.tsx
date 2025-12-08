@@ -19,11 +19,16 @@ export default function ChallengesPage() {
     const { role, organizationId, isUserLoading } = useUserContext();
     const isCandidate = role === 'Candidate';
 
+    // Determine the ID to query. 
+    // If Owner/Recruiter, use their Org ID.
+    // If Candidate, we ideally need a "Marketplace" query (all challenges).
+    // For now, it defaults to a demo org if not set.
+    const queryOrgId = organizationId || 'org-demo-owner-id';
+
     const challengesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        const orgId = organizationId || 'org-demo-owner-id';
-        return query(collection(firestore, `organizations/${orgId}/challenges`));
-    }, [firestore, organizationId]);
+        return query(collection(firestore, `organizations/${queryOrgId}/challenges`));
+    }, [firestore, queryOrgId]);
     
     const { data: challenges, isLoading: areChallengesLoading } = useCollection<Challenge>(challengesQuery);
     const isLoading = isUserLoading || areChallengesLoading;
@@ -56,7 +61,11 @@ export default function ChallengesPage() {
                     {challenges.map((challenge, i) => (
                         <ChallengeCard 
                             key={challenge.id} 
-                            challenge={challenge} 
+                            // Ensure organizationId is present for the link generation to work
+                            challenge={{ 
+                                ...challenge, 
+                                organizationId: challenge.organizationId || queryOrgId 
+                            }} 
                             showJoinButton={isCandidate}
                             delay={i * 100} 
                         />
