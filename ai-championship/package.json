@@ -47,6 +47,8 @@
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
+    "@genkit-ai/ai": "^1.25.0",
+    "@genkit-ai/flow": "^0.5.17",
     "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^4.1.3",
     "@liquidmetal-ai/raindrop": "^0.11.0",
