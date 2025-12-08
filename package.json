@@ -4,8 +4,11 @@
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
+    "@genkit-ai/flow": "^0.5.17",
+    "@genkit-ai/googleai": "^1.25.0",
     "@google/generative-ai": "^0.24.1",
     "@vultr/vultr-node": "^2.8.0",
-    "@workos-inc/node": "^7.77.0"
+    "@workos-inc/node": "^7.77.0",
+    "firebase-admin": "^13.6.0"
   }
 }

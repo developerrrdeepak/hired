@@ -1,9 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { negotiationPracticeFlow } from '../../../../ai/flows/ai-negotiation-practice';
-import { configureGenkit } from '../../../../ai/genkit';
-
-configureGenkit();
 
 export async function POST(req: NextRequest) {
   const { role, userResponse, history } = await req.json();

@@ -1,0 +1,32 @@
+
+import admin from 'firebase-admin';
+import { z } from 'zod';
+
+const firebaseAdminConfigSchema = z.object({
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().min(1, 'Missing Firebase project ID'),
+  FIREBASE_CLIENT_EMAIL: z.string().email('Invalid Firebase client email'),
+  FIREBASE_PRIVATE_KEY: z.string().min(1, 'Missing Firebase private key'),
+});
+
+const result = firebaseAdminConfigSchema.safeParse(process.env);
+
+if (!result.success) {
+  console.error('🔥 Invalid Firebase admin environment variables', result.error.flatten().fieldErrors);
+  throw new Error('Invalid Firebase admin environment variables');
+}
+
+const serviceAccount = {
+  projectId: result.data.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  clientEmail: result.data.FIREBASE_CLIENT_EMAIL,
+  privateKey: result.data.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+};
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: `https://${result.data.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
+  });
+}
+
+export const adminAuth = admin.auth();
+export const adminDb = admin.firestore();

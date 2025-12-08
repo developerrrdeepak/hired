@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { doc, getDoc } from 'firebase/firestore';
-import { firestore } from '@/firebase/admin'; // Assuming admin SDK for server-side
+import { adminDb } from '@/firebase/admin';
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
             return new NextResponse('Organization ID is required', { status: 400 });
         }
 
-        const orgDoc = await getDoc(doc(firestore, 'organizations', organizationId));
+        const orgDoc = await getDoc(doc(adminDb, 'organizations', organizationId));
 
         if (!orgDoc.exists()) {
             return new NextResponse('Organization not found', { status: 404 });

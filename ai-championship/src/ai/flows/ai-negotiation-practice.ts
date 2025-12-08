@@ -2,7 +2,7 @@
 import { defineFlow } from '@genkit-ai/flow';
 import { z } from 'zod';
 import { generate } from '@genkit-ai/ai';
-import { geminiPro } from '@genkit-ai/googleai';
+import { geminiPro } from '../../ai/genkit';
 
 export const negotiationPracticeFlow = defineFlow(
   {
