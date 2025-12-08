@@ -444,7 +444,7 @@ function AvailableChallengesList() {
             {challenges.slice(0, 3).map((challenge, idx) => (
                 <Link 
                     key={challenge.id} 
-                    href={`/challenges/${challenge.id}`} 
+                    href={`/challenges/${challenge.id}?role=Candidate&orgId=${challenge.organizationId}`} 
                     className="block p-4 rounded-lg border-2 border-green-500/20 hover:border-green-500 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-background to-green-500/5 relative overflow-hidden"
                 >
                     <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-bl-full" />
