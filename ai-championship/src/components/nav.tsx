@@ -72,6 +72,7 @@ const navConfig: Record<string, NavSection[]> = {
        title: 'Intelligence',
        items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        { href: '/offer-letter', icon: FileText, label: 'Offer Generator' },
         { href: '/analytics', icon: BarChart3, label: 'Analytics' },
        ]
     },
@@ -105,6 +106,7 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'Intelligence',
         items: [
             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/offer-letter', icon: FileText, label: 'Offer Generator' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
         ]
     },
