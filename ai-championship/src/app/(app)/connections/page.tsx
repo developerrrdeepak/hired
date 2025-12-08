@@ -107,6 +107,13 @@ export default function ConnectionsPage() {
 
   const handleSendRequest = async (receiverId: string, receiverName: string, receiverRole: string) => {
     if (!firestore || !userId) return;
+    
+    // Validate all required fields
+    if (!receiverId || !receiverName || !receiverRole) {
+      toast({ variant: 'destructive', title: 'Invalid user data' });
+      return;
+    }
+
     try {
       // Check if request already exists
       const existingConnection = connections.find(c => 
@@ -123,9 +130,9 @@ export default function ConnectionsPage() {
         requesterId: userId,
         requesterName: displayName || 'User',
         requesterRole: role || 'User',
-        receiverId,
-        receiverName,
-        receiverRole,
+        receiverId: receiverId,
+        receiverName: receiverName || 'User',
+        receiverRole: receiverRole || 'User',
         status: 'pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -229,7 +236,11 @@ export default function ConnectionsPage() {
                   <Button 
                     className="w-full" 
                     size="sm"
-                    onClick={() => handleSendRequest(user.id, user.name, user.role || user.title || 'User')}
+                    onClick={() => handleSendRequest(
+                      user.id, 
+                      user.name || user.displayName || 'User', 
+                      user.role || user.title || 'User'
+                    )}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Connect
