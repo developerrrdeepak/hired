@@ -3,14 +3,14 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus, FileText, MapPin, Briefcase } from 'lucide-react';
+import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus, FileText, MapPin, Briefcase, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Candidate, Application, Job } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy, getDocs, doc, updateDoc, arrayUnion, addDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, updateDoc, arrayUnion, addDoc, writeBatch } from 'firebase/firestore';
 import { useMemo, useState, useEffect } from 'react';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 type CandidateWithAppInfo = Candidate & {
   jobTitle?: string;
@@ -28,57 +29,6 @@ type CandidateWithAppInfo = Candidate & {
   fitScore?: number;
   isShortlisted?: boolean;
 };
-
-const columns: {
-  accessorKey: keyof CandidateWithAppInfo;
-  header: string;
-  cell?: ({ row }: { row: { original: CandidateWithAppInfo } }) => JSX.Element;
-  enableSorting?: boolean;
-}[] = [
-  {
-    accessorKey: 'name',
-    header: 'Candidate',
-    enableSorting: true,
-    cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
-                <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} data-ai-hint="person face" />
-                <AvatarFallback>{row.original.name?.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-                <div className="font-semibold">{row.original.name}</div>
-                <div className="text-sm text-muted-foreground">{row.original.email}</div>
-            </div>
-        </div>
-    ),
-  },
-  {
-    accessorKey: 'jobTitle',
-    header: 'Applied For',
-    enableSorting: true,
-    cell: ({ row }) => row.original.jobTitle ? row.original.jobTitle : <span className="text-muted-foreground">-</span>,
-  },
-  {
-    accessorKey: 'stage',
-    header: 'Current Stage',
-    cell: ({ row }) => {
-        if (!row.original.stage) return <span className="text-muted-foreground">-</span>;
-        return <Badge variant="secondary">{row.original.stage}</Badge>;
-    },
-  },
-  {
-    accessorKey: 'fitScore',
-    header: 'Fit Score',
-    enableSorting: true,
-    cell: ({ row }) => (row.original.fitScore ? <div className="flex items-center gap-1 font-semibold">{row.original.fitScore} <Star className="w-4 h-4 text-amber-400 fill-amber-400" /></div> : <span className="text-muted-foreground">-</span>),
-  },
-  {
-      accessorKey: 'updatedAt',
-      header: 'Last Updated',
-      enableSorting: true,
-      cell: ({ row }) => new Date(row.original.updatedAt).toLocaleDateString(),
-  }
-];
 
 export default function CandidatesPage() {
     const router = useRouter();
@@ -96,17 +46,99 @@ export default function CandidatesPage() {
     const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithAppInfo | null>(null);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [selectedJobForInvite, setSelectedJobForInvite] = useState('');
-    
+    const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+
     useEffect(() => {
       const t = setTimeout(() => setMounted(true), 10);
       return () => clearTimeout(t);
     }, []);
 
+    const columns: {
+      id: string;
+      header?: ({ table }: any) => JSX.Element;
+      cell?: ({ row }: { row: { original: CandidateWithAppInfo, getIsSelected: () => boolean, toggleSelected: (value: boolean) => void } }) => JSX.Element;
+      accessorKey?: keyof CandidateWithAppInfo;
+      enableSorting?: boolean;
+    }[] = [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            onCheckedChange={(value) => {
+              table.toggleAllPageRowsSelected(!!value);
+              const allIds = table.getRowModel().rows.map((row: any) => row.original.id);
+              setSelectedCandidates(value ? allIds : []);
+            }}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => {
+                row.toggleSelected(!!value);
+                setSelectedCandidates(prev => 
+                    value ? [...prev, row.original.id] : prev.filter(id => id !== row.original.id)
+                );
+            }}
+            aria-label="Select row"
+          />
+        ),
+      },
+      {
+        id: 'candidate',
+        accessorKey: 'name',
+        header: 'Candidate',
+        enableSorting: true,
+        cell: ({ row }) => (
+            <div className="flex items-center gap-3">
+                <Avatar className="h-9 w-9">
+                    <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} data-ai-hint="person face" />
+                    <AvatarFallback>{row.original.name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <div className="font-semibold">{row.original.name}</div>
+                    <div className="text-sm text-muted-foreground">{row.original.email}</div>
+                </div>
+            </div>
+        ),
+      },
+      {
+        id: 'appliedFor',
+        accessorKey: 'jobTitle',
+        header: 'Applied For',
+        enableSorting: true,
+        cell: ({ row }) => row.original.jobTitle ? row.original.jobTitle : <span className="text-muted-foreground">-</span>,
+      },
+      {
+        id: 'stage',
+        accessorKey: 'stage',
+        header: 'Current Stage',
+        cell: ({ row }) => {
+            if (!row.original.stage) return <span className="text-muted-foreground">-</span>;
+            return <Badge variant="secondary">{row.original.stage}</Badge>;
+        },
+      },
+      {
+        id: 'fitScore',
+        accessorKey: 'fitScore',
+        header: 'Fit Score',
+        enableSorting: true,
+        cell: ({ row }) => (row.original.fitScore ? <div className="flex items-center gap-1 font-semibold">{row.original.fitScore} <Star className="w-4 h-4 text-amber-400 fill-amber-400" /></div> : <span className="text-muted-foreground">-</span>),
+      },
+      {
+          id: 'lastUpdated',
+          accessorKey: 'updatedAt',
+          header: 'Last Updated',
+          enableSorting: true,
+          cell: ({ row }) => new Date(row.original.updatedAt).toLocaleDateString(),
+      }
+    ];
+
     // Query real candidates from Firestore
     const candidatesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Fetch users who are candidates
-        // In a real app with many users, this needs server-side filtering or Algolia
         return query(
             collection(firestore, 'users'),
             where('role', '==', 'Candidate'),
@@ -118,7 +150,6 @@ export default function CandidatesPage() {
     
     const candidates = useMemo(() => {
         if (!allUsers) return [];
-        // No more mock data fallback. Only real data.
         return allUsers.filter(user => user.profileVisibility === 'public' || !user.profileVisibility);
     }, [allUsers]);
 
@@ -246,31 +277,34 @@ export default function CandidatesPage() {
         return Array.from(locations);
     }, [candidates]);
 
-    const handleShortlist = async (candidateId: string, isCurrentlyShortlisted: boolean) => {
-        if (!firestore) return;
+    const handleBulkShortlist = async (shortlist: boolean) => {
+        if (!firestore || selectedCandidates.length === 0) return;
+        const batch = writeBatch(firestore);
+        selectedCandidates.forEach(id => {
+            const docRef = doc(firestore, 'users', id);
+            batch.update(docRef, { isShortlisted: shortlist, updatedAt: new Date().toISOString() });
+        });
+
         try {
-            await updateDoc(doc(firestore, 'users', candidateId), {
-                isShortlisted: !isCurrentlyShortlisted,
-                updatedAt: new Date().toISOString(),
-            });
+            await batch.commit();
             toast({
-                title: isCurrentlyShortlisted ? "Removed from shortlist" : "Added to shortlist",
-                description: isCurrentlyShortlisted ? "Candidate removed from your shortlist." : "Candidate added to your shortlist.",
+                title: `Candidates ${shortlist ? 'shortlisted' : 'removed from shortlist'}`,
+                description: `${selectedCandidates.length} candidates have been updated.`,
             });
+            setSelectedCandidates([]);
         } catch (error) {
             console.error(error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Failed to update shortlist.",
+                description: "Failed to update candidates.",
             });
         }
     };
-
+    
     const handleInviteToApply = async () => {
         if (!firestore || !organizationId || !selectedCandidate || !selectedJobForInvite) return;
         try {
-            // Add notification for candidate
             await updateDoc(doc(firestore, `users`, selectedCandidate.id), {
                 notifications: arrayUnion({
                     id: `invite-${Date.now()}`,
@@ -323,8 +357,23 @@ export default function CandidatesPage() {
         </div>
       </PageHeader>
 
+      {selectedCandidates.length > 0 && (
+        <div className="my-4 p-3 rounded-lg bg-muted flex items-center justify-between">
+            <p className="text-sm font-medium">{selectedCandidates.length} candidate{selectedCandidates.length > 1 ? 's' : ''} selected</p>
+            <div className="flex gap-2">
+                <Button size="sm" onClick={() => handleBulkShortlist(true)}>
+                    <Check className="mr-2 h-4 w-4" />
+                    Shortlist
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleBulkShortlist(false)}>
+                    <X className="mr-2 h-4 w-4" />
+                    Remove from Shortlist
+                </Button>
+            </div>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6 mt-6">
-        {/* Filters Sidebar */}
         <aside className="w-full lg:w-1/4 lg:min-w-[280px] space-y-4">
           <Card className="glassmorphism">
             <CardHeader>
@@ -410,7 +459,6 @@ export default function CandidatesPage() {
             </CardContent>
           </Card>
 
-          {/* Top Matches */}
           <Card className="glassmorphism">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -449,12 +497,22 @@ export default function CandidatesPage() {
           </Card>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1">
           {viewMode === 'cards' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCandidates.map((candidate, i) => (
-                <Card key={candidate.id} className="hover:shadow-md transition-shadow group flex flex-col h-full">
+                <Card key={candidate.id} className="hover:shadow-md transition-shadow group flex flex-col h-full relative">
+                  <div className="absolute top-2 right-2 z-10">
+                    <Checkbox
+                        className="h-5 w-5 bg-white"
+                        checked={selectedCandidates.includes(candidate.id)}
+                        onCheckedChange={(value) => {
+                            setSelectedCandidates(prev => 
+                                value ? [...prev, candidate.id] : prev.filter(id => id !== candidate.id)
+                            );
+                        }}
+                    />
+                  </div>
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-12 w-12 border border-border">
@@ -519,7 +577,7 @@ export default function CandidatesPage() {
                             updatedAt: new Date().toISOString(),
                           });
                           router.push(`/messages?convId=${convRef.id}`);
-                        } catch (error) {
+                        } catch (error){
                           console.error(error);
                         }
                       }}
