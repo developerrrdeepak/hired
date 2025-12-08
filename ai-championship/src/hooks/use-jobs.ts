@@ -19,40 +19,22 @@ export function useJobs(role?: string, organizationId?: string) {
     setIsLoading(true);
     setError(null);
 
-    // Candidates see all jobs across organizations
-    if (role === 'Candidate') {
-      const subscription = subscribeToAllJobs(
-        firestore,
-        (updatedJobs) => {
-          setJobs(updatedJobs);
-          setIsLoading(false);
-        },
-        (err) => {
-          setError(err);
-          setIsLoading(false);
-        }
-      );
+    // Use demo organization for all users
+    const orgId = organizationId || 'org-demo-owner-id';
+    const subscription = subscribeToOrgJobs(
+      firestore,
+      orgId,
+      (updatedJobs) => {
+        setJobs(updatedJobs);
+        setIsLoading(false);
+      },
+      (err) => {
+        setError(err);
+        setIsLoading(false);
+      }
+    );
 
-      return () => subscription.unsubscribe();
-    }
-
-    // Employers see only their organization's jobs
-    if (organizationId) {
-      const subscription = subscribeToOrgJobs(
-        firestore,
-        organizationId,
-        (updatedJobs) => {
-          setJobs(updatedJobs);
-          setIsLoading(false);
-        },
-        (err) => {
-          setError(err);
-          setIsLoading(false);
-        }
-      );
-
-      return () => subscription.unsubscribe();
-    }
+    return () => subscription.unsubscribe();
 
     setIsLoading(false);
   }, [firestore, role, organizationId]);
