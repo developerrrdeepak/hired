@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Notifications } from '@/components/notifications';
+import { NotificationCenter } from '@/components/notification-center';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
@@ -81,7 +81,7 @@ function AppShellContent({ children, nav, homePath, organization }: AppShellProp
                             </Link>
                         </Button>
                         <ThemeToggle />
-                        <Notifications />
+                        <NotificationCenter />
                      </div>
                 </header>
                 <div className="flex-1 overflow-auto p-4 md:p-6">

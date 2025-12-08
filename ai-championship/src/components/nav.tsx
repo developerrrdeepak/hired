@@ -58,6 +58,7 @@ const navConfig: Record<string, NavSection[]> = {
       title: 'Platform',
       items: [
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { href: '/admin/dashboard', icon: BarChart3, label: 'Admin' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
