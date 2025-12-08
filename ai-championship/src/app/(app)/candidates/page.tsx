@@ -97,7 +97,7 @@ export default function CandidatesPage() {
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9">
-                    <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} data-ai-hint="person face" />
+                    <AvatarImage src={row.original.avatarUrl} />
                     <AvatarFallback>{row.original.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -512,7 +512,7 @@ export default function CandidatesPage() {
                     {idx + 1}
                   </Badge>
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} />
+                    <AvatarImage src={candidate.avatarUrl} />
                     <AvatarFallback>{candidate.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
@@ -550,7 +550,7 @@ export default function CandidatesPage() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-12 w-12 border border-border">
-                        <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} />
+                        <AvatarImage src={candidate.avatarUrl} />
                         <AvatarFallback>{candidate.name?.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
