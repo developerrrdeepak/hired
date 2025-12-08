@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { VultrClient } from '@/lib/vultr-client-mock';
+import { VultrClient } from '@/lib/vultr-client';
 
 export async function POST(request: NextRequest) {
   try {
