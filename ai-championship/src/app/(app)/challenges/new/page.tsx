@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, addDocumentNonBlocking } from "@/firebase";
 import { collection } from "firebase/firestore";
+import { useUserContext } from "../layout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -35,6 +36,7 @@ export default function NewChallengePage() {
     const router = useRouter();
     const { toast } = useToast();
     const { firestore, user } = useFirebase();
+    const { organizationId } = useUserContext();
 
     const form = useForm<ChallengeFormData>({
         resolver: zodResolver(challengeFormSchema),
@@ -51,13 +53,13 @@ export default function NewChallengePage() {
             return;
         }
 
-        const organizationId = 'org-demo-owner-id';
-        const challengesCol = collection(firestore, `organizations/${organizationId}/challenges`);
+        const orgId = organizationId || 'org-demo-owner-id';
+        const challengesCol = collection(firestore, `organizations/${orgId}/challenges`);
         
         const newChallengeData = {
             ...values,
             deadline: values.deadline.toISOString(),
-            organizationId,
+            organizationId: orgId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
