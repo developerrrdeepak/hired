@@ -138,20 +138,14 @@ export default function CandidatesPage() {
 
     // Query real candidates from Firestore
     const candidatesQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !organizationId) return null;
         return query(
-            collection(firestore, 'users'),
-            where('role', '==', 'Candidate'),
+            collection(firestore, `organizations/${organizationId}/candidates`),
             orderBy('updatedAt', 'desc')
         );
-    }, [firestore]);
+    }, [firestore, organizationId]);
 
-    const { data: allUsers, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
-    
-    const candidates = useMemo(() => {
-        if (!allUsers) return [];
-        return allUsers.filter(user => user.profileVisibility === 'public' || !user.profileVisibility);
-    }, [allUsers]);
+    const { data: candidates, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
 
     const [applicationsByCandidate, setApplicationsByCandidate] = useState<Map<string, Application>>(new Map());
     const [isLoadingApps, setIsLoadingApps] = useState(true);
