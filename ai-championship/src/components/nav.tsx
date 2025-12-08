@@ -81,6 +81,8 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'Settings',
         items: [
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
+            { href: '/reports', icon: LineChart, label: 'Reports' },
+            { href: '/billing', icon: CreditCard, label: 'Billing' },
             { href: '/settings', icon: Settings, label: 'Settings' },
         ]
     }
@@ -111,6 +113,7 @@ const navConfig: Record<string, NavSection[]> = {
     },
     {
       items: [
+        { href: '/reports', icon: LineChart, label: 'Reports' },
         { href: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
