@@ -20,7 +20,7 @@ const MOCK_STORIES = [
 
 export function Stories() {
   const { user, displayName, userId } = useUserContext();
-  const { storage } = useFirebase();
+  const { storage, firestore } = useFirebase();
   const { toast } = useToast();
   const [selectedStory, setSelectedStory] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -37,17 +37,28 @@ export function Stories() {
   };
 
   const handleCreateStory = async () => {
-    if (!storyImage || !storage || !userId) return;
+    if (!storyImage || !storage || !userId || !firestore) return;
     try {
       const file = fileInputRef.current?.files?.[0];
       if (!file) return;
       const storageRef = ref(storage, `stories/${userId}/${Date.now()}.jpg`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
+      
+      const { addDoc, collection } = await import('firebase/firestore');
+      await addDoc(collection(firestore, 'stories'), {
+        userId,
+        userName: displayName,
+        userAvatar: user?.photoURL,
+        imageUrl: url,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      });
+      
       toast({ title: 'Story created!' });
-      setShowCreateDialog(false);
       setStoryImage(null);
     } catch (error) {
+      console.error('Story error:', error);
       toast({ variant: 'destructive', title: 'Failed to create story' });
     }
   };
