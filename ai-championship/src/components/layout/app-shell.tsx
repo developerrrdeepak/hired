@@ -21,6 +21,7 @@ import type { Organization } from '@/lib/definitions';
 import Image from 'next/image';
 import { UserNav } from '../user-nav';
 import { Separator } from '@/components/ui/separator';
+import { CommandPalette } from '@/components/command-palette';
 
 interface AppShellProps {
     children: React.ReactNode;
@@ -31,6 +32,8 @@ interface AppShellProps {
 
 function AppShellContent({ children, nav, homePath, organization }: AppShellProps) {
     return (
+        <>
+        <CommandPalette />
         <SidebarProvider>
             <Sidebar collapsible="icon">
                 <SidebarHeader>
@@ -86,6 +89,7 @@ function AppShellContent({ children, nav, homePath, organization }: AppShellProp
                 </div>
             </SidebarInset>
         </SidebarProvider>
+        </>
     );
 }
 

@@ -26,6 +26,7 @@ import { exportCandidatesToExcel } from '@/lib/export-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CandidateCardSkeleton } from '@/components/loading-skeleton';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { BulkActions } from '@/components/bulk-actions';
 
 type CandidateWithAppInfo = Candidate & {
   jobTitle?: string;
@@ -387,21 +388,12 @@ export default function CandidatesPage() {
         </div>
       </PageHeader>
 
-      {selectedCandidates.length > 0 && (
-        <div className="my-4 p-3 rounded-lg bg-muted flex items-center justify-between">
-            <p className="text-sm font-medium">{selectedCandidates.length} candidate{selectedCandidates.length > 1 ? 's' : ''} selected</p>
-            <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleBulkShortlist(true)}>
-                    <Check className="mr-2 h-4 w-4" />
-                    Shortlist
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleBulkShortlist(false)}>
-                    <X className="mr-2 h-4 w-4" />
-                    Remove from Shortlist
-                </Button>
-            </div>
-        </div>
-      )}
+      <BulkActions
+        selectedCount={selectedCandidates.length}
+        onShortlist={() => handleBulkShortlist(true)}
+        onRemoveShortlist={() => handleBulkShortlist(false)}
+        onExport={() => exportCandidatesToExcel(candidatesWithInfo.filter(c => selectedCandidates.includes(c.id)))}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
         <TabsList className="mb-6">
