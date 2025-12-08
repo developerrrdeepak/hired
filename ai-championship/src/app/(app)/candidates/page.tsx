@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { exportCandidatesToExcel } from '@/lib/export-utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type CandidateWithAppInfo = Candidate & {
   jobTitle?: string;
@@ -38,6 +39,7 @@ export default function CandidatesPage() {
     const { toast } = useToast();
 
     const [mounted, setMounted] = useState(false);
+    const [activeTab, setActiveTab] = useState('candidates');
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
     const [searchTerm, setSearchTerm] = useState('');
     const [skillFilter, setSkillFilter] = useState('');
@@ -147,6 +149,18 @@ export default function CandidatesPage() {
     }, [firestore]);
 
     const { data: allCandidates, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
+    
+    // Query team members (employees in same organization)
+    const teamQuery = useMemoFirebase(() => {
+        if (!firestore || !organizationId) return null;
+        return query(
+            collection(firestore, 'users'),
+            where('organizationId', '==', organizationId),
+            where('role', 'in', ['Employee', 'Owner'])
+        );
+    }, [firestore, organizationId]);
+
+    const { data: teamMembers, isLoading: isLoadingTeam } = useCollection<any>(teamQuery);
     
     // Sort on client side
     const candidates = useMemo(() => {
@@ -346,8 +360,8 @@ export default function CandidatesPage() {
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <PageHeader
-        title="Talent Pool"
-        description="Connect with qualified candidates."
+        title={activeTab === 'candidates' ? 'Talent Pool' : 'My Team'}
+        description={activeTab === 'candidates' ? 'Connect with qualified candidates.' : 'View and manage your team members.'}
       >
         <div className="flex gap-2">
           <Button 
@@ -386,7 +400,14 @@ export default function CandidatesPage() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6 mt-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+        <TabsList className="mb-6">
+          <TabsTrigger value="candidates">All Candidates</TabsTrigger>
+          <TabsTrigger value="team">My Team</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="candidates">
+      <div className="flex flex-col lg:flex-row gap-6">
         <aside className="w-full lg:w-1/4 lg:min-w-[280px] space-y-4">
           <Card className="glassmorphism">
             <CardHeader>
@@ -627,6 +648,82 @@ export default function CandidatesPage() {
           )}
         </main>
       </div>
+        </TabsContent>
+
+        <TabsContent value="team">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {teamMembers?.map((member) => (
+              <Card key={member.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-12 w-12 border border-border">
+                      <AvatarImage src={member.avatarUrl} />
+                      <AvatarFallback>{member.displayName?.charAt(0) || 'T'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base truncate">
+                        {member.displayName || member.name || 'Team Member'}
+                      </CardTitle>
+                      <CardDescription className="text-sm truncate">
+                        {member.role}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-3">
+                  <p className="text-sm text-muted-foreground truncate">{member.email}</p>
+                </CardContent>
+                <CardFooter className="flex gap-2 pt-3 border-t bg-muted/20">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={() => router.push(`/public-profile/${member.id}`)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" /> Profile
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="flex-1"
+                    onClick={async () => {
+                      if (!firestore || !userId) return;
+                      try {
+                        const convRef = await addDoc(collection(firestore, 'conversations'), {
+                          participants: [
+                            { id: userId, name: displayName, role: role },
+                            { id: member.id, name: member.displayName || member.name, role: member.role }
+                          ],
+                          participantIds: [userId, member.id],
+                          lastMessage: '',
+                          lastMessageAt: new Date().toISOString(),
+                          unreadCount: {},
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        });
+                        router.push(`/messages?convId=${convRef.id}`);
+                      } catch (error){
+                        console.error(error);
+                      }
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" /> Message
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          {teamMembers?.length === 0 && !isLoadingTeam && (
+            <div className="text-center py-16 px-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <UserPlus className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-1">No team members found</h3>
+              <p className="text-muted-foreground">Your team members will appear here.</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogContent>
