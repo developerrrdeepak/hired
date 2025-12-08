@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus, FileText, MapPin, Briefcase, Check, X } from 'lucide-react';
+import { PlusCircle, Star, Search, Bookmark, Mail, Sparkles, UserPlus, FileText, MapPin, Briefcase, Check, X, Download } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Candidate, Application, Job } from '@/lib/definitions';
@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { exportCandidatesToExcel } from '@/lib/export-utils';
 
 type CandidateWithAppInfo = Candidate & {
   jobTitle?: string;
@@ -339,6 +340,14 @@ export default function CandidatesPage() {
         description="Connect with qualified candidates."
       >
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => exportCandidatesToExcel(filteredCandidates)}
+            disabled={filteredCandidates.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export to Excel
+          </Button>
           <Button variant="outline" onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}>
             {viewMode === 'cards' ? 'Table View' : 'Card View'}
           </Button>

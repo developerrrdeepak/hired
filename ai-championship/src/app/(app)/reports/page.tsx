@@ -4,7 +4,7 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
-import { Briefcase, Users, UserCheck, Clock, BarChart } from 'lucide-react';
+import { Briefcase, Users, UserCheck, Clock, BarChart, Download } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { Job, Application, Candidate } from '@/lib/definitions';
@@ -15,6 +15,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { DataTable } from '@/components/data-table';
 import { useUserContext } from '../layout';
+import { exportReportToExcel } from '@/lib/export-utils';
 
 
 type JobPerformance = {
@@ -128,12 +129,34 @@ export default function ReportsPage() {
         return <ReportsPageSkeleton />;
     }
 
+  const handleExportReport = () => {
+    const exportData = {
+      summary: {
+        'Total Jobs': reportData.totalJobs,
+        'Total Candidates': reportData.totalCandidates,
+        'Total Hires': reportData.totalHires,
+        'Average Time to Hire (days)': reportData.avgTimeToHire,
+      },
+      'Hiring Funnel': reportData.funnelData,
+      'Job Performance': reportData.jobPerformance,
+    };
+    exportReportToExcel(exportData, `recruitment_report_${new Date().toISOString().split('T')[0]}`);
+  };
+
   return (
     <>
       <PageHeader
         title="Reports"
         description="Analyze your recruitment data and key performance indicators."
-      />
+      >
+        <Button 
+          variant="outline" 
+          onClick={handleExportReport}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Export Report
+        </Button>
+      </PageHeader>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Total Jobs" value={reportData.totalJobs.toString()} icon={Briefcase} />
         <StatCard title="Total Candidates" value={reportData.totalCandidates.toString()} icon={Users} />

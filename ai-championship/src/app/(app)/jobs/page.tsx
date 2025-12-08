@@ -3,7 +3,7 @@
 
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, Download } from 'lucide-react';
 import Link from 'next/link';
 import { DataTable } from '@/components/data-table';
 import type { Job } from '@/lib/definitions';
@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUserContext } from '../layout';
+import { exportJobsToExcel } from '@/lib/export-utils';
 
 const getStatusPillClass = (status: string) => {
     switch (status) {
@@ -274,12 +275,22 @@ export default function JobsPage() {
         title={pageTitle}
         description={pageDescription}
       >
-        <Button asChild>
-          <Link href="/jobs/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Job
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => exportJobsToExcel(filteredJobs)}
+            disabled={filteredJobs.length === 0}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export to Excel
+          </Button>
+          <Button asChild>
+            <Link href="/jobs/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Job
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
       <div className="rounded-xl border bg-card text-card-foreground shadow-sm mt-6 animate-in fade-in-0 duration-500">
         <DataTable columns={columns} data={jobs || []} searchKey="title" onRowClick={handleRowClick} />
