@@ -147,6 +147,7 @@ const navConfig: Record<string, NavSection[]> = {
         items: [
              { href: '/ai-hub', icon: Sparkles, label: 'AI Hub' },
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+             { href: '/negotiation-practice', icon: Brain, label: 'Negotiation Practice' },
         ]
     },
     {
