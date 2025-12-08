@@ -23,6 +23,7 @@ export function ChallengeCard({ challenge, showJoinButton = true, delay = 0 }: C
   const { toast } = useToast();
   const router = useRouter();
   const isExpired = new Date(challenge.deadline) < new Date();
+  const detailUrl = `/challenges/${challenge.id}?orgId=${challenge.organizationId}${showJoinButton ? '&role=Candidate' : ''}`;
 
   const handleDelete = async () => {
     if (!firestore || !confirm('Are you sure you want to delete this challenge?')) return;
@@ -45,7 +46,7 @@ export function ChallengeCard({ challenge, showJoinButton = true, delay = 0 }: C
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg font-semibold hover:text-primary cursor-pointer truncate">
-              <Link href={`/challenges/${challenge.id}?orgId=${challenge.organizationId}`}>
+              <Link href={detailUrl}>
                 {challenge.title}
               </Link>
             </CardTitle>
@@ -105,7 +106,7 @@ export function ChallengeCard({ challenge, showJoinButton = true, delay = 0 }: C
       {showJoinButton && !isExpired && (
         <CardFooter className="p-5 pt-0">
           <Button className="w-full" asChild>
-            <Link href={`/challenges/${challenge.id}?orgId=${challenge.organizationId}`}>
+            <Link href={detailUrl}>
               View Details
             </Link>
           </Button>
