@@ -24,7 +24,7 @@ import { TrendingSidebar } from '@/components/community/TrendingSidebar';
 import Link from 'next/link';
 
 export default function CommunityPage() {
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { userId, displayName, role } = useUserContext();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('all');
@@ -92,6 +92,7 @@ export default function CommunityPage() {
       await addDoc(collection(firestore, 'posts'), {
         authorId: userId,
         authorName: displayName || 'Anonymous',
+        authorAvatar: user?.photoURL || '',
         authorRole: role || 'User',
         type: postType,
         title: postTitle.trim(),
