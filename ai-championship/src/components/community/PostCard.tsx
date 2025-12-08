@@ -28,8 +28,8 @@ export function PostCard({ post, currentUserId, onLike, onSave }: PostCardProps)
       <div className="flex items-start justify-between mb-4">
         <div className="flex gap-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={post.authorAvatar} />
-            <AvatarFallback>{post.authorName?.charAt(0)}</AvatarFallback>
+            <AvatarImage src={post.authorAvatar || undefined} />
+            <AvatarFallback>{post.authorName?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
           <div>
             <h4 className="font-semibold">{post.authorName}</h4>

@@ -3,7 +3,7 @@
 
 import { Candidate } from "@/lib/definitions";
 import { Button } from "@/components/ui/button";
-import { Star, Mail } from "lucide-react";
+import { Star, Mail, Calendar } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { placeholderImages } from '@/lib/placeholder-images';
 import Link from "next/link";
@@ -22,8 +22,8 @@ export function CandidateHeader({ candidate, hasStarred, onToggleStar, isCandida
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 md:py-6">
         <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-                <AvatarImage src={placeholderImages.find(p => p.id === 'avatar-2')?.imageUrl} data-ai-hint="person face" />
-                <AvatarFallback className="text-2xl">{candidate.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                <AvatarImage src={candidate.photoUrl} alt={candidate.name} />
+                <AvatarFallback className="text-2xl">{candidate.name?.charAt(0) || 'C'}</AvatarFallback>
             </Avatar>
             <div className="grid gap-1">
                 <h1 className="text-2xl font-bold md:text-3xl">{candidate.name}</h1>

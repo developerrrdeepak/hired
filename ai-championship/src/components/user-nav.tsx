@@ -55,7 +55,8 @@ export function UserNav() {
 
   const userInitial = user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U');
   const displayName = user.displayName || user.email?.split('@')[0] || 'User';
-  const avatarUrl = user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4F46E5&color=fff&size=128`;
+  // Fix: Use user.avatarUrl if exists, otherwise undefined to let AvatarFallback render
+  const avatarUrl = user.avatarUrl;
 
   return (
         <DropdownMenu>
@@ -98,7 +99,6 @@ export function UserNav() {
                      <Sparkles className="mr-2 h-4 w-4" />
                      Upgrade to Pro
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
                      <User className="mr-2 h-4 w-4" />
                      Profile

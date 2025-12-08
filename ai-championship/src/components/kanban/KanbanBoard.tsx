@@ -78,7 +78,7 @@ export function KanbanBoard() {
             candidateName: candidate?.name || 'Unknown',
             jobTitle: job?.title || 'Unknown Role',
             fitScore: app.fitScore || 0,
-            avatar: placeholderImages[0].imageUrl // simplified for now
+            avatar: candidate?.photoUrl || undefined // Fix: Use real photo or undefined for fallback
          };
     });
   }, [applications, candidates, jobs]);
