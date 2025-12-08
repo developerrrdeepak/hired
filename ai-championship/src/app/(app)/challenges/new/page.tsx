@@ -51,7 +51,7 @@ export default function NewChallengePage() {
             return;
         }
 
-        const organizationId = `org-${user.uid}`;
+        const organizationId = 'org-demo-owner-id';
         const challengesCol = collection(firestore, `organizations/${organizationId}/challenges`);
         
         const newChallengeData = {

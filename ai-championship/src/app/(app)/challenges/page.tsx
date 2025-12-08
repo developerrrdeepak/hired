@@ -20,8 +20,9 @@ export default function ChallengesPage() {
     const isCandidate = role === 'Candidate';
 
     const challengesQuery = useMemoFirebase(() => {
-        if (!firestore || !organizationId) return null;
-        return query(collection(firestore, `organizations/${organizationId}/challenges`));
+        if (!firestore) return null;
+        const orgId = organizationId || 'org-demo-owner-id';
+        return query(collection(firestore, `organizations/${orgId}/challenges`));
     }, [firestore, organizationId]);
     
     const { data: challenges, isLoading: areChallengesLoading } = useCollection<Challenge>(challengesQuery);
