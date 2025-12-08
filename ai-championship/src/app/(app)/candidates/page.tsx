@@ -24,6 +24,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { exportCandidatesToExcel } from '@/lib/export-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CandidateCardSkeleton } from '@/components/loading-skeleton';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 type CandidateWithAppInfo = Candidate & {
   jobTitle?: string;
@@ -358,6 +360,7 @@ export default function CandidatesPage() {
     const isLoading = isUserLoading || isLoadingCandidates || isLoadingApps || isLoadingJobs;
 
   return (
+    <ErrorBoundary>
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <PageHeader
         title={activeTab === 'candidates' ? 'Talent Pool' : 'My Team'}
@@ -532,7 +535,13 @@ export default function CandidatesPage() {
         </aside>
 
         <main className="flex-1">
-          {viewMode === 'cards' ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <CandidateCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : viewMode === 'cards' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCandidates.map((candidate, i) => (
                 <Card key={candidate.id} className="hover:shadow-md transition-shadow group flex flex-col h-full relative">
@@ -756,5 +765,6 @@ export default function CandidatesPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </ErrorBoundary>
   );
 }
