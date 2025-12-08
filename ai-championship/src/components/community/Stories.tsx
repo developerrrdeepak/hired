@@ -146,6 +146,6 @@ export function Stories() {
             </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
