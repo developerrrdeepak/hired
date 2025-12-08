@@ -48,7 +48,7 @@ interface ProfilePhotoUploadProps {
   userId: string;
   currentPhotoUrl?: string;
   displayName?: string;
-  storage: any; // We'll keep this but also get it from hook if missing
+  storage?: any;
   onUploadComplete: (photoUrl: string) => void;
   size?: 'sm' | 'md' | 'lg';
 }

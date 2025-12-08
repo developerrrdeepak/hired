@@ -60,6 +60,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
         { href: '/candidates', icon: Users, label: 'Candidates' },
+        { href: '/challenges', icon: Trophy, label: 'Challenges' },
         { href: '/diversity-hiring', icon: Heart, label: 'Diversity' },
       ]
     },
@@ -95,6 +96,7 @@ const navConfig: Record<string, NavSection[]> = {
         { href: '/recruiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
         { href: '/candidates', icon: Users, label: 'Candidates' },
+        { href: '/challenges', icon: Trophy, label: 'Challenges' },
         { href: '/diversity-hiring', icon: Heart, label: 'Diversity' },
       ]
     },
