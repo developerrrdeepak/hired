@@ -8,16 +8,24 @@ export async function aiPitchDeckGenerator(idea: string, market: string) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `Generate a 10-slide startup pitch deck outline for this idea:
-  Idea: "${idea}"
-  Target Market: "${market}"
+  const prompt = `Act as a Venture Capitalist and Startup Advisor. Create a compelling 10-slide pitch deck structure for a startup with the following premise:
   
-  For each slide, provide:
-  1. Title
-  2. Key content/bullet points
-  3. Suggestion for visuals (chart, image description)
+  STARTUP IDEA: "${idea}"
+  TARGET MARKET: "${market}"
   
-  Return as JSON: { "slides": [{ "title": "string", "content": ["string"], "visual": "string" }] }`;
+  For each slide, provide strategic content that addresses standard VC criteria (Problem, Solution, Market Size, Business Model, Traction, Team).
+  
+  Return a JSON object:
+  { 
+    "slides": [
+      { 
+        "slide_number": number,
+        "title": "string", // Professional slide title
+        "key_talking_points": ["string"], // Bullet points for the script
+        "visual_suggestion": "string" // Description of charts/images
+      }
+    ] 
+  }`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -25,25 +33,39 @@ export async function aiPitchDeckGenerator(idea: string, market: string) {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
   } catch (e) {
+    console.error("AI Pitch Deck Gen Error:", e);
     return null;
   }
 }
 
 export async function aiCoFounderMatcher(founderProfile: any, idealPartner: string) {
-  // Simulating matching logic with AI reasoning
   const apiKey = getEnv().GOOGLE_GENAI_API_KEY;
   if (!apiKey) return [];
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `I am a founder with these skills: ${founderProfile.skills.join(', ')}.
-  I am looking for a co-founder who is: ${idealPartner}.
+  const prompt = `Act as a Startup Team Builder.
   
-  Generate 3 persona profiles of ideal co-founders I should look for.
-  For each persona, include: Role, Key Skills, Complementary Traits.
+  CURRENT FOUNDER PROFILE:
+  - Skills: ${founderProfile.skills?.join(', ') || 'Not specified'}
+  - Background: ${founderProfile.background || 'Not specified'}
   
-  Return JSON: { "matches": [{ "role": "string", "skills": ["string"], "traits": "string" }] }`;
+  DESIRED PARTNER DESCRIPTION: "${idealPartner}"
+  
+  Generate 3 distinct, detailed personas for ideal co-founders that would maximize this startup's chance of success by complementing the current founder's weaknesses.
+  
+  Return a JSON object:
+  { 
+    "matches": [
+      { 
+        "role_title": "string", // e.g., CTO, COO, Head of Growth
+        "primary_skills": ["string"], 
+        "complementary_traits": "string", // Why they fit with the founder
+        "search_keywords": ["string"] // Keywords to use on LinkedIn/AngelList
+      }
+    ] 
+  }`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -51,6 +73,7 @@ export async function aiCoFounderMatcher(founderProfile: any, idealPartner: stri
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0])?.matches : [];
   } catch (e) {
+    console.error("AI Co-founder Matcher Error:", e);
     return [];
   }
 }

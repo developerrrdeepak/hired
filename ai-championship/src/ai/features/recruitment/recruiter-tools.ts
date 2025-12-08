@@ -8,16 +8,25 @@ export async function aiJobDescriptionGenerator(role: string, keyPoints: string[
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `Generate a professional Job Description for "${role}".
-  Key points to include: ${keyPoints.join(', ')}.
+  const prompt = `Act as a Senior HR Specialist. Create a high-quality, inclusive Job Description for the position of "${role}".
   
-  Include sections: Responsibilities, Required Skills, Preferred Skills, Salary Range (estimate based on role).
-  Return as formatted Markdown.`;
+  MANDATORY ELEMENTS:
+  ${keyPoints.map(p => `- ${p}`).join('\n')}
+  
+  STRUCTURE:
+  1.  **Role Overview**: Hook the candidate.
+  2.  **Core Responsibilities**: Clear, action-oriented bullets.
+  3.  **Qualifications**: Split into 'Required' and 'Preferred'.
+  4.  **Benefits & Culture**: Highlight why the company is a great place to work.
+  5.  **Salary Expectation**: Provide a realistic market range estimate if not provided.
+  
+  Format: Clean Markdown. Tone: Professional, Encouraging, Ambitious.`;
 
   try {
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (e) {
+    console.error("AI JD Gen Error:", e);
     return "Failed to generate JD.";
   }
 }
@@ -35,19 +44,25 @@ export async function aiOfferLetterGenerator(details: any) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `Write a formal job offer letter.
-  Candidate: ${details.candidateName}
-  Role: ${details.role}
-  Salary: ${details.salary}
-  Joining Date: ${details.joiningDate}
-  Company: ${details.companyName}
+  const prompt = `Compose a formal and legally sound Job Offer Letter.
   
-  Tone: Professional and welcoming.`;
+  DETAILS:
+  - Candidate: ${details.candidateName}
+  - Role: ${details.role}
+  - Company: ${details.companyName}
+  - Base Salary: ${details.salary}
+  - Start Date: ${details.joiningDate}
+  - Benefits Summary: ${details.benefits || 'Standard benefits package'}
+  
+  TONE: Professional, Warm, and Celebratory.
+  
+  The letter should include a clear acceptance deadline placeholder and signature lines.`;
 
   try {
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (e) {
+    console.error("AI Offer Letter Error:", e);
     return "Error generating offer letter.";
   }
 }

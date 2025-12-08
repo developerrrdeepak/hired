@@ -16,11 +16,20 @@ const RecruitmentSummaryInputSchema = z.object({
     .string()
     .default('last week')
     .describe('The time range for the recruitment summary.'),
+  stats: z.object({
+      jobsPosted: z.number().optional(),
+      newCandidates: z.number().optional(),
+      interviewsConducted: z.number().optional(),
+      offersExtended: z.number().optional()
+  }).optional().describe("Actual recruitment metrics to base the summary on.")
 });
 export type RecruitmentSummaryInput = z.infer<typeof RecruitmentSummaryInputSchema>;
 
 const RecruitmentSummaryOutputSchema = z.object({
-  summary: z.string().describe('A summary of the recruiting efforts.'),
+  headline: z.string().describe("A catchy title for the summary."),
+  summary: z.string().describe('A professional narrative summary of the recruiting efforts.'),
+  keyMetrics: z.array(z.string()).describe("Bulleted list of key performance indicators highlighted."),
+  nextWeekFocus: z.string().describe("Strategic suggestion for where to focus next.")
 });
 export type RecruitmentSummaryOutput = z.infer<typeof RecruitmentSummaryOutputSchema>;
 
@@ -33,7 +42,23 @@ const prompt = ai.definePrompt({
   input: {schema: RecruitmentSummaryInputSchema},
   output: {schema: RecruitmentSummaryOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert HR assistant. You will generate a summary of the recruiting efforts over the {{{timeRange}}}. Consider metrics like the total number of jobs, candidates, applications, interviews, and the conversion rate per stage. Also include any key insights or bottlenecks that have been identified. The generated summary should be concise and easy to understand.
+  prompt: `Act as a Head of Talent Acquisition. Generate a weekly status update.
+  
+  TIME RANGE: {{{timeRange}}}
+  
+  DATA (Simulated if missing):
+  - Jobs Posted: {{stats.jobsPosted}}
+  - New Candidates: {{stats.newCandidates}}
+  - Interviews: {{stats.interviewsConducted}}
+  - Offers: {{stats.offersExtended}}
+
+  TASK:
+  1.  **Headline**: Professional and status-aware (e.g., "Strong Candidate Flow for Engineering Roles").
+  2.  **Narrative**: Summarize the activity. Was it a busy week? Did we hit bottlenecks?
+  3.  **Metrics**: Highlight the most important numbers.
+  4.  **Strategy**: Suggest a primary focus for the upcoming week based on the data flow.
+
+  Keep it brief and executive-ready.
 `,
 });
 

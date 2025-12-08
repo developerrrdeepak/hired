@@ -23,7 +23,7 @@ const ExperienceSchema = z.object({
     company: z.string(),
     startDate: z.string().describe("The start date, preferably in YYYY-MM format."),
     endDate: z.string().optional().describe("The end date, preferably in YYYY-MM format, or 'Present'."),
-    description: z.string().optional().describe("A brief summary of responsibilities and achievements."),
+    description: z.string().optional().describe("A concise summary of responsibilities, focusing on achievements."),
 });
 
 const EducationSchema = z.object({
@@ -40,11 +40,13 @@ const LinkSchema = z.object({
 });
 
 const AiEnrichProfileOutputSchema = z.object({
-  summary: z.string().describe("A 2-3 paragraph professional summary of the candidate."),
-  skills: z.array(z.string()).describe("A list of key technical and soft skills."),
+  summary: z.string().describe("A comprehensive professional summary (approx 100 words) highlighting expertise and seniority."),
+  headline: z.string().optional().describe("A catchy one-line professional headline."),
+  skills: z.array(z.string()).describe("A comprehensive list of technical and soft skills."),
   experience: z.array(ExperienceSchema).describe("A structured list of the candidate's work experience."),
   education: z.array(EducationSchema).describe("A structured list of the candidate's education history."),
   links: z.array(LinkSchema).describe("A list of relevant web links like portfolio or social profiles."),
+  location: z.string().optional().describe("Inferred current location/city."),
 });
 export type AiEnrichProfileOutput = z.infer<typeof AiEnrichProfileOutputSchema>;
 
@@ -58,20 +60,20 @@ const prompt = ai.definePrompt({
   input: {schema: AiEnrichProfileInputSchema},
   output: {schema: AiEnrichProfileOutputSchema},
   model: geminiFlash,
-  prompt: `You are an expert HR data analyst. Analyze the following resume text and extract a structured professional profile.
-The dates should be parsed and returned in a consistent format (e.g., YYYY-MM or YYYY).
+  prompt: `Act as a Professional Resume Parser and Career Profiler.
 
-Resume Text:
----
-{{{rawText}}}
----
+  INPUT TEXT:
+  ---
+  {{{rawText}}}
+  ---
 
-Based on the resume, extract the following information in the specified JSON format.
-- A professional summary.
-- A list of skills.
-- A structured list of work experiences.
-- A structured list of education history.
-- Any links to portfolios, GitHub, or LinkedIn profiles.`,
+  INSTRUCTIONS:
+  1.  **Extract & Standardize**: Parse all employment and education details. Convert dates to YYYY-MM.
+  2.  **Generate Summary**: If a summary exists, refine it to be more impactful. If not, generate a professional executive summary based on the experience.
+  3.  **Infer Metadata**: Deduce the candidate's likely current location and a professional headline (e.g., "Senior Full Stack Engineer | Cloud Architecture Enthusiast").
+  4.  **Skill Extraction**: Capture all technical tools, languages, and soft skills mentioned.
+  
+  Ensure high accuracy in entity extraction (Company names, Job Titles).`,
 });
 
 const aiEnrichProfileFlow = ai.defineFlow(

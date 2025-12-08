@@ -26,12 +26,12 @@ const AiFounderWeeklySummaryInputSchema = z.object({
 export type AiFounderWeeklySummaryInput = z.infer<typeof AiFounderWeeklySummaryInputSchema>;
 
 const AiFounderWeeklySummaryOutputSchema = z.object({
-  keyObservations: z.array(z.string()).describe("Key observations from the week's hiring data."),
-  whatWentWell: z.array(z.string()).describe("Positive trends or successes."),
-  whatDidNot: z.array(z.string()).describe("Negative trends or challenges."),
-  rolesAtRisk: z.array(z.string()).describe("Specific roles that are facing hiring challenges."),
-  pipelineOutlook: z.string().describe("A brief forecast for the upcoming week."),
-  founderActionItems: z.array(z.string()).describe("Recommended actions for the founder."),
+  executiveSummary: z.string().describe("A high-level narrative summary of the week's performance."),
+  keyObservations: z.array(z.string()).describe("Data-driven insights."),
+  whatWentWell: z.array(z.string()).describe("Wins and improvements."),
+  whatDidNot: z.array(z.string()).describe("Stalls and issues."),
+  rolesAtRisk: z.array(z.string()).describe("Roles needing immediate attention."),
+  founderActionItems: z.array(z.string()).describe("Strategic decisions or interventions required from the founder."),
 });
 
 export type AiFounderWeeklySummaryOutput = z.infer<typeof AiFounderWeeklySummaryOutputSchema>;
@@ -47,24 +47,26 @@ const prompt = ai.definePrompt({
   input: {schema: AiFounderWeeklySummaryInputSchema },
   output: {schema: AiFounderWeeklySummaryOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert HR analyst and strategist, reporting directly to the CEO of a fast-growing startup.
-Your task is to analyze the following weekly hiring data and generate a concise, insightful executive summary.
-Focus on what matters to a founder: hiring velocity, pipeline health, risks, and strategic action items.
+  prompt: `Act as a Chief People Officer reporting to the Founder/CEO.
+  
+  DATA INPUT:
+  - Open Roles: {{{openRoles}}}
+  - Critical Priority: {{#each criticalRoles}}{{this.title}}, {{/each}}
+  - Pipeline Score: {{{pipelineHealthScore}}}/100
+  - Velocity: {{{hiringVelocityDays}}} days/stage
+  - Time-to-Hire: {{{timeToHireDays}}} days (Avg)
+  - Funnel: {{#each funnelData}} {{{this.stage}}}:{{{this.count}}} | {{/each}}
+  - Bottlenecks: {{#each bottleneckRoles}} {{this.title}} @ {{this.stage}} | {{/each}}
 
-Here is the data for the week:
-- Total Open Roles: {{{openRoles}}}
-- Critical Roles: {{#if criticalRoles.length}}{{#each criticalRoles}}{{this.title}}, {{/each}}{{else}}None{{/if}}
-- Pipeline Health Score: {{{pipelineHealthScore}}}/100
-- Average Hiring Velocity: {{{hiringVelocityDays}}} days
-- Average Time to Hire: {{{timeToHireDays}}} days
-- Funnel Conversion:
-  {{#each funnelData}}
-  - {{{this.stage}}}: {{{this.count}}}
-  {{/each}}
-- Bottleneck Roles: {{#if bottleneckRoles.length}}{{#each bottleneckRoles}}{{this.title}} (stuck at {{this.stage}}), {{/each}}{{else}}None{{/if}}
+  TASK:
+  Synthesize this data into a "Founder's Weekly Hiring Brief".
+  
+  GUIDELINES:
+  1.  **Executive Summary**: Is hiring accelerating, stalling, or stable? Why?
+  2.  **Strategic Focus**: Highlight risks to critical path roles.
+  3.  **Actionable Advice**: Tell the founder exactly where to intervene (e.g., "Review candidate X", "Approve budget for Y").
 
-Based on this data, provide the executive summary. Be direct and insightful.
-`,
+  Tone: Concise, Business-First, Solution-Oriented.`,
 });
 
 
@@ -79,5 +81,3 @@ const aiFounderWeeklySummaryFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

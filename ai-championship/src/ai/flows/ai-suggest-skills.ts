@@ -22,6 +22,14 @@ const SuggestSkillsOutputSchema = z.object({
   suggestedSkills: z
     .array(z.string())
     .describe('The skills suggested for the job description.'),
+  categories: z
+    .object({
+        technical: z.array(z.string()),
+        soft: z.array(z.string()),
+        tools: z.array(z.string())
+    })
+    .optional()
+    .describe('Categorized skills breakdown'),
 });
 export type SuggestSkillsOutput = z.infer<typeof SuggestSkillsOutputSchema>;
 
@@ -36,13 +44,20 @@ const prompt = ai.definePrompt({
   input: {schema: SuggestSkillsInputSchema},
   output: {schema: SuggestSkillsOutputSchema},
   model: geminiFlash,
-  prompt: `You are an expert in recruiting, and you are helping to suggest skills for a job description.
-
-Given the following job description, suggest a list of skills that would be relevant for the job.
-
-Job Description: {{{jobDescription}}}
-
-Please provide the output as a JSON array of strings.`,
+  prompt: `Analyze the provided Job Description to extract and infer the most relevant professional skills.
+  
+  JOB DESCRIPTION:
+  ---
+  {{{jobDescription}}}
+  ---
+  
+  TASK:
+  1. Identify core competencies required for success in this role.
+  2. Differentiate between Hard Skills (Technical), Soft Skills (Behavioral), and specific Tools/Platforms.
+  3. Return a clean, de-duplicated list of the top 15-20 skills.
+  
+  Ensure the skills are industry-standard terms (e.g., "React.js" instead of "React", "Stakeholder Management" instead of "Managing people").
+  `,
 });
 
 const suggestSkillsFlow = ai.defineFlow(

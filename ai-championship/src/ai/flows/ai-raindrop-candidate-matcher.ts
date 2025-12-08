@@ -1,6 +1,6 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
+import { ai, geminiPro } from '@/ai/genkit';
 import { z } from 'genkit';
 import { runCandidateMatchingInference } from '@/lib/raindropSmartComponents';
 
@@ -47,34 +47,36 @@ const matchingPrompt = ai.definePrompt({
   name: 'candidateMatchingPrompt',
   input: { schema: CandidateMatcherInputSchema },
   output: { schema: CandidateMatcherOutputSchema },
-  prompt: `You are an expert talent matcher powered by Raindrop SmartInference. Analyze the job requirements and candidate profile to provide a comprehensive matching analysis.
+  model: geminiPro,
+  prompt: `Act as a Raindrop SmartInference Talent Matching Engine.
 
-Job Description:
----
-{{{jobDescription}}}
----
+  CONTEXT:
+  Perform a deep-learning style analysis to match a candidate against a job opportunity.
+  
+  JOB DATA:
+  ---
+  {{{jobDescription}}}
+  ---
 
-Candidate Profile:
----
-{{{candidateProfile}}}
----
+  CANDIDATE DATA:
+  ---
+  {{{candidateProfile}}}
+  ---
 
-{{#if preferences}}
-Candidate Preferences:
-- Minimum Experience: {{{preferences.minimumExperience}}} years
-- Desired Salary: {{{preferences.desiredSalaryRange}}}
-- Preferred Location: {{{preferences.preferredLocation}}}
-{{/if}}
+  {{#if preferences}}
+  CONSTRAINTS:
+  - Experience Floor: {{{preferences.minimumExperience}}} years
+  - Comp Range: {{{preferences.desiredSalaryRange}}}
+  - Location: {{{preferences.preferredLocation}}}
+  {{/if}}
 
-Provide a detailed analysis including:
-1. Overall match score (0-100)
-2. Technical skills assessment
-3. Experience alignment
-4. Culture fit assessment
-5. A clear recommendation
-6. Specific next steps for the hiring process
-
-Be thorough but concise.`,
+  INSTRUCTION:
+  Synthesize all data points to calculate a precise compatibility profile.
+  1.  **Skills**: Cross-reference taxonomies to find exact and related matches.
+  2.  **Experience**: Normalize titles and years to determine seniority fit.
+  3.  **Verdict**: Provide a clear hiring recommendation with strategic reasoning.
+  
+  Output structured JSON.`,
 });
 
 export async function aiRaindropCandidateMatcher(

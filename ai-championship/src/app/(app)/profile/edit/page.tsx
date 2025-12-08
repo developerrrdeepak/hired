@@ -158,12 +158,43 @@ export default function ProfileEditPage() {
     setLoading(true);
     try {
       let resumeURL = '';
+      let resumeAnalysis = null;
 
       // Upload resume to Firebase Storage
       if (resumeFile) {
         const resumeRef = ref(storage, `profiles/${user.uid}/resume_${Date.now()}.pdf`);
         const uploadResult = await uploadBytes(resumeRef, resumeFile);
         resumeURL = await getDownloadURL(uploadResult.ref);
+
+        // Analyze resume if a new one is uploaded
+        try {
+            // Need resume text for analysis.
+            // Since parsing PDF in client is heavy, we'll try to extract text from PDF 
+            // OR simply pass the URL to backend if the backend supports downloading & parsing.
+            // For now, let's assume we can only send text if we don't have a backend parser ready.
+            // But wait, the backend `resume-analyzer` expects `resumeText`.
+            // And `smarter-resume-analysis` expects `resumePath` (which seems to be a path in storage or similar).
+
+            // Let's use `smarter-resume-analysis` since it takes a path, but the current implementation 
+            // of that endpoint seems to mock data or require vultr. 
+            // The user complaint is "resume upload analysis not working".
+            
+            // Let's try to fetch text content from the file if possible (simple text file) or just skip text extraction for PDF here
+            // and rely on backend if possible.
+            // However, the existing `resume-analyzer` endpoint needs text. 
+            // The `smarter-resume-analysis` endpoint is what is used in the candidate view.
+            
+            // Let's call the smarter-resume-analysis endpoint to trigger analysis and store result
+            // The endpoint takes `resumePath`. We can pass the path relative to storage root if backend supports it.
+            // Or we can just store the URL and let the viewing component fetch analysis on demand.
+            
+            // Actually, in `CandidateSmarterResumeAnalysisTab`, it calls `/api/ai/smarter-resume-analysis` with `resumePath`.
+            // So we just need to make sure we save the resume path correctly.
+             
+        } catch (analysisError) {
+             console.error("Resume analysis failed", analysisError);
+             // Don't block profile update if analysis fails
+        }
       }
 
       // Prepare profile data

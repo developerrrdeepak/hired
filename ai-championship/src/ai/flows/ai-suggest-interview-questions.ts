@@ -36,14 +36,26 @@ const prompt = ai.definePrompt({
   name: 'aiSuggestInterviewQuestionsPrompt',
   input: {schema: AiSuggestInterviewQuestionsInputSchema},
   output: {schema: AiSuggestInterviewQuestionsOutputSchema},
-  prompt: `You are an expert hiring manager. Based on the following job title and description, please generate a list of 5-7 insightful interview questions to ask a candidate. Focus on a mix of behavioral, technical, and situational questions.
+  prompt: `Act as a Senior HR Consultant specializing in Competency-Based Interviewing.
+  
+  JOB TITLE: {{{jobTitle}}}
 
-Job Title: {{{jobTitle}}}
+  JOB DESCRIPTION:
+  ---
+  {{{jobDescription}}}
+  ---
 
-Job Description:
----
-{{{jobDescription}}}
----
+  TASK:
+  Generate a curated list of 7 high-impact interview questions designed to rigorously assess a candidate's fit for this specific role.
+  
+  REQUIREMENTS:
+  1.  **Technical Proficiency**: 2 questions testing core hard skills required in the description.
+  2.  **Behavioral Competence**: 2 questions using the STAR method (Situation, Task, Action, Result) to assess past performance.
+  3.  **Problem Solving**: 1 scenario-based question relevant to the role's challenges.
+  4.  **Cultural Fit**: 1 question to gauge alignment with the implied work environment.
+  5.  **Soft Skills**: 1 question targeting communication or leadership abilities.
+
+  Ensure questions are open-ended and professional.
 `,
 });
 

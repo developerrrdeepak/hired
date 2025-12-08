@@ -23,7 +23,9 @@ export type AiCandidateRankingInput = z.infer<typeof AiCandidateRankingInputSche
 
 const AiCandidateRankingOutputSchema = z.object({
   fitScore: z.number().describe('A score from 0-100 indicating how well the candidate fits the job description.'),
-  reasoning: z.string().describe('A brief explanation for the assigned fit score.'),
+  reasoning: z.string().describe('A detailed justification for the assigned fit score.'),
+  matchingSkills: z.array(z.string()).describe('List of skills found in both JD and Resume'),
+  missingSkills: z.array(z.string()).describe('Key skills required but not found in Resume'),
 });
 
 export type AiCandidateRankingOutput = z.infer<typeof AiCandidateRankingOutputSchema>;
@@ -37,20 +39,31 @@ const prompt = ai.definePrompt({
   input: {schema: AiCandidateRankingInputSchema},
   output: {schema: AiCandidateRankingOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert AI recruiter. Your task is to score a candidate based on their resume against a specific job description.
+  prompt: `Act as a specialized Talent Assessment AI. Quantify the compatibility between the candidate and the job role.
 
-Provide a fit score from 0 to 100, where 100 is a perfect match.
-Also provide a concise, one-paragraph reasoning for your score, highlighting the key matching skills and experience, as well as any potential gaps.
+  JOB DESCRIPTION:
+  ---
+  {{{jobDescription}}}
+  ---
 
-Job Description:
----
-{{{jobDescription}}}
----
+  CANDIDATE RESUME:
+  ---
+  {{{candidateResume}}}
+  ---
 
-Candidate's Resume:
----
-{{{candidateResume}}}
----
+  SCORING CRITERIA:
+  - 90-100: Exceptional Match (Exceeds requirements)
+  - 80-89: Strong Match (Meets all key requirements)
+  - 70-79: Good Match (Meets most requirements, minor gaps)
+  - <70: Weak Match
+
+  OUTPUT REQUIREMENTS:
+  1. **Fit Score**: 0-100. Be strict.
+  2. **Reasoning**: A professional paragraph explaining the score logic.
+  3. **Matching Skills**: Extract exact skill keywords present in both.
+  4. **Missing Skills**: Identify critical skills listed in JD but absent in Resume.
+
+  Analyze deeply.
 `,
 });
 

@@ -19,9 +19,10 @@ const AICandidatePrepInputSchema = z.object({
 export type AICandidatePrepInput = z.infer<typeof AICandidatePrepInputSchema>;
 
 const AICandidatePrepOutputSchema = z.object({
-  summary: z.string().describe("A 2-3 sentence summary of the candidate's professional profile based on their resume."),
+  summary: z.string().describe("A professional profile summary."),
   suggestedRoles: z.array(z.string()).describe("A list of 3-5 alternative or similar job titles that might be a good fit."),
-  improvementTips: z.array(z.string()).describe("A bullet-point list of 3-5 actionable tips to improve the resume for the target role."),
+  improvementTips: z.array(z.string()).describe("Detailed actionable advice to optimize the resume."),
+  keywordsToInclude: z.array(z.string()).describe("Specific industry keywords missing from the resume."),
 });
 export type AICandidatePrepOutput = z.infer<typeof AICandidatePrepOutputSchema>;
 
@@ -35,20 +36,23 @@ const prompt = ai.definePrompt({
   input: { schema: AICandidatePrepInputSchema },
   output: { schema: AICandidatePrepOutputSchema },
   model: geminiPro,
-  prompt: `You are a friendly and expert career coach. A candidate has provided their resume and a target role.
-Your task is to provide concise, helpful feedback.
+  prompt: `Act as a Senior Career Strategist helping a candidate land a role as a "{{{targetRole}}}".
 
-Resume Text:
----
-{{{resumeText}}}
----
+  RESUME:
+  ---
+  {{{resumeText}}}
+  ---
 
-Target Role: {{{targetRole}}}
+  TASK:
+  Provide a strategic review of the resume to maximize interview chances for the target role.
 
-Based on the information provided, generate the following:
-1. A 2-3 sentence summary of the candidate's professional profile.
-2. A list of 3-5 alternative job titles that seem like a good fit.
-3. A list of 3-5 specific, actionable tips on how they could improve their resume to better match the target role. Focus on things like quantifying achievements, adding specific keywords, or highlighting relevant projects.`,
+  OUTPUTS:
+  1.  **Summary**: A concise, punchy version of their professional narrative (2-3 sentences).
+  2.  **Role Expansion**: Suggest 3-5 alternative titles (e.g., if "Software Engineer", suggest "Full Stack Developer" or "Backend Specialist" based on skills).
+  3.  **Optimization Tactics**: 3-5 high-impact changes. Be specific (e.g., "Change bullet 2 to quantify the impact in revenue").
+  4.  **Keyword Strategy**: Identify 5-7 crucial ATS (Applicant Tracking System) keywords for a "{{{targetRole}}}" that are currently missing or weak in their resume.
+
+  Tone: Encouraging, authoritative, and tactical.`,
 });
 
 const aiCandidatePrepFlow = ai.defineFlow(

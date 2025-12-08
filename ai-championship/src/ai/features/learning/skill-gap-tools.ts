@@ -8,19 +8,32 @@ export async function aiSkillGapAnalysis(currentSkills: string[], targetRole: st
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `Analyze skill gap for a user wanting to be a "${targetRole}".
-  Current Skills: ${currentSkills.join(', ')}.
+  const prompt = `Act as a Senior Career Coach and Technical Mentor. Perform a detailed skill gap analysis for a professional targeting the role of "${targetRole}".
   
-  Provide:
-  1. Missing critical skills (technical & soft).
-  2. A step-by-step learning roadmap (Weeks 1-8).
-  3. Recommended project ideas to build portfolio.
+  CURRENT SKILLS: ${currentSkills.join(', ')}
   
-  Return JSON: { 
-    "missingSkills": ["string"], 
-    "roadmap": [{ "week": "number", "focus": "string", "resources": ["string"] }],
-    "projects": [{ "title": "string", "description": "string" }]
-  }`;
+  Analyze the market requirements for "${targetRole}" and compare.
+  
+  Return a JSON object:
+  { 
+    "missingSkills": ["string"], // Top 5 critical missing technical/soft skills
+    "roadmap": [
+      { 
+        "week": "number", // 1 to 8
+        "focus": "string", // Main topic
+        "details": "string", // What specifically to learn
+        "resources": ["string"] // Types of resources (e.g., "Official Documentation", "Coursera course on X")
+      }
+    ],
+    "projects": [
+      { 
+        "title": "string", 
+        "description": "string", // How this project proves the new skills
+        "difficulty": "Beginner|Intermediate|Advanced"
+      }
+    ]
+  }
+  `;
 
   try {
     const result = await model.generateContent(prompt);
@@ -28,6 +41,7 @@ export async function aiSkillGapAnalysis(currentSkills: string[], targetRole: st
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
   } catch (e) {
+    console.error("AI Skill Gap Analysis Error:", e);
     return null;
   }
 }
@@ -39,15 +53,19 @@ export async function aiProjectGenerator(skills: string[]) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-  const prompt = `Generate a unique real-world project idea that uses these skills: ${skills.join(', ')}.
+  const prompt = `Design a portfolio-worthy project that integrates the following skills: ${skills.join(', ')}.
   
-  Provide:
-  1. Project Title & Tagline.
-  2. Real-world problem it solves.
-  3. Key features to implement (MVP).
-  4. Bonus features for advanced learning.
+  The project should solve a tangible real-world problem and demonstrate professional competency.
   
-  Return JSON: { "title": "string", "problem": "string", "mvp": ["string"], "bonus": ["string"] }`;
+  Return a JSON object:
+  { 
+    "title": "string", 
+    "tagline": "string",
+    "problem_solved": "string", // The 'Why'
+    "architecture": "string", // High-level suggestion
+    "mvp_features": ["string"], // Core requirements
+    "advanced_features": ["string"] // Stretch goals to impress recruiters
+  }`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -55,6 +73,7 @@ export async function aiProjectGenerator(skills: string[]) {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : null;
   } catch (e) {
+    console.error("AI Project Generator Error:", e);
     return null;
   }
 }

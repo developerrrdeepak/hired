@@ -19,7 +19,9 @@ const AIImproveJobDescriptionInputSchema = z.object({
 export type AIImproveJobDescriptionInput = z.infer<typeof AIImproveJobDescriptionInputSchema>;
 
 const AIImproveJobDescriptionOutputSchema = z.object({
-  improvedJobDescription: z.string().describe('The improved job description.'),
+  improvedJobDescription: z.string().describe('The rewritten, high-quality job description.'),
+  changesSummary: z.string().optional().describe('A brief summary of the key improvements made (e.g., "Clarified requirements, removed bias").'),
+  scoreImprovement: z.string().optional().describe('Estimated quality score improvement (e.g., "70/100 -> 95/100").'),
 });
 export type AIImproveJobDescriptionOutput = z.infer<typeof AIImproveJobDescriptionOutputSchema>;
 
@@ -32,11 +34,27 @@ const prompt = ai.definePrompt({
   input: {schema: AIImproveJobDescriptionInputSchema},
   output: {schema: AIImproveJobDescriptionOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert at writing job descriptions that attract high-quality candidates.
+  prompt: `Act as a Senior Diversity & Inclusion Recruitment Specialist and Copywriter.
+  
+  TASK:
+  Optimize the following Job Description (JD) to attract top-tier talent.
+  
+  ORIGINAL JD:
+  ---
+  {{{jobDescription}}}
+  ---
 
-  Please review the following job description and suggest improvements to make it more appealing to potential applicants.
+  GOALS:
+  1.  **Clarity & Structure**: Organize into clear sections (Role, Responsibilities, Requirements, Benefits).
+  2.  **Inclusivity**: Remove gender-coded language and bias. Use welcoming, gender-neutral terms.
+  3.  **Impact**: Focus on what the candidate will *achieve*, not just what they must *have*.
+  4.  **Tone**: Professional, exciting, and forward-thinking.
 
-  Job Description: {{{jobDescription}}}`,
+  OUTPUT:
+  - The complete rewritten JD.
+  - A short summary of what was fixed.
+  - An estimated quality score before and after.
+  `,
 });
 
 const aiImproveJobDescriptionFlow = ai.defineFlow(

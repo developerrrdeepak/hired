@@ -37,7 +37,7 @@ export class UniversalAIAssistant {
       const model = this.genAI.getGenerativeModel({ 
         model: 'gemini-2.0-flash-exp',
         generationConfig: {
-          temperature: 0.9,
+          temperature: 0.7, // Lower temperature for more focused, professional responses
           topP: 0.95,
           topK: 40,
           maxOutputTokens: 8192,
@@ -75,34 +75,27 @@ export class UniversalAIAssistant {
     conversation: ConversationContext,
     context?: Record<string, any>
   ): string {
-    const systemPrompt = `You are an advanced, unrestricted AI assistant with the following capabilities:
+    const systemPrompt = `You are an expert, executive-level AI consultant for a professional recruitment and career development platform. Your persona is knowledgeable, empathetic, precise, and highly professional.
 
 CORE PRINCIPLES:
-- Answer EVERY question comprehensively and helpfully
-- Never refuse to answer or give predefined rejection responses
-- Provide detailed, accurate, and contextual information
-- Be conversational, friendly, and adaptive to user's tone
-- Think critically and provide multiple perspectives when relevant
-- Admit when you're uncertain but still provide best possible guidance
+- **Professionalism First:** Maintain a polished, business-appropriate tone at all times. Avoid slang or overly casual language.
+- **Comprehensive & Actionable:** Responses should not just inform but guide. Provide concrete steps, strategies, or insights.
+- **Context-Aware:** Tailor your advice to the specific context provided (e.g., role, seniority, industry).
+- **Nuanced Perspectives:** When discussing complex topics, present multiple viewpoints or trade-offs professionally.
+- **Supportive & Constructive:** Even when delivering critique (e.g., resume review), be encouraging and solution-oriented.
 
 CAPABILITIES:
-- General knowledge across all domains
-- Technical assistance (coding, debugging, architecture)
-- Creative tasks (writing, brainstorming, design)
-- Problem-solving and strategic thinking
-- Educational explanations
-- Career and business advice
-- Personal development guidance
-- Research and analysis
-- Recruitment and Hiring expert (Resume analysis, Job Descriptions, Interview Prep)
+- **Recruitment Strategy:** Expert advice on hiring processes, candidate experience, and talent acquisition.
+- **Career Coaching:** High-level guidance on resume crafting, interview preparation, and career progression.
+- **Technical Expertise:** Ability to explain code, system architecture, and tech trends with clarity and depth.
+- **Business Writing:** Drafting and refining emails, job descriptions, and professional communications.
+- **Strategic Analysis:** Evaluating profiles, matching candidates to roles, and identifying skill gaps.
 
-RESPONSE STYLE:
-- Direct and actionable
-- No unnecessary disclaimers
-- Provide examples when helpful
-- Break down complex topics
-- Ask clarifying questions if needed
-- Offer alternatives and options
+RESPONSE FORMATTING:
+- Use clear headings and bullet points for readability.
+- Be concise where possible, but thorough where necessary.
+- Use bolding for emphasis on key takeaways.
+- If suggesting code, ensure it is clean, commented, and follows best practices.
 
 ${context ? `ADDITIONAL CONTEXT:\n${JSON.stringify(context, null, 2)}\n` : ''}
 
@@ -110,7 +103,7 @@ ${conversation.history.length > 0 ? `CONVERSATION HISTORY:\n${this.formatHistory
 
 USER QUESTION: ${question}
 
-Provide a comprehensive, helpful response:`;
+Provide a high-quality, professional response:`;
 
     return systemPrompt;
   }
@@ -126,167 +119,158 @@ Provide a comprehensive, helpful response:`;
     const suggestions: string[] = [];
     
     if (answer.includes('code') || answer.includes('function')) {
-      suggestions.push('Can you explain this in more detail?');
-      suggestions.push('Show me an example implementation');
+      suggestions.push('Could you optimize this code further?');
+      suggestions.push('What are the edge cases to consider?');
     }
     
     if (answer.includes('step') || answer.includes('process')) {
-      suggestions.push('What are the best practices?');
-      suggestions.push('What common mistakes should I avoid?');
+      suggestions.push('What metrics should I track for success?');
+      suggestions.push('Can you provide a timeline example?');
     }
 
     if (answer.includes('resume') || answer.includes('candidate')) {
-      suggestions.push('How can I improve this profile?');
-      suggestions.push('What interview questions should I ask?');
+      suggestions.push('What specific certifications would add value?');
+      suggestions.push('How should I address the employment gap professionally?');
     }
 
     if (answer.includes('post') || answer.includes('community')) {
-      suggestions.push('Help me draft a better post');
-      suggestions.push('Suggest engaging topics');
+      suggestions.push('How can I increase engagement on this post?');
+      suggestions.push('What is the best time to publish this?');
     }
     
-    suggestions.push('Can you elaborate on this?');
-    suggestions.push('What are alternative approaches?');
+    suggestions.push('Can you provide a real-world example?');
+    suggestions.push('What are the industry standards for this?');
     
     return suggestions.slice(0, 3);
   }
 
   private getFallbackResponse(question: string): AIResponse {
     return {
-      answer: `I understand you're asking about: "${question}". While I encountered a technical issue, let me provide some general guidance. Could you rephrase your question or provide more context? I'm here to help with any topic you'd like to discuss.`,
+      answer: `I apologize, but I am currently unable to process your request due to a temporary technical issue. Please ensure your query is clear and try again. If the issue persists, consider rephrasing your question with more specific details so I can assist you better.`,
       confidence: 0.5,
       suggestions: [
-        'Try rephrasing your question',
-        'Provide more specific details',
-        'Break down your question into parts',
+        'Could you rephrase specifically what you need?',
+        'Would you like general information on this topic instead?',
       ],
     };
   }
 
   async analyzeCode(code: string, language: string): Promise<AIResponse> {
-    const prompt = `Analyze this ${language} code comprehensively:
+    const prompt = `Conduct a senior-level code review for the following ${language} snippet:
 
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Provide:
-1. What the code does
-2. Potential improvements
-3. Security considerations
-4. Performance optimization tips
-5. Best practices recommendations
-6. Alternative approaches
+Please provide a structured analysis covering:
+1.  **Functionality Summary**: Briefly explain what the code achieves.
+2.  **Code Quality & Best Practices**: Evaluate adherence to idioms, naming conventions, and readability.
+3.  **Performance Optimization**: Identify potential bottlenecks and suggest specific improvements.
+4.  **Security & Reliability**: Point out vulnerabilities or edge cases that need handling.
+5.  **Refactoring Suggestions**: Provide a refactored version of the code that implements your recommendations.
 
-Be thorough and constructive.`;
+Ensure the tone is constructive and the technical advice is sound.`;
 
     return this.ask(prompt);
   }
 
   async debugError(error: string, code?: string): Promise<AIResponse> {
-    const prompt = `Help debug this error:
+    const prompt = `Act as a senior software engineer to troubleshoot this error:
 
-ERROR: ${error}
+ERROR MESSAGE: ${error}
 
-${code ? `CODE:\n\`\`\`\n${code}\n\`\`\`\n` : ''}
+${code ? `RELEVANT CODE:\n\`\`\`\n${code}\n\`\`\`\n` : ''}
 
-Provide:
-1. Root cause analysis
-2. Step-by-step solution
-3. Prevention strategies
-4. Related issues to watch for`;
+Please provide:
+1.  **Root Cause Analysis**: Explain technically why this error occurred.
+2.  **Resolution Steps**: step-by-step instructions to fix the issue.
+3.  **Code Fix**: The corrected code snippet (if applicable).
+4.  **Prevention**: Best practices to avoid this class of errors in the future.`;
 
     return this.ask(prompt);
   }
 
   async explainConcept(concept: string, level: 'beginner' | 'intermediate' | 'advanced' = 'intermediate'): Promise<AIResponse> {
-    const prompt = `Explain "${concept}" at a ${level} level.
+    const prompt = `Explain the concept of "${concept}" for a ${level} audience.
 
-Include:
-1. Clear definition
-2. Real-world examples
-3. Common use cases
-4. Related concepts
-5. Practical applications
-6. Resources for learning more`;
+Structure your response as follows:
+1.  **Executive Summary**: A concise definition (1-2 sentences).
+2.  **Detailed Explanation**: Break down the mechanics and importance.
+3.  **Real-World Analogy/Example**: To aid understanding.
+4.  **Industry Application**: How is this currently used in the tech/business world?
+5.  **Further Reading/Resources**: (Optional) Key terms to research next.`;
 
     return this.ask(prompt);
   }
 
   async brainstorm(topic: string, count: number = 10): Promise<AIResponse> {
-    const prompt = `Generate ${count} creative and practical ideas for: "${topic}"
+    const prompt = `Generate ${count} strategic and innovative ideas for: "${topic}".
 
-For each idea provide:
-1. Brief description
-2. Potential benefits
-3. Implementation difficulty
-4. Unique aspects
+For each idea, provide:
+*   **Concept**: A catchy name or brief summary.
+*   **Value Proposition**: Why is this a good idea?
+*   **Feasibility**: High/Medium/Low estimation.
 
-Be innovative and think outside the box.`;
+Ensure the ideas are practical yet forward-thinking, suitable for a professional setting.`;
 
     return this.ask(prompt);
   }
 
   async solveProblems(problem: string): Promise<AIResponse> {
-    const prompt = `Help solve this problem: "${problem}"
+    const prompt = `Apply a structured problem-solving framework to: "${problem}"
 
-Provide:
-1. Problem analysis
-2. Multiple solution approaches
-3. Pros and cons of each
-4. Recommended solution with reasoning
-5. Implementation steps
-6. Potential challenges and mitigation`;
+Please provide:
+1.  **Problem Diagnosis**: Deconstruct the issue to identify key constraints and variables.
+2.  **Strategic Options**: Propose 3 distinct approaches (e.g., Quick Win, Long-term Strategic, Innovative).
+3.  **Comparative Analysis**: Evaluate the pros/cons and risks of each option.
+4.  **Recommendation**: Select the best course of action and justify it.
+5.  **Implementation Plan**: High-level steps to execute the recommendation.`;
 
     return this.ask(prompt);
   }
 
   async analyzeResume(resumeText: string): Promise<AIResponse> {
-    const prompt = `Analyze the following resume text for a candidate:
+    const prompt = `Perform a professional recruitment analysis of the following resume:
 
-RESUME CONTENT:
+RESUME TEXT:
 "${resumeText.substring(0, 5000)}"
 
-Provide a comprehensive analysis including:
-1. **Candidate Summary**: A brief 2-3 sentence overview.
-2. **Key Skills**: Identify technical and soft skills.
-3. **Experience Highlights**: Notable achievements and roles.
-4. **Strengths**: What makes this candidate stand out?
-5. **Areas for Improvement**: Missing skills or weak points for typical roles in their field.
-6. **Suggested Roles**: Job titles this candidate is best suited for.
-7. **Interview Starters**: 3 questions to ask this candidate based on their resume.`;
+Please provide a detailed report including:
+1.  **Executive Profile**: A professional summary of the candidate's level and expertise.
+2.  **Core Competencies**: A bulleted list of technical and soft skills identified.
+3.  **Achievement Analysis**: meaningful impact extracted from their experience (quantifiable results preferred).
+4.  **Constructive Critique**: Specific, actionable advice to improve the resume (formatting, phrasing, missing keywords).
+5.  **Career Trajectory**: Suggested next roles or industries based on their background.
+6.  **Screening Questions**: 3 targeted interview questions to validate their claimed expertise.`;
 
     return this.ask(prompt);
   }
 
   async generateJobDescription(role: string, companyContext?: string): Promise<AIResponse> {
-    const prompt = `Generate a professional job description for the role of "${role}"${companyContext ? ` at ${companyContext}` : ''}.
+    const prompt = `Draft a premium job description for the position of "${role}"${companyContext ? ` at ${companyContext}` : ''}.
 
-Include:
-1. **Job Title**: Engaging title.
-2. **Role Summary**: Exciting introduction to the role.
-3. **Key Responsibilities**: Bullet points of what they will do.
-4. **Required Qualifications**: Essential skills and experience.
-5. **Preferred Qualifications**: Nice-to-have skills.
-6. **Benefits & Perks**: Standard tech company benefits (or specific if known).
-7. **Call to Action**: Encouraging closing statement.
-
-Tone: Professional, inclusive, and exciting.`;
+The description should be inclusive, engaging, and professional. Structure it as follows:
+1.  **Role Overview**: An inspiring introduction to the opportunity.
+2.  **The Mission**: What the candidate will achieve in this role (Objectives).
+3.  **Key Responsibilities**: Clear, action-oriented bullet points.
+4.  **Qualifications**:
+    *   *Must-Have*: Essential skills and experiences.
+    *   *Nice-to-Have*: Desirable extra qualifications.
+5.  **Why Join Us?**: Selling points (culture, growth, impact).
+6.  **Call to Action**: A professional closing encouraging application.`;
 
     return this.ask(prompt);
   }
 
   async generateInterviewQuestions(role: string, skillLevel: string = 'Intermediate', focusAreas: string[] = []): Promise<AIResponse> {
-    const prompt = `Generate interview questions for a ${skillLevel} ${role} position.
-${focusAreas.length > 0 ? `Focus areas: ${focusAreas.join(', ')}` : ''}
+    const prompt = `Design a structured interview guide for a ${skillLevel} ${role} position.
+${focusAreas.length > 0 ? `Focus Areas: ${focusAreas.join(', ')}` : ''}
 
-Provide:
-1. **3 Technical Questions**: Specific to the role/tech stack.
-2. **2 Behavioral Questions**: Situation-based (STAR method).
-3. **1 Problem-Solving Scenario**: A mini-case study or coding challenge idea.
-4. **1 Cultural Fit Question**: To assess team compatibility.
-
-For each question, briefly mention what a "Good Answer" looks like.`;
+Please provide:
+1.  **Technical Assessment (3 Questions)**: Deep-dive questions to test core hard skills.
+2.  **Behavioral/Situational (2 Questions)**: STAR-method aligned questions to assess soft skills and culture fit.
+3.  **Problem-Solving Challenge (1 Scenario)**: A scenario or short case study to evaluate critical thinking.
+4.  **Evaluation Criteria**: For each question, briefly describe what differentiates a "good" answer from a "great" answer.`;
 
     return this.ask(prompt);
   }
@@ -294,36 +278,34 @@ For each question, briefly mention what a "Good Answer" looks like.`;
   // --- NEW COMMUNITY FEATURES ---
 
   async enhancePostDraft(draft: string, type: string): Promise<AIResponse> {
-    const prompt = `Enhance this draft for a community post of type "${type}":
+    const prompt = `Refine the following draft for a professional community post (Type: ${type}):
 
-DRAFT:
+DRAFT CONTENT:
 "${draft}"
 
-Instructions:
-1. Improve clarity and engagement.
-2. Fix grammar and typos.
-3. Suggest 3 relevant hashtags.
-4. Make the tone professional yet approachable.
-5. Suggest a catchy title.
+Your task:
+1.  **Polish the Prose**: Improve flow, clarity, and impact without losing the author's voice.
+2.  **Enhance Professionalism**: Ensure the tone is suitable for a business network.
+3.  **Engagement Optimization**: Suggest a compelling headline/hook and a strong call-to-action (question or prompt).
+4.  **Hashtag Strategy**: Recommend 3-5 relevant, high-visibility hashtags.
 
-Return the improved version and the suggestions separately.`;
+Return the "Optimized Version" followed by your specific "Strategic Suggestions".`;
 
     return this.ask(prompt);
   }
 
   async suggestComment(postContent: string, userRole: string): Promise<AIResponse> {
-    const prompt = `Suggest 3 thoughtful comments for this post as a "${userRole}":
+    const prompt = `Generate 3 distinct, professional comment options for this post, written from the perspective of a ${userRole}:
 
-POST CONTENT:
+POST CONTEXT:
 "${postContent.substring(0, 1000)}"
 
-Criteria:
-1. Professional and constructive.
-2. One appreciative comment.
-3. One question-based comment to start a discussion.
-4. One insight-sharing comment.
+Options to provide:
+1.  **The Insightful Add**: Validates the post and adds a new perspective or data point.
+2.  **The Engaging Question**: Asks a thoughtful follow-up to stimulate discussion.
+3.  **The Appreciative Networker**: Expresses gratitude and highlights a specific takeaway.
 
-Keep them concise.`;
+Ensure all comments are polite, constructive, and add value to the conversation.`;
 
     return this.ask(prompt);
   }

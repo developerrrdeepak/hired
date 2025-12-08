@@ -5,54 +5,62 @@ import { ai, geminiPro } from '@/ai/genkit';
 import { z } from 'zod';
 
 export const CandidateProfileSchema = z.object({
-  name: z.string().describe('Full name of the candidate'),
-  profileUrl: z.string().url().describe('URL of the candidate’s professional profile (e.g., LinkedIn, GitHub)'),
-  summary: z.string().describe('A brief summary of the candidate’s skills and experience relevant to the job'),
-  location: z.string().optional().describe('The candidate’s current location'),
+  name: z.string().describe('Name of the candidate'),
+  currentRole: z.string().describe('Current job title'),
+  company: z.string().optional().describe('Current company'),
+  matchReason: z.string().describe('Why this profile is a good fit'),
+  searchQuery: z.string().describe('Boolean string used to find this profile'),
 });
 
 export type CandidateProfile = z.infer<typeof CandidateProfileSchema>;
 
 const AISourceCandidatesInputSchema = z.object({
   jobDescription: z.string().describe('The job description to source candidates for'),
+  location: z.string().optional().describe('Target location'),
 });
 export type AISourceCandidatesInput = z.infer<typeof AISourceCandidatesInputSchema>;
 
 const AISourceCandidatesOutputSchema = z.object({
-  candidates: z.array(CandidateProfileSchema).describe('A list of potential candidates'),
+  sourcingStrategy: z.string().describe("Strategy used to identify these profiles."),
+  searchStrings: z.array(z.string()).describe("Effective Boolean search strings for LinkedIn/GitHub."),
+  profiles: z.array(CandidateProfileSchema).describe('Simulated candidate profiles matching the criteria.'),
 });
 export type AISourceCandidatesOutput = z.infer<typeof AISourceCandidatesOutputSchema>;
 
 export async function aiSourceCandidates(input: AISourceCandidatesInput): Promise<AISourceCandidatesOutput> {
-  return sourceCandidatesFlow(input.jobDescription);
+  return sourceCandidatesFlow(input);
 }
 
-const prompt = `You are an expert technical recruiter. Your task is to find the best possible candidates for the following job description.
-Search public platforms like LinkedIn, GitHub, and technical communities for suitable candidates.
-
-Job Description:
-{{jobDescription}}
-
-Based on your search, provide a list of at least 5 potential candidates who appear to be a strong match.
-For each candidate, return their full name, a URL to their professional profile, a brief summary of their relevant skills and experience, and their location if available.`;
-
-export const sourceCandidatesFlow = ai.defineFlow(
+const sourceCandidatesFlow = ai.defineFlow(
   {
     name: 'sourceCandidatesFlow',
-    inputSchema: z.string(),
-    outputSchema: z.array(CandidateProfileSchema),
+    inputSchema: AISourceCandidatesInputSchema,
+    outputSchema: AISourceCandidatesOutputSchema,
   },
-  async (jobDescription) => {
+  async (input) => {
+    // Note: Since we cannot browse the live web, we act as a strategy generator and simulator.
+    const prompt = `Act as a Master Sourcing Specialist.
+    
+    JOB DESCRIPTION:
+    ${input.jobDescription}
+    ${input.location ? `LOCATION: ${input.location}` : ''}
+
+    TASK:
+    1.  **Develop a Sourcing Strategy**: Where would these candidates hang out? (GitHub, Dribbble, StackOverflow, etc.)
+    2.  **Generate Boolean Search Strings**: Create complex search strings to find these candidates on LinkedIn or Google.
+    3.  **Simulate Profiles**: Generate 3 realistic "Ideal Candidate Personas" that would match this role to illustrate what to look for.
+
+    Output structured JSON.`;
+
     const result = await ai.generate({
-      prompt,
+      prompt: prompt,
       model: geminiPro,
-      input: { jobDescription },
-      output: {
-        schema: z.object({
-          candidates: z.array(CandidateProfileSchema),
-        }),
-      },
+      output: { schema: AISourceCandidatesOutputSchema },
     });
-    return result.output()?.candidates || [];
+    
+    if (!result.output) {
+        throw new Error("Failed to generate sourcing data");
+    }
+    return result.output;
   }
 );

@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const GenerateEmailFromBriefInputSchema = z.object({
   brief: z.string().describe('A brief description of the email to generate, including context like candidate name and job title.'),
+  tone: z.enum(['Professional', 'Friendly', 'Formal', 'Empathetic', 'Direct']).optional().describe('Desired tone of the email.'),
 });
 export type GenerateEmailFromBriefInput = z.infer<
   typeof GenerateEmailFromBriefInputSchema
@@ -22,6 +23,7 @@ export type GenerateEmailFromBriefInput = z.infer<
 const GenerateEmailFromBriefOutputSchema = z.object({
   subject: z.string().describe('The generated email subject line.'),
   body: z.string().describe('The generated email body content.'),
+  previewText: z.string().describe('A short snippet for email client previews.'),
 });
 export type GenerateEmailFromBriefOutput = z.infer<
   typeof GenerateEmailFromBriefOutputSchema
@@ -38,11 +40,17 @@ const generateEmailFromBriefPrompt = ai.definePrompt({
   input: {schema: GenerateEmailFromBriefInputSchema},
   output: {schema: GenerateEmailFromBriefOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert recruitment email writer. Based on the provided brief, create a professional, empathetic, and effective email.
+  prompt: `Act as a Senior Communication Manager. Draft a high-quality email based on the brief.
+  
+  BRIEF: {{{brief}}}
+  TONE: {{#if tone}}{{{tone}}}{{else}}Professional{{/if}}
 
-Keep the tone appropriate for the context (e.g., encouraging for an invite, respectful for a rejection). Ensure the output is only the subject and body.
+  REQUIREMENTS:
+  1.  **Subject**: Engaging and clear (under 50 chars ideally).
+  2.  **Structure**: Salutation -> Context -> Core Message -> Call to Action -> Sign-off.
+  3.  **Clarity**: Avoid jargon. Be concise.
 
-Brief Description: {{{brief}}}`,
+  Generate the Subject, Body, and a Preview Text line.`,
 });
 
 const generateEmailFromBriefFlow = ai.defineFlow(

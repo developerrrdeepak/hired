@@ -14,19 +14,22 @@ export async function analyzeCandidateProfile(
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
   const prompt = `
-    Analyze the following candidate resume${jobDescription ? ' against the job description' : ''}.
+    Act as a Senior Talent Acquisition Specialist and Technical Recruiter. Analyze the following candidate resume${jobDescription ? ' specifically for the provided job description' : ' to determine their overall professional profile'}.
     
-    Resume:
+    RESUME CONTENT:
     ${resumeText}
     
-    ${jobDescription ? `Job Description:\n${jobDescription}` : ''}
+    ${jobDescription ? `TARGET JOB DESCRIPTION:\n${jobDescription}` : ''}
     
-    Provide a structured JSON response with:
-    1. key_skills: Array of top technical and soft skills
-    2. experience_summary: Brief 2-sentence summary
-    3. score: 0-100 match score (if job description provided, else general quality score)
-    4. gaps: Array of missing skills or areas for improvement
-    5. interview_questions: Array of 3 specific technical questions to ask
+    Provide a structured JSON response (do not include markdown formatting like \`\`\`json) with the following fields:
+    1. "key_skills": Array of string. Extract the most relevant technical and soft skills (limit to top 10).
+    2. "experience_summary": String. A professional, executive-style summary (2-3 sentences) of the candidate's background.
+    3. "score": Number (0-100). A match score indicating suitability${jobDescription ? ' for the role' : ' for senior-level roles in their domain'}. Be rigorous.
+    4. "gaps": Array of string. Identify specific missing skills, experiences, or certifications that would strengthen their profile${jobDescription ? ' for this specific job' : ''}.
+    5. "interview_questions": Array of string. 3 high-impact, role-specific interview questions to validate their expertise.
+    6. "strengths": Array of string. What are the standout qualities of this candidate?
+    
+    Ensure the tone is objective, professional, and insightful.
   `;
 
   try {
@@ -34,15 +37,17 @@ export async function analyzeCandidateProfile(
     const response = result.response;
     const text = response.text();
     
-    // Basic cleaning to get JSON content if wrapped in markdown
+    // Improved JSON parsing resilience
+    let jsonString = text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-       console.error('AI Response format invalid:', text);
-       return { error: 'AI response could not be parsed' };
+    if (jsonMatch) {
+       jsonString = jsonMatch[0];
     }
-    return JSON.parse(jsonMatch[0]);
+    
+    return JSON.parse(jsonString);
   } catch (error) {
     console.error('AI Analysis failed:', error);
+    // Return a graceful fallback or rethrow depending on needs, but here we throw to let the caller handle
     throw new Error('Failed to analyze candidate profile');
   }
 }

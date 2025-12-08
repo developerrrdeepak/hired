@@ -28,11 +28,13 @@ const AiSummarizeFeedbackInputSchema = z.object({
 export type AiSummarizeFeedbackInput = z.infer<typeof AiSummarizeFeedbackInputSchema>;
 
 const AiSummarizeFeedbackOutputSchema = z.object({
-  overallSummary: z.string().describe("A 2-3 paragraph summary synthesizing all feedback into a coherent narrative about the candidate's performance."),
-  keyStrengths: z.array(z.string()).describe("A bullet-point list of the most commonly cited strengths."),
-  keyWeaknesses: z.array(z.string()).describe("A bullet-point list of the most commonly cited weaknesses or concerns."),
-  conflictingSignals: z.array(z.string()).describe("A bullet-point list identifying any conflicting feedback or disagreements between interviewers."),
-  recommendedNextStep: z.string().describe("A suggested next step, such as 'Advance to final round', 'Hold for team matching', or 'Reject'."),
+  overallSummary: z.string().describe("A professional hiring brief synthesizing all data."),
+  aggregatedScore: z.number().describe("Calculated average weighted score (1-5)."),
+  keyStrengths: z.array(z.string()).describe("Consensus areas of excellence."),
+  keyWeaknesses: z.array(z.string()).describe("Consensus areas of concern."),
+  conflictingSignals: z.array(z.string()).describe("Disagreements between interviewers requiring debrief discussion."),
+  finalRecommendation: z.enum(['Strong Hire', 'Hire', 'Leaning Hire', 'Leaning No Hire', 'No Hire']).describe("AI computed verdict."),
+  decisionRationale: z.string().describe("Justification for the recommendation.")
 });
 export type AiSummarizeFeedbackOutput = z.infer<typeof AiSummarizeFeedbackOutputSchema>;
 
@@ -46,28 +48,26 @@ const prompt = ai.definePrompt({
   input: {schema: AiSummarizeFeedbackInputSchema},
   output: {schema: AiSummarizeFeedbackOutputSchema},
   model: geminiPro,
-  prompt: `You are an expert HR analyst at a major tech company. Your task is to review the interview feedback for a candidate and produce a balanced, concise, and insightful summary for the hiring committee.
+  prompt: `Act as a Hiring Committee Secretary. Synthesize the interview panel's feedback into a decision document.
 
-Candidate Name: {{{candidateName}}}
-Applied for: {{{jobTitle}}}
+  CANDIDATE: {{{candidateName}}}
+  ROLE: {{{jobTitle}}}
 
-Here is the raw feedback from the interview panel:
----
-{{#each feedbacks}}
-Interviewer: {{this.interviewerName}}
-Rating: {{this.rating}}/5
-Verdict: {{this.verdict}}
-Strengths: {{this.pros}}
-Weaknesses: {{this.cons}}
----
-{{/each}}
+  FEEDBACK DATA:
+  ---
+  {{#each feedbacks}}
+  [Interviewer: {{this.interviewerName}} | Score: {{this.rating}}/5 | Verdict: {{this.verdict}}]
+  PROS: {{this.pros}}
+  CONS: {{this.cons}}
+  ---
+  {{/each}}
 
-Based on all the provided feedback, please generate the following:
-1.  **Overall Summary:** A synthesized narrative of the candidate's performance.
-2.  **Key Strengths:** A consolidated list of recurring positive themes.
-3.  **Key Weaknesses:** A consolidated list of recurring concerns.
-4.  **Conflicting Signals:** Any areas where interviewers had notably different opinions.
-5.  **Recommended Next Step:** A clear recommendation for the hiring manager.`,
+  ANALYSIS:
+  1.  **Consolidate**: Identify patterns. If 3 people say "Good communication", that's a Key Strength.
+  2.  **Highlight Conflicts**: If one says "Technical Expert" and another says "Weak Coding", flag it.
+  3.  **Compute Verdict**: Weigh "Strong Hires" heavily. Provide a final recommendation based on the consensus.
+
+  Tone: Objective, decisive, and clear.`,
 });
 
 const aiSummarizeFeedbackFlow = ai.defineFlow(

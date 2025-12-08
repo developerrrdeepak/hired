@@ -19,14 +19,16 @@ const AiAnalyzeCandidateInputSchema = z.object({
 export type AiAnalyzeCandidateInput = z.infer<typeof AiAnalyzeCandidateInputSchema>;
 
 const ProfileJsonSchema = z.object({
-    summary: z.string().describe("A 2-3 paragraph summary of the candidate's profile, experience, and qualifications."),
-    skills: z.array(z.string()).describe("A list of key technical and soft skills extracted from the resume."),
-    strengths: z.array(z.string()).describe("A bullet-point list of the candidate's main strengths."),
-    risks: z.array(z.string()).describe("A bullet-point list of potential risks or concerns based on the resume (e.g., job hopping, gaps in employment, missing key skills)."),
+    summary: z.string().describe("A professional executive summary of the candidate."),
+    skills: z.array(z.string()).describe("A comprehensive list of technical and soft skills."),
+    strengths: z.array(z.string()).describe("Key selling points and competitive advantages."),
+    risks: z.array(z.string()).describe("Potential concerns (e.g., short tenure, skill gaps)."),
+    seniorityLevel: z.string().describe("Estimated seniority (e.g., Junior, Mid-Level, Senior, Lead)."),
+    recommendedRoles: z.array(z.string()).describe("Job titles this candidate is best suited for."),
 });
 
 const AiAnalyzeCandidateOutputSchema = z.object({
-  aiProfileJson: z.string().describe(`A JSON string containing the structured analysis of the candidate's profile, matching this schema: ${JSON.stringify(ProfileJsonSchema.shape)}`),
+  aiProfileJson: z.string().describe(`A JSON string containing the structured analysis.`),
 });
 export type AiAnalyzeCandidateOutput = z.infer<typeof AiAnalyzeCandidateOutputSchema>;
 
@@ -40,16 +42,19 @@ const prompt = ai.definePrompt({
   input: {schema: AiAnalyzeCandidateInputSchema},
   output: {schema: ProfileJsonSchema},
   model: geminiPro,
-  prompt: `You are an expert HR analyst. Analyze the following resume text and provide a structured analysis.
+  prompt: `Act as a Senior Talent Assessor. Conduct a deep-dive analysis of the provided resume text.
 
-Resume:
-{{{resumeText}}}
+  RESUME CONTENT:
+  {{{resumeText}}}
 
-Based on the resume, provide the following:
-1.  A concise 2-3 paragraph summary of the candidate's professional profile.
-2.  A list of their key skills.
-3.  A list of their primary strengths.
-4.  A list of potential risks or red flags.`,
+  OBJECTIVES:
+  1.  **Summary**: Write a compelling narrative summary of their career trajectory.
+  2.  **Strengths**: Identify unique value propositions.
+  3.  **Risks**: Flag any employment gaps, frequent job changes, or vague descriptions tactfully.
+  4.  **Leveling**: Estimate their seniority based on years of experience and scope of responsibility.
+  5.  **Placement**: Suggest 3-5 specific job titles they would excel in.
+
+  Ensure the output is strictly professional and objective.`,
 });
 
 const aiAnalyzeCandidateFlow = ai.defineFlow(

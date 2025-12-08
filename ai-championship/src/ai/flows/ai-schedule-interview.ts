@@ -12,15 +12,18 @@ import { ai, geminiPro } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const AIScheduleInterviewInputSchema = z.object({
-  candidateEmail: z.string().email().describe('Email address of the candidate'),
-  interviewerEmail: z.string().email().describe('Email address of the interviewer'),
+  candidateName: z.string().describe('Name of the candidate'),
+  interviewerName: z.string().describe('Name of the interviewer'),
   jobTitle: z.string().describe('The title of the job the candidate is interviewing for'),
+  interviewType: z.enum(['Screening', 'Technical', 'Behavioral', 'Final']).default('Screening').describe('Type of interview'),
+  duration: z.string().default('30 mins').describe('Duration of the interview'),
 });
 export type AIScheduleInterviewInput = z.infer<typeof AIScheduleInterviewInputSchema>;
 
 const AIScheduleInterviewOutputSchema = z.object({
-  emailSubject: z.string().describe('The subject of the email to be sent to the candidate'),
-  emailBody: z.string().describe('The body of the email to be sent to the candidate'),
+  emailSubject: z.string().describe('Professional email subject line'),
+  emailBody: z.string().describe('The full email body formatted with line breaks.'),
+  schedulingLinkText: z.string().optional().describe('Text to link to a calendar scheduling tool if suggested.'),
 });
 export type AIScheduleInterviewOutput = z.infer<typeof AIScheduleInterviewOutputSchema>;
 
@@ -33,20 +36,23 @@ const prompt = ai.definePrompt({
   input: { schema: AIScheduleInterviewInputSchema },
   output: { schema: AIScheduleInterviewOutputSchema },
   model: geminiPro,
-  prompt: `As an expert recruitment coordinator, your task is to write a friendly and professional email to a candidate to schedule an interview.
+  prompt: `Act as an Executive Recruitment Coordinator. Draft a high-touch invitation email for an interview.
+  
+  DETAILS:
+  - Candidate: {{{candidateName}}}
+  - Role: {{{jobTitle}}}
+  - Stage: {{{interviewType}}} Interview
+  - Interviewer: {{{interviewerName}}}
+  - Duration: {{{duration}}}
 
-The candidate's email is: {{{candidateEmail}}}
-The interviewer's email is: {{{interviewerEmail}}}
-The job title is: {{{jobTitle}}}
+  GUIDELINES:
+  1.  **Subject Line**: Clear and exciting (e.g., "Interview Invitation: [Role] at [Company]").
+  2.  **Opening**: Warmly congratulate them on progressing.
+  3.  **Context**: Briefly explain what this interview stage entails (e.g., "This session will focus on...").
+  4.  **Call to Action**: Direct them to book a time or provide availability.
+  5.  **Tone**: Professional, respectful of their time, and welcoming.
 
-The email should:
-1. Congratulate the candidate on moving to the interview stage.
-2. Propose a video interview for the position of {{{jobTitle}}}.
-3. Ask the candidate to provide their availability for the next week.
-4. Mention that the interview will be with the hiring manager ({{{interviewerEmail}}}).
-5. Keep the tone warm and professional.
-
-Generate a subject and body for this email.`,
+  Ensure the formatting is clean and easy to read.`,
 });
 
 const aiScheduleInterviewFlow = ai.defineFlow(

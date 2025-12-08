@@ -170,7 +170,10 @@ export default function CandidateDetailPage() {
             <CandidateActivityTab activities={activities || []} isLoading={areActivitiesLoading} />
         </TabsContent>}
         {!isCandidateViewing && <TabsContent value="smarter-resume-analysis">
-            <CandidateSmarterResumeAnalysisTab candidateId={candidate.id} resumePath={`candidates/${candidate.id}/resume.pdf`} />
+            <CandidateSmarterResumeAnalysisTab 
+                candidateId={candidate.id} 
+                resumePath={candidate.resumeUrl || `candidates/${candidate.id}/resume.pdf`} 
+            />
         </TabsContent>}
       </Tabs>
     </div>
