@@ -142,12 +142,21 @@ export default function CandidatesPage() {
         if (!firestore) return null;
         return query(
             collection(firestore, 'users'),
-            where('role', '==', 'Candidate'),
-            orderBy('createdAt', 'desc')
+            where('role', '==', 'Candidate')
         );
     }, [firestore]);
 
-    const { data: candidates, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
+    const { data: allCandidates, isLoading: isLoadingCandidates } = useCollection<any>(candidatesQuery);
+    
+    // Sort on client side
+    const candidates = useMemo(() => {
+        if (!allCandidates) return [];
+        return [...allCandidates].sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+            const dateB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+            return dateB - dateA; // Newest first
+        });
+    }, [allCandidates]);
 
     const [applicationsByCandidate, setApplicationsByCandidate] = useState<Map<string, Application>>(new Map());
     const [isLoadingApps, setIsLoadingApps] = useState(true);
