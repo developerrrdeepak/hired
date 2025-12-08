@@ -108,6 +108,17 @@ export default function ConnectionsPage() {
   const handleSendRequest = async (receiverId: string, receiverName: string, receiverRole: string) => {
     if (!firestore || !userId) return;
     try {
+      // Check if request already exists
+      const existingConnection = connections.find(c => 
+        (c.requesterId === userId && c.receiverId === receiverId) ||
+        (c.receiverId === userId && c.requesterId === receiverId)
+      );
+      
+      if (existingConnection) {
+        toast({ title: 'Connection already exists or pending' });
+        return;
+      }
+
       await addDoc(collection(firestore, 'connections'), {
         requesterId: userId,
         requesterName: displayName || 'User',
@@ -121,7 +132,8 @@ export default function ConnectionsPage() {
       });
       toast({ title: 'Connection request sent!' });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Failed to send request' });
+      console.error('Connection error:', error);
+      toast({ variant: 'destructive', title: 'Failed to send request', description: String(error) });
     }
   };
 
