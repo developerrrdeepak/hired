@@ -1,0 +1,23 @@
+import { cn } from '@/lib/utils';
+
+describe('Utils', () => {
+  describe('cn', () => {
+    it('should merge class names', () => {
+      const result = cn('text-red-500', 'bg-blue-500');
+      expect(result).toContain('text-red-500');
+      expect(result).toContain('bg-blue-500');
+    });
+
+    it('should handle conditional classes', () => {
+      const result = cn('base', true && 'active', false && 'inactive');
+      expect(result).toContain('base');
+      expect(result).toContain('active');
+      expect(result).not.toContain('inactive');
+    });
+
+    it('should handle undefined and null', () => {
+      const result = cn('base', undefined, null);
+      expect(result).toBe('base');
+    });
+  });
+});
