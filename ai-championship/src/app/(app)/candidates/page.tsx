@@ -569,7 +569,7 @@ export default function CandidatesPage() {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent className="pb-3 space-y-3 flex-1">
+                  <CardContent className="pb-3 space-y-3 flex-grow">
                     {candidate.location && <p className="text-sm flex items-center gap-2 text-muted-foreground"><MapPin className="w-3 h-3" /> {candidate.location}</p>}
                     {candidate.yearsOfExperience && <p className="text-sm flex items-center gap-2 text-muted-foreground"><Briefcase className="w-3 h-3" /> {candidate.yearsOfExperience} years exp</p>}
                     
@@ -582,7 +582,7 @@ export default function CandidatesPage() {
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex gap-2 pt-3 border-t bg-muted/20">
+                  <CardFooter className="flex gap-2 pt-3 border-t bg-muted/20 mt-auto">
                     <Button
                       size="sm"
                       variant="ghost"
