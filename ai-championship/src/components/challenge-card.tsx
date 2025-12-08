@@ -3,9 +3,14 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Calendar, Award } from 'lucide-react';
+import { Trophy, Calendar, MoreVertical, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import type { Challenge } from '@/lib/definitions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useFirebase } from '@/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -14,7 +19,22 @@ interface ChallengeCardProps {
 }
 
 export function ChallengeCard({ challenge, showJoinButton = true, delay = 0 }: ChallengeCardProps) {
+  const { firestore } = useFirebase();
+  const { toast } = useToast();
+  const router = useRouter();
   const isExpired = new Date(challenge.deadline) < new Date();
+
+  const handleDelete = async () => {
+    if (!firestore || !confirm('Are you sure you want to delete this challenge?')) return;
+    
+    try {
+      await deleteDoc(doc(firestore, `organizations/${challenge.organizationId}/challenges`, challenge.id));
+      toast({ title: 'Challenge deleted successfully' });
+      router.refresh();
+    } catch (error) {
+      toast({ title: 'Failed to delete challenge', variant: 'destructive' });
+    }
+  };
   
   return (
     <Card 
@@ -33,9 +53,32 @@ export function ChallengeCard({ challenge, showJoinButton = true, delay = 0 }: C
               {challenge.description}
             </CardDescription>
           </div>
-          <Badge variant={isExpired ? 'secondary' : 'default'} className="shrink-0">
-            {challenge.type}
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant={isExpired ? 'secondary' : 'default'}>
+              {challenge.type}
+            </Badge>
+            {!showJoinButton && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/challenges/${challenge.id}/edit?orgId=${challenge.organizationId}`} className="cursor-pointer">
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive cursor-pointer">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
       </CardHeader>
       
