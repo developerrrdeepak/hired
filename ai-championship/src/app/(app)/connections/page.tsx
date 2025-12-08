@@ -53,7 +53,9 @@ export default function ConnectionsPage() {
   }, [connections]);
 
   const pendingRequests = useMemo(() => {
-    return connections?.filter(c => c.status === 'pending' && c.receiverId === userId) || [];
+    const pending = connections?.filter(c => c.status === 'pending' && c.receiverId === userId) || [];
+    console.log('Pending requests for userId:', userId, pending);
+    return pending;
   }, [connections, userId]);
 
   const sentRequests = useMemo(() => {
