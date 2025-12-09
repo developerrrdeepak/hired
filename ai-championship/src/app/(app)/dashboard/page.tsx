@@ -2,12 +2,30 @@
 
 import { useUserRole } from '@/hooks/use-user-role';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import { useFirebase } from '@/firebase';
+import { signInWithCustomToken } from 'firebase/auth';
 
 export default function DashboardPage() {
   const { role, isLoading } = useUserRole();
+  const { auth } = useFirebase();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token && auth) {
+      signInWithCustomToken(auth, token)
+        .then(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('token');
+          url.searchParams.delete('provider');
+          window.history.replaceState({}, '', url.toString());
+        })
+        .catch(() => {});
+    }
+  }, [searchParams, auth]);
 
   useEffect(() => {
     if (!isLoading && role) {
@@ -26,7 +44,6 @@ export default function DashboardPage() {
           router.replace('/hiring-manager/dashboard');
           break;
         default:
-          // Stay here if role is unknown or 'Employee' without specific dash
           break;
       }
     }
