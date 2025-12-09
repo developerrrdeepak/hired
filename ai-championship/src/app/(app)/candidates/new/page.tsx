@@ -14,7 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase, addDocumentNonBlocking } from "@/firebase";
 import { collection, writeBatch, doc, updateDoc, getDoc } from "firebase/firestore";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, Sparkles } from "lucide-react";
 import { aiEnrichProfile } from "@/ai/flows/ai-enrich-profile";
 import { aiAnalyzeCandidate } from "@/ai/flows/ai-analyze-candidate";
 import { aiCandidateRanking } from "@/ai/flows/ai-candidate-ranking";
@@ -283,10 +283,44 @@ export default function NewCandidatePage() {
                         name="resumeFile"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Upload Resume</FormLabel>
+                                <FormLabel className="flex items-center gap-2">
+                                    <Upload className="h-4 w-4" />
+                                    Upload Resume (AI Auto-Fill)
+                                    <Sparkles className="h-4 w-4 text-primary" />
+                                </FormLabel>
                                 <FormControl>
-                                    <Input type="file" {...form.register("resumeFile")} />
+                                    <Input 
+                                        type="file" 
+                                        accept=".pdf,.doc,.docx"
+                                        {...form.register("resumeFile")}
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                toast({ title: "Parsing Resume...", description: "AI is extracting information" });
+                                                const formData = new FormData();
+                                                formData.append('resume', file);
+                                                try {
+                                                    const res = await fetch('/api/ai/parse-resume', {
+                                                        method: 'POST',
+                                                        body: formData
+                                                    });
+                                                    if (res.ok) {
+                                                        const { data } = await res.json();
+                                                        form.setValue('name', data.name || '');
+                                                        form.setValue('email', data.email || '');
+                                                        form.setValue('phone', data.phone || '');
+                                                        form.setValue('currentRole', data.title || '');
+                                                        form.setValue('rawResumeText', JSON.stringify(data, null, 2));
+                                                        toast({ title: "Success!", description: "Resume parsed and form auto-filled" });
+                                                    }
+                                                } catch (error) {
+                                                    toast({ variant: "destructive", title: "Error", description: "Failed to parse resume" });
+                                                }
+                                            }
+                                        }}
+                                    />
                                 </FormControl>
+                                <p className="text-xs text-muted-foreground">Upload PDF/DOC and AI will auto-fill the form</p>
                                 <FormMessage />
                             </FormItem>
                         )}

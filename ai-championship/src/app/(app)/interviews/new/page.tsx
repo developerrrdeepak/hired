@@ -17,7 +17,7 @@ import { collection, query } from "firebase/firestore";
 import type { Job, Application, Candidate } from "@/lib/definitions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Calendar as CalendarPlus } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { useMemo } from "react";
@@ -101,9 +101,36 @@ export default function NewInterviewPage() {
 
         addDocumentNonBlocking(interviewsCol, newInterviewData);
 
+        // Create calendar event
+        const app = applicationsWithDetails.find(a => a.id === values.applicationId);
+        const startTime = values.scheduledAt.toISOString();
+        const endTime = new Date(values.scheduledAt.getTime() + values.durationMinutes * 60000).toISOString();
+        
+        try {
+            const res = await fetch('/api/calendar/create-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: `Interview: ${app?.candidateName} - ${app?.jobTitle}`,
+                    description: `Interview Type: ${values.type}\nLocation: ${values.locationOrLink}`,
+                    startTime,
+                    endTime,
+                    attendees: [],
+                    location: values.locationOrLink
+                })
+            });
+            
+            if (res.ok) {
+                const { calendarUrl } = await res.json();
+                window.open(calendarUrl, '_blank');
+            }
+        } catch (error) {
+            console.error('Calendar error:', error);
+        }
+
         toast({
             title: "Interview Scheduled",
-            description: `The interview has been successfully scheduled.`,
+            description: `Calendar invite opened in new tab`,
         });
         router.push("/interviews");
     }
