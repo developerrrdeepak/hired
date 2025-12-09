@@ -3,6 +3,8 @@
 
 import { AppShell } from '@/components/layout/app-shell';
 import { Nav } from '@/components/nav';
+import { QuickActions } from '@/components/quick-actions';
+import { KeyboardShortcuts } from '@/components/keyboard-shortcuts';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import type { Organization } from '@/lib/definitions';
 import { doc } from 'firebase/firestore';
@@ -155,17 +157,21 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AppShell
-        homePath={homePath}
-        organization={organization}
-        nav={<Nav role={role} />}
-    >
-        <main className="flex-1 p-4 sm:px-6 sm:py-8">
-            <div className="max-w-7xl mx-auto w-full">
-              {children}
-            </div>
-        </main>
-    </AppShell>
+    <>
+      <KeyboardShortcuts />
+      <AppShell
+          homePath={homePath}
+          organization={organization}
+          nav={<Nav role={role} />}
+      >
+          <main className="flex-1 p-4 sm:px-6 sm:py-8">
+              <div className="max-w-7xl mx-auto w-full">
+                {children}
+              </div>
+          </main>
+          <QuickActions />
+      </AppShell>
+    </>
   );
 }
 
