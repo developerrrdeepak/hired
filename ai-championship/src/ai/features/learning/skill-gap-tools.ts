@@ -14,15 +14,59 @@ export async function aiSkillGapAnalysis(currentSkills: string[], targetRole: st
   
   Analyze the market requirements for "${targetRole}" and compare.
   
+  IMPORTANT: Create EXACTLY 8 weeks of learning roadmap. Do not skip any week from 1 to 8.
+  
   Return a JSON object:
   { 
     "missingSkills": ["string"], // Top 5 critical missing technical/soft skills
     "roadmap": [
       { 
-        "week": "number", // 1 to 8
+        "week": 1, // Week 1
         "focus": "string", // Main topic
         "details": "string", // What specifically to learn
-        "resources": ["string"] // Types of resources (e.g., "Official Documentation", "Coursera course on X")
+        "resources": ["string"] // Types of resources
+      },
+      { 
+        "week": 2, // Week 2
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 3, // Week 3
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 4, // Week 4
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 5, // Week 5
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 6, // Week 6
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 7, // Week 7
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
+      },
+      { 
+        "week": 8, // Week 8
+        "focus": "string",
+        "details": "string",
+        "resources": ["string"]
       }
     ],
     "projects": [
@@ -33,6 +77,8 @@ export async function aiSkillGapAnalysis(currentSkills: string[], targetRole: st
       }
     ]
   }
+  
+  Generate ALL 8 weeks. Do not generate less than 8 weeks.
   `;
 
   try {

@@ -44,17 +44,38 @@ export default function VoiceInterviewPage() {
     // Web Speech API for voice input
     if ('webkitSpeechRecognition' in window) {
       const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.continuous = true; // Keep listening
+      recognition.interimResults = true; // Show interim results
+      
+      let finalTranscript = '';
+      let silenceTimer: NodeJS.Timeout;
       
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setIsListening(false);
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        setInput(finalTranscript + interimTranscript);
+        
+        // Reset silence timer on each result
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          recognition.stop();
+        }, 2000); // Stop after 2 seconds of silence
       };
       
       recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
+      recognition.onend = () => {
+        setIsListening(false);
+        clearTimeout(silenceTimer);
+      };
       
       recognition.start();
     }
@@ -239,26 +260,26 @@ export default function VoiceInterviewPage() {
                     <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`flex gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-500 text-white'
+                          message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-blue-600 text-white'
                         }`}>
                           {message.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                         </div>
                         <div className={`rounded-lg p-3 ${
                           message.role === 'user' 
                             ? 'bg-primary text-primary-foreground' 
-                            : 'bg-blue-500 text-white'
+                            : 'bg-blue-600 text-white dark:bg-blue-700'
                         }`}>
-                          <p className="text-sm">{message.content}</p>
+                          <p className="text-sm text-white">{message.content}</p>
                         </div>
                       </div>
                     </div>
                   ))}
                   {isLoading && (
                     <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
                         <Bot className="h-4 w-4 text-white" />
                       </div>
-                      <div className="bg-blue-500 rounded-lg p-3">
+                      <div className="bg-blue-600 dark:bg-blue-700 rounded-lg p-3">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>

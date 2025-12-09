@@ -148,8 +148,90 @@ export function UniversalAIChat() {
     }
   };
 
-  const useSuggestion = (suggestion: string) => {
+  const useSuggestion = async (suggestion: string) => {
     setInput(suggestion);
+    
+    // Auto-send the message
+    const userMessage: Message = {
+      role: 'user',
+      content: suggestion,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const payload: any = {
+        question: suggestion,
+        userId: 'user-' + Date.now(),
+      };
+
+      switch (mode) {
+        case 'code':
+          payload.action = 'analyze-code';
+          payload.code = suggestion;
+          payload.language = 'javascript';
+          break;
+        case 'debug':
+          payload.action = 'debug';
+          payload.error = suggestion;
+          break;
+        case 'explain':
+          payload.action = 'explain';
+          payload.concept = suggestion;
+          payload.level = 'intermediate';
+          break;
+        case 'brainstorm':
+          payload.action = 'brainstorm';
+          payload.topic = suggestion;
+          payload.count = 10;
+          break;
+        case 'resume':
+          payload.action = 'analyze-resume';
+          payload.resumeText = suggestion;
+          break;
+        case 'jd':
+          payload.action = 'generate-jd';
+          payload.role = suggestion;
+          break;
+        case 'interview':
+          payload.action = 'generate-interview-questions';
+          payload.role = suggestion;
+          break;
+      }
+
+      const response = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: data.data.answer,
+          timestamp: new Date(),
+          suggestions: data.data.suggestions,
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      console.error(error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `I encountered an issue processing your request. Please try again or rephrase.`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getModePlaceholder = (m: Mode) => {
@@ -166,8 +248,8 @@ export function UniversalAIChat() {
   };
 
   return (
-    <div className="flex flex-col h-[600px] max-w-4xl mx-auto">
-      <Card className="flex-1 flex flex-col p-4 space-y-4">
+    <div className="flex flex-col h-[600px] max-w-4xl mx-auto w-full">
+      <Card className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden">
         <div className="flex items-center justify-between border-b pb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-purple-500" />
@@ -243,14 +325,14 @@ export function UniversalAIChat() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2 overflow-x-hidden">
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-lg p-3`}>
+              <div className={`max-w-[80%] ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-800'} rounded-lg p-3 break-words overflow-hidden`}>
                 {message.role === 'user' ? (
                   <div className="whitespace-pre-wrap break-words text-sm md:text-base">{message.content}</div>
                 ) : (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                     <ReactMarkdown 
                       components={{
                         p: ({node, ...props}) => <p className="mb-2" {...props} />,

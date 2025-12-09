@@ -25,11 +25,11 @@ import { useUserContext } from "../../layout";
 
 const interviewFormSchema = z.object({
   applicationId: z.string().min(1, "Please select a candidate application."),
-  type: z.string().min(1, "Interview type is required."),
+  type: z.string().min(1, "Interview type/field is required."),
   scheduledAt: z.date({ required_error: "A date is required."}),
   durationMinutes: z.coerce.number().min(15, "Duration must be at least 15 minutes."),
   locationOrLink: z.string().min(1, "Location or a meeting link is required."),
-  interviewerIds: z.array(z.string()).min(1, "At least one interviewer must be assigned."),
+  interviewerIds: z.array(z.string()).optional(),
 });
 
 type InterviewFormData = z.infer<typeof interviewFormSchema>;
@@ -44,7 +44,7 @@ export default function NewInterviewPage() {
         resolver: zodResolver(interviewFormSchema),
         defaultValues: {
             applicationId: "",
-            type: "Technical",
+            type: "",
             durationMinutes: 60,
             locationOrLink: "Google Meet",
             interviewerIds: [],
@@ -171,19 +171,13 @@ export default function NewInterviewPage() {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Interview Type</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an interview type" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {['Phone Screen', 'Technical', 'Behavioral', 'Final Round'].map((type) => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <FormLabel>Interview Type / Field</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g. Technical, Behavioral, Data Science, Marketing, etc." 
+                        {...field} 
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
