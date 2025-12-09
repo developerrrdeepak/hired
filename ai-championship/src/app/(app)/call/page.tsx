@@ -4,54 +4,59 @@ import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff } from 'lucide-react';
+import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Peer from 'simple-peer';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 function CallContent() {
   const searchParams = useSearchParams();
   const type = searchParams.get('type') || 'voice';
+  const isVideo = type === 'video';
   const { toast } = useToast();
   
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [isConnecting, setIsConnecting] = useState(true);
+  const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const peerRef = useRef<Peer.Instance | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsConnecting(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!isConnecting) {
-      const interval = setInterval(() => setCallDuration(d => d + 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [isConnecting]);
-
+  // Mocking remote stream for demo purposes since we don't have a signaling server in this context
+  // In a real app, this would be replaced by actual WebRTC signaling logic (Socket.io/Firebase)
   useEffect(() => {
     const startMedia = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: type === 'video'
+          video: isVideo
         });
         streamRef.current = stream;
         
-        if (localVideoRef.current && type === 'video') {
+        if (localVideoRef.current && isVideo) {
           localVideoRef.current.srcObject = stream;
         }
+
+        // Simulate connection delay
+        setTimeout(() => {
+            setCallStatus('connected');
+            // Mock remote stream display (mirroring local for demo)
+            if (remoteVideoRef.current && isVideo) {
+               remoteVideoRef.current.srcObject = stream; // In real app, this is the peer stream
+            }
+        }, 2000);
+
       } catch (error) {
         console.error('Media error:', error);
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to access camera/microphone',
+          title: 'Media Access Error',
+          description: 'Please check your camera/microphone permissions.',
         });
+        setCallStatus('ended');
       }
     };
 
@@ -59,8 +64,16 @@ function CallContent() {
 
     return () => {
       streamRef.current?.getTracks().forEach(track => track.stop());
+      peerRef.current?.destroy();
     };
-  }, [type, toast]);
+  }, [isVideo, toast]);
+
+  useEffect(() => {
+    if (callStatus === 'connected') {
+      const interval = setInterval(() => setCallDuration(d => d + 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [callStatus]);
 
   const toggleMute = () => {
     if (streamRef.current) {
@@ -72,7 +85,7 @@ function CallContent() {
   };
 
   const toggleVideo = () => {
-    if (streamRef.current && type === 'video') {
+    if (streamRef.current && isVideo) {
       streamRef.current.getVideoTracks().forEach(track => {
         track.enabled = !track.enabled;
       });
@@ -82,7 +95,8 @@ function CallContent() {
 
   const endCall = () => {
     streamRef.current?.getTracks().forEach(track => track.stop());
-    window.close();
+    setCallStatus('ended');
+    setTimeout(() => window.close(), 1000);
   };
 
   const formatDuration = (seconds: number) => {
@@ -91,103 +105,111 @@ function CallContent() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="h-screen w-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
-      <Card className="w-full max-w-4xl bg-gray-900/50 border-gray-700 backdrop-blur">
-        <div className="p-6">
-          {isConnecting ? (
-            <div className="text-center py-20">
-              <div className="animate-pulse mb-4">
-                {type === 'video' ? (
-                  <Video className="h-16 w-16 mx-auto text-primary" />
-                ) : (
-                  <Phone className="h-16 w-16 mx-auto text-primary" />
-                )}
-              </div>
-              <p className="text-white text-xl">Connecting...</p>
+  if (callStatus === 'ended') {
+      return (
+        <div className="h-screen w-screen bg-gray-950 flex items-center justify-center">
+            <div className="text-white text-center">
+                <h2 className="text-2xl font-bold mb-2">Call Ended</h2>
+                <p className="text-gray-400">Closing window...</p>
             </div>
-          ) : (
-            <>
-              <div className="text-center mb-4">
-                <p className="text-white text-lg font-semibold">Call in Progress</p>
-                <p className="text-gray-400">{formatDuration(callDuration)}</p>
-              </div>
-
-              {type === 'video' ? (
-                <div className="relative aspect-video bg-gray-800 rounded-lg overflow-hidden mb-6">
-                  <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-4 right-4 w-32 h-24 bg-gray-700 rounded-lg overflow-hidden border-2 border-gray-600">
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {isVideoOff && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
-                      <VideoOff className="h-16 w-16 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center mb-4 mx-auto animate-pulse">
-                      <Phone className="h-16 w-16 text-primary" />
-                    </div>
-                    <p className="text-white text-lg">Voice Call Active</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-4">
-                <Button
-                  variant={isMuted ? 'destructive' : 'secondary'}
-                  size="lg"
-                  className="rounded-full h-14 w-14"
-                  onClick={toggleMute}
-                >
-                  {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                </Button>
-
-                {type === 'video' && (
-                  <Button
-                    variant={isVideoOff ? 'destructive' : 'secondary'}
-                    size="lg"
-                    className="rounded-full h-14 w-14"
-                    onClick={toggleVideo}
-                  >
-                    {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
-                  </Button>
-                )}
-
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="rounded-full h-16 w-16"
-                  onClick={endCall}
-                >
-                  <PhoneOff className="h-6 w-6" />
-                </Button>
-              </div>
-            </>
-          )}
         </div>
-      </Card>
+      )
+  }
+
+  return (
+    <div className="h-screen w-screen bg-gray-950 flex flex-col relative overflow-hidden">
+      {/* Remote Video (Full Screen) */}
+      {isVideo && (
+        <div className="absolute inset-0 z-0">
+            <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+            />
+            {/* Overlay gradient for controls visibility */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60 pointer-events-none"></div>
+        </div>
+      )}
+
+      {/* Voice Call UI (Centered) */}
+      {!isVideo && (
+          <div className="flex-1 flex flex-col items-center justify-center z-10">
+              <div className="w-32 h-32 rounded-full bg-gray-800 border-4 border-gray-700 flex items-center justify-center mb-6 animate-pulse">
+                  <User className="h-16 w-16 text-gray-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                  {callStatus === 'connecting' ? 'Calling...' : 'Connected'}
+              </h2>
+              <p className="text-gray-400 font-mono text-lg">{formatDuration(callDuration)}</p>
+          </div>
+      )}
+
+      {/* Local Video (PiP) */}
+      {isVideo && !isVideoOff && (
+        <div className="absolute top-4 right-4 w-40 h-56 bg-black rounded-xl overflow-hidden border border-white/20 shadow-2xl z-20 transition-all hover:scale-105">
+            <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover mirror-mode"
+                style={{ transform: 'scaleX(-1)' }}
+            />
+        </div>
+      )}
+
+      {/* Controls Bar */}
+      <div className="absolute bottom-8 left-0 right-0 z-30 flex justify-center items-center gap-6">
+        <Button
+            variant={isMuted ? 'destructive' : 'secondary'}
+            size="icon"
+            className="h-14 w-14 rounded-full shadow-lg bg-white/10 hover:bg-white/20 backdrop-blur-md border-0"
+            onClick={toggleMute}
+        >
+            {isMuted ? <MicOff className="h-6 w-6 text-white" /> : <Mic className="h-6 w-6 text-white" />}
+        </Button>
+
+        {isVideo && (
+            <Button
+                variant={isVideoOff ? 'destructive' : 'secondary'}
+                size="icon"
+                className="h-14 w-14 rounded-full shadow-lg bg-white/10 hover:bg-white/20 backdrop-blur-md border-0"
+                onClick={toggleVideo}
+            >
+                {isVideoOff ? <VideoOff className="h-6 w-6 text-white" /> : <Video className="h-6 w-6 text-white" />}
+            </Button>
+        )}
+
+        <Button
+            variant="destructive"
+            size="icon"
+            className="h-16 w-16 rounded-full shadow-xl bg-red-600 hover:bg-red-700 border-4 border-red-800"
+            onClick={endCall}
+        >
+            <PhoneOff className="h-8 w-8 text-white" />
+        </Button>
+      </div>
+      
+      {/* Connecting Overlay for Video */}
+      {isVideo && callStatus === 'connecting' && (
+          <div className="absolute inset-0 z-40 bg-black/80 flex items-center justify-center backdrop-blur-sm">
+              <div className="text-center">
+                  <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-primary/50 animate-pulse">
+                      <AvatarImage src="/placeholder-user.jpg" />
+                      <AvatarFallback><User className="h-10 w-10" /></AvatarFallback>
+                  </Avatar>
+                  <p className="text-white text-lg font-medium">Connecting...</p>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
 
 export default function CallPage() {
   return (
-    <Suspense fallback={<div className="h-screen w-screen bg-gray-900 flex items-center justify-center"><p className="text-white">Loading...</p></div>}>
+    <Suspense fallback={<div className="h-screen w-screen bg-gray-950 flex items-center justify-center"><p className="text-white">Loading...</p></div>}>
       <CallContent />
     </Suspense>
   );
