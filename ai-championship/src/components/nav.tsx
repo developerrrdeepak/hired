@@ -70,6 +70,7 @@ const navConfig: Record<string, NavSection[]> = {
        title: 'AI Suite',
        items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
         { href: '/analytics', icon: BarChart3, label: 'Analytics' },
        ]
     },
@@ -102,6 +103,7 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'AI Suite',
         items: [
             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
         ]
     },
@@ -132,6 +134,7 @@ const navConfig: Record<string, NavSection[]> = {
       title: 'AI Suite',
       items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
       ]
     },
     {
