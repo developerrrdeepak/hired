@@ -13,6 +13,8 @@ import {
   Sparkles,
   RefreshCcw,
 } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -166,6 +168,13 @@ function ActionIconButton({ title, icon: Icon, href, disabled = false, delay }: 
 export default function CandidateDashboardPage() {
     const { user, isUserLoading } = useFirebase();
     const { candidate, isLoading: isLoadingCandidate } = useCandidateProfile();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.push('/login');
+        }
+    }, [user, isUserLoading, router]);
 
     const profileComplete = 75;
     const skillReadiness = 85;
