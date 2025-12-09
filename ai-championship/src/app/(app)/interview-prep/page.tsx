@@ -3,10 +3,11 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Video, FileText, Brain } from 'lucide-react';
+import { Mic, Video, FileText, Brain, Users, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { useUserContext } from '../layout';
 
-const tools = [
+const candidateTools = [
   {
     title: 'Voice Interview',
     description: 'Practice with AI voice interviewer',
@@ -33,12 +34,43 @@ const tools = [
   },
 ];
 
+const employerTools = [
+  {
+    title: 'Video Interview',
+    description: 'Conduct live video interviews with candidates',
+    icon: Video,
+    href: '/video-interview',
+  },
+  {
+    title: 'Voice Interview',
+    description: 'Conduct voice interviews with AI analysis',
+    icon: Mic,
+    href: '/voice-interview',
+  },
+  {
+    title: 'Interview Management',
+    description: 'Schedule and manage candidate interviews',
+    icon: Users,
+    href: '/interviews',
+  },
+  {
+    title: 'AI Assistant',
+    description: 'Get AI-powered interview questions and insights',
+    icon: MessageSquare,
+    href: '/ai-assistant',
+  },
+];
+
 export default function InterviewPrepPage() {
+  const { role } = useUserContext();
+  const isCandidate = role === 'Candidate';
+  const tools = isCandidate ? candidateTools : employerTools;
+  
   return (
     <>
       <PageHeader
         title="Interview Tools"
-        description="Prepare for your interviews with AI-powered tools"
+        description={isCandidate ? 'Prepare for your interviews with AI-powered tools' : 'Conduct and manage interviews with AI-powered tools'}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {tools.map((tool) => (
@@ -54,7 +86,7 @@ export default function InterviewPrepPage() {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link href={tool.href}>Start Practice</Link>
+                <Link href={tool.href}>{isCandidate ? 'Start Practice' : 'Open Tool'}</Link>
               </Button>
             </CardContent>
           </Card>
