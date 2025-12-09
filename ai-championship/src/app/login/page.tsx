@@ -184,8 +184,22 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
             <Button 
                 variant="outline" 
                 className="w-full mt-3 relative overflow-hidden group border-purple-200 hover:border-purple-300" 
-                onClick={() => {
-                    toast({ title: "WorkOS SSO", description: "Enterprise authentication coming soon!" });
+                onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                        const res = await fetch('/api/auth/workos/authorize', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userType: userType === 'employer' ? 'employer' : 'candidate' }),
+                        });
+                        const { url } = await res.json();
+                        if (url) window.location.href = url;
+                        else toast({ variant: 'destructive', title: 'Error', description: 'WorkOS not configured' });
+                    } catch (error) {
+                        toast({ variant: 'destructive', title: 'Error', description: 'WorkOS authentication failed' });
+                    } finally {
+                        setIsLoading(false);
+                    }
                 }}
                 disabled={isLoading}
             >

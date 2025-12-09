@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkOS } from '@workos-inc/node';
-import { getEnv } from '@/lib/env';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 
 const workos = new WorkOS(process.env.WORKOS_API_KEY);
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const userType = searchParams.get('state')?.split(':')[0]; // Passing userType in state
+  const state = searchParams.get('state');
+  const userType = state?.split(':')[0];
 
   if (!code) {
-    return NextResponse.json({ error: 'No code provided' }, { status: 400 });
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=no_code`);
   }
 
   try {
@@ -19,23 +32,58 @@ export async function GET(request: NextRequest) {
       clientId: process.env.WORKOS_CLIENT_ID || '',
     });
 
-    // Here we would ideally create a session or token
-    // For this implementation, we'll redirect with a token param (simplified)
-    // In production, use secure session cookies
+    const auth = getAuth();
+    const firestore = getFirestore();
     
-    // Redirect to frontend to complete Firebase login via custom token exchange
-    // We need an endpoint to exchange WorkOS user for Firebase token
+    let firebaseUser;
+    try {
+      firebaseUser = await auth.getUserByEmail(user.email);
+    } catch {
+      firebaseUser = await auth.createUser({
+        email: user.email,
+        displayName: `${user.firstName} ${user.lastName}`,
+        emailVerified: user.emailVerified,
+      });
+      
+      const role = userType === 'employer' ? 'Owner' : 'Candidate';
+      const organizationId = role === 'Owner' ? `org-${firebaseUser.uid}` : `personal-${firebaseUser.uid}`;
+      
+      await firestore.collection('users').doc(firebaseUser.uid).set({
+        id: firebaseUser.uid,
+        organizationId,
+        email: user.email,
+        displayName: `${user.firstName} ${user.lastName}`,
+        role,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isActive: true,
+        onboardingComplete: false,
+      });
+
+      await firestore.collection('organizations').doc(organizationId).set({
+        id: organizationId,
+        name: role === 'Owner' ? `${user.firstName}'s Organization` : `${user.firstName}'s Profile`,
+        ownerId: firebaseUser.uid,
+        type: role === 'Owner' ? 'company' : 'personal',
+        primaryBrandColor: '207 90% 54%',
+        logoUrl: '',
+        about: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    const customToken = await auth.createCustomToken(firebaseUser.uid);
     
-    const redirectUrl = new URL(getEnv().NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-    redirectUrl.pathname = userType === 'employer' ? '/dashboard' : '/candidate/dashboard';
-    redirectUrl.searchParams.set('auth_success', 'true');
+    const redirectUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002');
+    redirectUrl.pathname = userType === 'employer' ? '/dashboard' : '/candidate-portal/dashboard';
+    redirectUrl.searchParams.set('token', customToken);
     redirectUrl.searchParams.set('provider', 'workos');
-    redirectUrl.searchParams.set('email', user.email);
     
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
     console.error('WorkOS Auth Error:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=auth_failed`);
   }
 }

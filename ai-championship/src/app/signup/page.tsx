@@ -126,6 +126,24 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
         setIsLoading(false);
     }
 
+    const onWorkOSClick = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/auth/workos/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userType: 'candidate' }),
+            });
+            const { url } = await res.json();
+            if (url) window.location.href = url;
+            else toast({ variant: 'destructive', title: 'Error', description: 'WorkOS not configured' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'WorkOS authentication failed' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setEmail(value);
@@ -275,7 +293,7 @@ function CandidateSignupForm({ onBack }: { onBack: () => void }) {
                 <span className="relative z-10">Continue with Google</span>
             </Button>
 
-            <Button variant="outline" className="w-full mt-3 relative overflow-hidden group border-purple-200" onClick={() => toast({ title: "WorkOS SSO", description: "Enterprise authentication!" })} disabled={isLoading}>
+            <Button variant="outline" className="w-full mt-3 relative overflow-hidden group border-purple-200" onClick={onWorkOSClick} disabled={isLoading}>
                 <svg className="mr-2 h-4 w-4 relative z-10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
                 <span className="relative z-10">Continue with WorkOS SSO</span>
             </Button>
@@ -394,6 +412,24 @@ function EmployerSignupForm({ onBack }: { onBack: () => void }) {
         setIsLoading(true);
         await handleGoogleSignIn('Owner', { auth, firestore, toast, router });
         setIsLoading(false);
+    }
+
+    const onWorkOSClick = async () => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/auth/workos/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userType: 'employer' }),
+            });
+            const { url } = await res.json();
+            if (url) window.location.href = url;
+            else toast({ variant: 'destructive', title: 'Error', description: 'WorkOS not configured' });
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'WorkOS authentication failed' });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {

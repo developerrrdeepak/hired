@@ -1,53 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getEnv } from '@/lib/env';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2024-11-20.acacia',
 });
 
-const APP_URL = getEnv().NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
 
 export async function POST(request: NextRequest) {
   try {
-    const { planId, userId, email } = await request.json();
+    const { priceId, organizationId } = await request.json();
 
-    if (!userId || !email) {
-      return NextResponse.json({ error: 'User required' }, { status: 401 });
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization required' }, { status: 401 });
     }
 
-    let priceId = '';
-    // Map planId to real Stripe Price IDs (use env vars in production)
-    switch (planId) {
-      case 'starter': priceId = 'price_starter_dummy_id'; break;
-      case 'pro': priceId = 'price_pro_dummy_id'; break;
-      case 'enterprise': priceId = 'price_ent_dummy_id'; break;
-      default: return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    const firestore = getFirestore();
+    const orgDoc = await firestore.collection('organizations').doc(organizationId).get();
+    
+    if (!orgDoc.exists) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    // For demo/hackathon without real Stripe account, we mock the success
-    if (process.env.NODE_ENV === 'development' && !process.env.STRIPE_SECRET_KEY) {
-        return NextResponse.json({ 
-            url: `${APP_URL}/billing?success=true&plan=${planId}&mock=true` 
-        });
+    const orgData = orgDoc.data();
+    let customerId = orgData?.stripeCustomerId;
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: orgData?.email || `org-${organizationId}@hirevision.local`,
+        metadata: { organizationId },
+      });
+      customerId = customer.id;
+      await firestore.collection('organizations').doc(organizationId).update({
+        stripeCustomerId: customerId,
+      });
     }
 
     const session = await stripe.checkout.sessions.create({
+      customer: customerId,
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       success_url: `${APP_URL}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_URL}/pricing?canceled=true`,
-      customer_email: email,
-      metadata: {
-        userId,
-        planId
-      }
+      cancel_url: `${APP_URL}/billing?cancelled=true`,
+      metadata: { organizationId, priceId },
     });
 
     return NextResponse.json({ url: session.url });
