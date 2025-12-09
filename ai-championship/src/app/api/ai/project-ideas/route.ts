@@ -55,9 +55,23 @@ Make projects practical, modern, and portfolio-worthy. Generate ALL 3 projects.`
     const response = result.response.text();
     
     const jsonMatch = response.match(/\[[\s\S]*\]/);
-    const projects = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    if (!jsonMatch) {
+      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+    }
+    
+    const projects = JSON.parse(jsonMatch[0]);
+    
+    // Validate that all required fields are present
+    const validatedProjects = projects.map((p: any) => ({
+      title: p.title || 'Untitled Project',
+      description: p.description || 'No description',
+      mvpFeatures: Array.isArray(p.mvpFeatures) ? p.mvpFeatures : [],
+      bonusChallenges: Array.isArray(p.bonusChallenges) ? p.bonusChallenges : [],
+      techStack: Array.isArray(p.techStack) ? p.techStack : [],
+      estimatedHours: p.estimatedHours || 20
+    }));
 
-    return NextResponse.json({ projects });
+    return NextResponse.json({ projects: validatedProjects });
   } catch (error) {
     console.error('Project ideas error:', error);
     return NextResponse.json({ error: 'Failed to generate project ideas' }, { status: 500 });

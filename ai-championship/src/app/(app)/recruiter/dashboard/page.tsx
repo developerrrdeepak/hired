@@ -208,11 +208,11 @@ export default function RecruiterDashboardPage() {
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
               <AIActionIconButton title="AI Assistant" icon={Bot} href="/ai-assistant" delay={100} />
+              <AIActionIconButton title="Video Interview" icon={CalendarCheck} href="/video-interview" delay={150} />
               <AIActionIconButton title="Offer Generator" icon={FileText} href="/offer-letter" delay={200} />
               <AIActionIconButton title="Smart Screening" icon={BrainCircuit} href="/candidates" delay={300} />
               <AIActionIconButton title="Interview Qs" icon={MessageSquare} href="/ai-assistant" delay={400} />
               <AIActionIconButton title="JD Generator" icon={Briefcase} href="/jobs/new" delay={500} />
-              <AIActionIconButton title="Match Analysis" icon={RefreshCcw} href="/candidates" delay={600} />
             </div>
           </CardContent>
         </Card>

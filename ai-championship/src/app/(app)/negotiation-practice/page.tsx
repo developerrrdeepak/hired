@@ -39,7 +39,8 @@ export default function NegotiationPracticePage() {
     }
 
     setLoading(true);
-    const newHistory: Message[] = [...history, { role: 'user', content: userResponse }];
+    const oldHistory = history;
+    const newHistory: Message[] = [...oldHistory, { role: 'user', content: userResponse }];
     setHistory(newHistory);
     setUserResponse('');
 
@@ -53,7 +54,8 @@ export default function NegotiationPracticePage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to get a response from the AI');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to get a response from the AI');
       }
 
       const { response } = await res.json();
@@ -62,10 +64,10 @@ export default function NegotiationPracticePage() {
       console.error(error);
       toast({
         title: 'Error',
-        description: 'An error occurred. Please try again.',
+        description: error instanceof Error ? error.message : 'An error occurred. Please try again.',
         variant: 'destructive',
       });
-      setHistory(history);
+      setHistory(oldHistory);
     } finally {
       setLoading(false);
     }
@@ -129,7 +131,12 @@ export default function NegotiationPracticePage() {
               placeholder="Type your response..."
               value={userResponse}
               onChange={(e) => setUserResponse(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
               disabled={loading || !role}
             />
             <Button onClick={handleSendMessage} disabled={loading || !role}>

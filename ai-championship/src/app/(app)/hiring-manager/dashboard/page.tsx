@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, orderBy } from 'firebase/firestore';
@@ -22,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useRouter } from "next/navigation";
 import { placeholderImages } from '@/lib/placeholder-images';
 import { useUserContext } from '../../layout';
+import { Video } from 'lucide-react';
 
 type ApplicationWithDetails = Application & {
   candidateName?: string;
@@ -103,7 +105,14 @@ export default function HiringManagerDashboard() {
       <PageHeader
         title={`Hello, ${user?.displayName?.split(' ')[0] || 'Manager'}!`}
         description="Here are the candidates awaiting your review."
-      />
+      >
+        <Button asChild>
+          <Link href="/video-interview">
+            <Video className="mr-2 h-4 w-4" />
+            Start Video Interview
+          </Link>
+        </Button>
+      </PageHeader>
       
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
