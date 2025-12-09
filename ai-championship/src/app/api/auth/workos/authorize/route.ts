@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const { userType } = await request.json();
     
     const clientId = process.env.WORKOS_CLIENT_ID || '';
-    const redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'http://localhost:9002/api/auth/workos/callback';
+    const redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'https://hirevisi.vercel.app/api/auth/workos/callback';
     
     const authorizationUrl = workos.userManagement.getAuthorizationUrl({
       provider: 'authkit',

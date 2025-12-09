@@ -17,7 +17,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-11-20.acacia',
 });
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app';
 
 export async function POST(request: NextRequest) {
   try {

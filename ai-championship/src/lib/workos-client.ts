@@ -9,7 +9,7 @@ export class WorkOSClient {
   constructor() {
     this.clientId = process.env.NEXT_PUBLIC_WORKOS_CLIENT_ID || '';
     this.apiKey = process.env.WORKOS_API_KEY || '';
-    this.redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'http://localhost:9002/auth/callback';
+    this.redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'https://hirevisi.vercel.app/api/auth/workos/callback';
   }
 
   getAuthorizationUrl(provider: 'google' | 'microsoft' | 'github' = 'google') {

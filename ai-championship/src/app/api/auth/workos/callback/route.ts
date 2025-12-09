@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const userType = state?.split(':')[0];
 
   if (!code) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=no_code`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app'}/login?error=no_code`);
   }
 
   try {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     const customToken = await auth.createCustomToken(firebaseUser.uid);
     
-    const redirectUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002');
+    const redirectUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app');
     redirectUrl.pathname = userType === 'employer' ? '/dashboard' : '/candidate-portal/dashboard';
     redirectUrl.searchParams.set('token', customToken);
     redirectUrl.searchParams.set('provider', 'workos');
@@ -84,6 +84,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('WorkOS Auth Error:', error);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/login?error=auth_failed`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app'}/login?error=auth_failed`);
   }
 }
