@@ -61,23 +61,20 @@ const navConfig: Record<string, NavSection[]> = {
       title: 'Platform',
       items: [
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/admin/dashboard', icon: BarChart3, label: 'Admin' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
-        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
       ]
     },
     {
-       title: 'Intelligence',
+       title: 'AI Suite',
        items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-        { href: '/offer-letter', icon: FileText, label: 'Offer Generator' },
         { href: '/analytics', icon: BarChart3, label: 'Analytics' },
        ]
     },
     {
-       title: 'Network',
+       title: 'Community',
        items: [
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
@@ -86,9 +83,8 @@ const navConfig: Record<string, NavSection[]> = {
     {
         title: 'Account',
         items: [
-            { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
+            { href: '/profile/edit', icon: User, label: 'Profile' },
             { href: '/billing', icon: CreditCard, label: 'Billing' },
-            { href: '/settings', icon: Settings, label: 'Settings' },
         ]
     }
   ],
@@ -98,21 +94,19 @@ const navConfig: Record<string, NavSection[]> = {
       items: [
         { href: '/recruiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'},
-        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
         { href: '/challenges', icon: Trophy, label: 'Challenges' },
       ]
     },
     {
-        title: 'Intelligence',
+        title: 'AI Suite',
         items: [
             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-            { href: '/offer-letter', icon: FileText, label: 'Offer Generator' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
         ]
     },
     {
-       title: 'Network',
+       title: 'Community',
        items: [
         { href: '/community', icon: Users, label: 'Community' },
         { href: '/messages', icon: MessageCircle, label: 'Messages' },
@@ -121,8 +115,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
         title: 'Account',
         items: [
-            { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
-            { href: '/settings', icon: Settings, label: 'Settings' },
+            { href: '/profile/edit', icon: User, label: 'Profile' },
         ]
     }
   ],
@@ -132,13 +125,11 @@ const navConfig: Record<string, NavSection[]> = {
       items: [
         { href: '/hiring-manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs' },
-        { href: '/applications', icon: KanbanSquare, label: 'Applications' },
         { href: '/candidates', icon: Users, label: 'Candidates' },
-        { href: '/interviews', icon: List, label: 'Interviews' },
       ]
     },
     {
-      title: 'Intelligence',
+      title: 'AI Suite',
       items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
       ]
@@ -146,8 +137,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
       title: 'Account',
       items: [
-        { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
-        { href: '/settings', icon: Settings, label: 'Settings' },
+        { href: '/profile/edit', icon: User, label: 'Profile' },
       ]
     }
   ],
@@ -161,8 +151,7 @@ const navConfig: Record<string, NavSection[]> = {
     {
       title: 'Account',
       items: [
-        { href: '/profile/edit', icon: User, label: 'Profile' }, // Added Profile
-        { href: '/settings', icon: Settings, label: 'Settings' },
+        { href: '/profile/edit', icon: User, label: 'Profile' },
       ]
     }
   ],
@@ -173,20 +162,20 @@ const navConfig: Record<string, NavSection[]> = {
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
             { href: '/challenges', icon: Trophy, label: 'Challenges' },
-            { href: '/assessments', icon: CheckCircle2, label: 'Skill Assessments' },
             { href: '/courses', icon: GraduationCap, label: 'Courses' },
         ]
     },
     {
-        title: 'Intelligence',
+        title: 'AI Suite',
         items: [
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-             { href: '/resume-builder', icon: FileEdit, label: 'AI Resume Builder' },
-             { href: '/negotiation-practice', icon: Brain, label: 'Negotiation' },
+             { href: '/resume-builder', icon: FileEdit, label: 'Resume Builder' },
+             { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
+             { href: '/negotiation-practice', icon: Brain, label: 'Career Tools' },
         ]
     },
     {
-       title: 'Network',
+       title: 'Community',
        items: [
             { href: '/community', icon: Users, label: 'Community' },
             { href: '/messages', icon: MessageCircle, label: 'Messages' },
@@ -196,7 +185,6 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'Account',
         items: [
             { href: '/profile/edit', icon: User, label: 'Profile' },
-            { href: '/settings', icon: Settings, label: 'Settings' },
         ]
     }
   ],
