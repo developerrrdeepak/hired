@@ -13,8 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, addDocumentNonBlocking } from "@/firebase";
-import { collection, doc, getDoc } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { collection, doc, getDoc, addDoc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +128,11 @@ export default function NewJobPage() {
             return;
         }
 
-        const organizationId = `org-${user.uid}`;
+        if (!organizationId) {
+            toast({ variant: "destructive", title: "Organization Error", description: "No organization found." });
+            return;
+        }
+
         const jobsCol = collection(firestore, `organizations/${organizationId}/jobs`);
         
         const newJobData = {
@@ -141,13 +145,21 @@ export default function NewJobPage() {
             updatedAt: new Date().toISOString(),
         };
 
-        addDocumentNonBlocking(jobsCol, newJobData);
-
-        toast({
-            title: "Job Created",
-            description: `The job "${values.title}" has been successfully created.`,
-        });
-        router.push("/jobs");
+        try {
+            await addDoc(jobsCol, newJobData);
+            toast({
+                title: "Job Created",
+                description: `The job "${values.title}" has been successfully created.`,
+            });
+            router.push("/jobs");
+        } catch (error) {
+            console.error("Failed to create job:", error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to create job. Please try again.",
+            });
+        }
     }
 
   return (
