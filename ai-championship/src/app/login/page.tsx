@@ -180,6 +180,21 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin relative z-10" /> : <GoogleLogo className="mr-2 h-4 w-4 relative z-10" />}
                 <span className="relative z-10">Continue with Google</span>
             </Button>
+
+            <Button 
+                variant="outline" 
+                className="w-full mt-3 relative overflow-hidden group border-purple-200 hover:border-purple-300" 
+                onClick={() => {
+                    toast({ title: "WorkOS SSO", description: "Enterprise authentication coming soon!" });
+                }}
+                disabled={isLoading}
+            >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <svg className="mr-2 h-4 w-4 relative z-10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
+                <span className="relative z-10">Continue with WorkOS SSO</span>
+            </Button>
             
             <div className="my-4 flex items-center">
                 <div className="flex-grow border-t border-muted"></div>
