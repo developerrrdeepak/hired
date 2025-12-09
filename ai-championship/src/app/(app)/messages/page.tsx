@@ -347,7 +347,7 @@ export default function MessagesPage() {
                     onClick={() => setSelectedConversation(conv)}
                   >
                     <Avatar>
-                      <AvatarImage src={otherParticipant?.avatarUrl || placeholderImages[0].imageUrl} />
+                      <AvatarImage src={otherParticipant?.avatarUrl} />
                       <AvatarFallback>{otherParticipant?.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
@@ -373,7 +373,7 @@ export default function MessagesPage() {
               <div className="p-4 border-b flex items-center justify-between bg-muted/30">
                 <div className="flex items-center gap-3 flex-1">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={selectedConversation.participants.find(p => p.id !== userId)?.avatarUrl || placeholderImages[0].imageUrl} />
+                    <AvatarImage src={selectedConversation.participants.find(p => p.id !== userId)?.avatarUrl} />
                     <AvatarFallback>{selectedConversation.participants.find(p => p.id !== userId)?.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
@@ -593,7 +593,7 @@ export default function MessagesPage() {
                 }}
               >
                 <Avatar>
-                  <AvatarImage src={user.avatarUrl || placeholderImages[0].imageUrl} />
+                  <AvatarImage src={user.avatarUrl} />
                   <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <div>

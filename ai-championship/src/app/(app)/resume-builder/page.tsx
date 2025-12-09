@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, FileText, Loader2, Download, Check, AlertCircle } from 'lucide-react';
+import { Sparkles, FileText, Loader2, Download, Check, AlertCircle, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -117,8 +117,48 @@ export default function ResumeBuilderPage() {
                             <Tabs defaultValue="paste">
                                 <TabsList className="grid w-full grid-cols-2">
                                     <TabsTrigger value="paste">Paste Text</TabsTrigger>
-                                    <TabsTrigger value="upload" disabled>Upload PDF (Pro)</TabsTrigger>
+                                    <TabsTrigger value="upload">Upload PDF</TabsTrigger>
                                 </TabsList>
+                                <TabsContent value="upload" className="space-y-4">
+                                    <div className="border-2 border-dashed rounded-lg p-8 text-center space-y-4">
+                                        <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+                                        <div>
+                                            <p className="font-semibold mb-1">Upload Your Resume</p>
+                                            <p className="text-sm text-muted-foreground">AI will analyze and improve it</p>
+                                        </div>
+                                        <Input 
+                                            type="file" 
+                                            accept=".pdf,.doc,.docx"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    toast({ title: "Analyzing Resume...", description: "AI is parsing your document" });
+                                                    const formData = new FormData();
+                                                    formData.append('resume', file);
+                                                    try {
+                                                        const res = await fetch('/api/ai/parse-resume', {
+                                                            method: 'POST',
+                                                            body: formData
+                                                        });
+                                                        if (res.ok) {
+                                                            const { data } = await res.json();
+                                                            setOldResumeText(JSON.stringify(data, null, 2));
+                                                            if (data.title) setTargetRole(data.title);
+                                                            if (data.skills) setSkills(data.skills.join(', '));
+                                                            toast({ title: "Success!", description: "Resume parsed successfully" });
+                                                        } else {
+                                                            toast({ variant: "destructive", title: "Error", description: "Failed to parse resume" });
+                                                        }
+                                                    } catch (error) {
+                                                        console.error(error);
+                                                        toast({ variant: "destructive", title: "Error", description: "Failed to parse resume" });
+                                                    }
+                                                }
+                                            }}
+                                            className="cursor-pointer"
+                                        />
+                                    </div>
+                                </TabsContent>
                                 <TabsContent value="paste" className="space-y-4">
                                     <Textarea 
                                         placeholder="Paste your current resume content or a summary of your experience here..." 

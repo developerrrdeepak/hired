@@ -292,7 +292,6 @@ export default function NewCandidatePage() {
                                     <Input 
                                         type="file" 
                                         accept=".pdf,.doc,.docx"
-                                        {...form.register("resumeFile")}
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
@@ -312,8 +311,11 @@ export default function NewCandidatePage() {
                                                         form.setValue('currentRole', data.title || '');
                                                         form.setValue('rawResumeText', JSON.stringify(data, null, 2));
                                                         toast({ title: "Success!", description: "Resume parsed and form auto-filled" });
+                                                    } else {
+                                                        toast({ variant: "destructive", title: "Error", description: "Failed to parse resume" });
                                                     }
                                                 } catch (error) {
+                                                    console.error(error);
                                                     toast({ variant: "destructive", title: "Error", description: "Failed to parse resume" });
                                                 }
                                             }
