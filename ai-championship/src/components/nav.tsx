@@ -262,13 +262,13 @@ export function Nav({ role }: { role: string | null }) {
   return (
     <SidebarMenu className="h-full">
       {navSections.map((section, index) => (
-        <SidebarGroup key={index} className={index > 0 ? 'mt-6' : ''}>
+        <SidebarGroup key={index} className={index > 0 ? 'mt-3' : ''}>
             {section.title && (
-                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
+                <div className="px-3 py-1 mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider group-data-[collapsible=icon]:hidden">
                     {section.title}
                 </div>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {section.items.map(item => (
                   <SidebarMenuItem key={item.href}>
                       <NavItem item={item} />
