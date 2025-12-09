@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import {
     SidebarProvider,
     Sidebar,
@@ -8,7 +9,8 @@ import {
     SidebarFooter,
     SidebarRail,
     SidebarTrigger,
-    SidebarInset
+    SidebarInset,
+    useSidebar
 } from '@/components/ui/sidebar';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -30,41 +32,55 @@ interface AppShellProps {
     organization: Organization | null;
 }
 
+function SidebarWithHover({ children, nav, homePath, organization }: AppShellProps) {
+    const { setOpen } = useSidebar();
+
+    return (
+        <Sidebar 
+            collapsible="icon"
+            onMouseEnter={() => setOpen(true)}
+            onMouseLeave={() => setOpen(false)}
+        >
+            <SidebarHeader>
+                 <div className="flex items-center justify-between px-2 pt-2">
+                     <Link
+                        href={homePath}
+                        className="flex items-center gap-2 truncate font-semibold"
+                    >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                             {organization?.logoUrl ? (
+                                <Image src={organization.logoUrl} alt={`${organization.name} Logo`} width={24} height={24} className="rounded-md object-contain" />
+                            ) : (
+                                <HireVisionLogo className="h-5 w-5" />
+                            )}
+                        </div>
+                        <span className="truncate font-bold group-data-[collapsible=icon]:hidden">
+                            {organization?.name || 'HireVision'}
+                        </span>
+                    </Link>
+                </div>
+            </SidebarHeader>
+            
+            <SidebarContent>
+              {nav}
+            </SidebarContent>
+
+            <SidebarFooter>
+                 <UserNav />
+            </SidebarFooter>
+            <SidebarRail />
+        </Sidebar>
+    );
+}
+
 function AppShellContent({ children, nav, homePath, organization }: AppShellProps) {
     return (
         <>
         <CommandPalette />
-        <SidebarProvider>
-            <Sidebar collapsible="icon">
-                <SidebarHeader>
-                     <div className="flex items-center justify-between px-2 pt-2">
-                         <Link
-                            href={homePath}
-                            className="flex items-center gap-2 truncate font-semibold"
-                        >
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                 {organization?.logoUrl ? (
-                                    <Image src={organization.logoUrl} alt={`${organization.name} Logo`} width={24} height={24} className="rounded-md object-contain" />
-                                ) : (
-                                    <HireVisionLogo className="h-5 w-5" />
-                                )}
-                            </div>
-                            <span className="truncate font-bold group-data-[collapsible=icon]:hidden">
-                                {organization?.name || 'HireVision'}
-                            </span>
-                        </Link>
-                    </div>
-                </SidebarHeader>
-                
-                <SidebarContent>
-                  {nav}
-                </SidebarContent>
-
-                <SidebarFooter>
-                     <UserNav />
-                </SidebarFooter>
-                <SidebarRail />
-            </Sidebar>
+        <SidebarProvider defaultOpen={false}>
+            <SidebarWithHover nav={nav} homePath={homePath} organization={organization}>
+                {children}
+            </SidebarWithHover>
             
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
