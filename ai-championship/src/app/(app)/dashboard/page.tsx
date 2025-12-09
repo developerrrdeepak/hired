@@ -2,42 +2,14 @@
 
 import { useUserRole } from '@/hooks/use-user-role';
 import { Loader2 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useFirebase } from '@/firebase';
-import { signInWithCustomToken } from 'firebase/auth';
 
 export default function DashboardPage() {
   const { role, isLoading } = useUserRole();
-  const { auth } = useFirebase();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    const provider = searchParams.get('provider');
-
-    if (token && provider === 'workos' && auth) {
-      signInWithCustomToken(auth, token)
-        .then(() => {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('token');
-          url.searchParams.delete('provider');
-          window.history.replaceState({}, '', url.toString());
-        })
-        .catch((error) => {
-          console.error('WorkOS token sign-in failed:', error);
-          router.push('/login?error=workos_failed');
-        });
-    }
-  }, [searchParams, auth, router]);
-
-  useEffect(() => {
-    if (!isLoading && !role) {
-      router.replace('/login');
-      return;
-    }
-
     if (!isLoading && role) {
       switch (role) {
         case 'Candidate':
@@ -54,6 +26,7 @@ export default function DashboardPage() {
           router.replace('/hiring-manager/dashboard');
           break;
         default:
+          // Stay here if role is unknown or 'Employee' without specific dash
           break;
       }
     }
