@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import pdf from 'pdf-parse';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -14,19 +15,31 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString('base64');
-
-    // Determine MIME type
-    let mimeType = file.type;
-    if (!mimeType || mimeType === 'application/octet-stream') {
-      if (file.name.endsWith('.pdf')) mimeType = 'application/pdf';
-      else if (file.name.endsWith('.docx')) mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-      else if (file.name.endsWith('.doc')) mimeType = 'application/msword';
+    
+    let resumeText = '';
+    
+    // Extract text from PDF
+    if (file.name.endsWith('.pdf')) {
+      try {
+        const pdfData = await pdf(buffer);
+        resumeText = pdfData.text;
+        console.log('Extracted PDF text length:', resumeText.length);
+      } catch (error) {
+        console.error('PDF extraction error:', error);
+        return NextResponse.json({ error: 'Failed to extract text from PDF' }, { status: 500 });
+      }
+    } else {
+      // For non-PDF files, convert to base64 and use Gemini vision
+      resumeText = buffer.toString('utf-8');
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    if (!resumeText || resumeText.length < 50) {
+      return NextResponse.json({ error: 'Resume appears to be empty or unreadable' }, { status: 400 });
+    }
 
-    const prompt = `Analyze this resume document and extract ALL information. Return ONLY a valid JSON object with this exact structure:
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+    const prompt = `Analyze this resume text and extract ALL information. Return ONLY a valid JSON object with this exact structure:
 
 {
   "name": "Full name from resume",
@@ -41,12 +54,12 @@ export async function POST(req: NextRequest) {
   "yearsOfExperience": 5
 }
 
-IMPORTANT: Return ONLY the JSON object, no markdown formatting, no explanation.`;
+IMPORTANT: Return ONLY the JSON object, no markdown formatting, no explanation.
 
-    const result = await model.generateContent([
-      { inlineData: { mimeType, data: base64 } },
-      { text: prompt }
-    ]);
+RESUME TEXT:
+${resumeText}`;
+
+    const result = await model.generateContent(prompt);
 
     const response = result.response.text();
     console.log('AI Response:', response);
