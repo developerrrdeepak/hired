@@ -106,7 +106,7 @@ function ProfileGistCard({ candidate }: { candidate: Candidate | null }) {
     const imageSrc = user?.photoURL ?? `https://api.dicebear.com/7.x/initials/svg?seed=${userName}`;
 
     return (
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500">
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 overflow-hidden">
             <CardHeader>
                 <CardTitle className="text-2xl font-bold">Just the Gist</CardTitle>
             </CardHeader>
@@ -129,7 +129,7 @@ function ProfileGistCard({ candidate }: { candidate: Candidate | null }) {
                         </Link>
                     </Button>
                 </div>
-                 <div className="flex items-center justify-around mt-6">
+                 <div className="flex items-center justify-around mt-6 flex-wrap">
                     <CircularProgress value={profileComplete} label="Profile Complete" />
                     <CircularProgress value={skillReadiness} label="Skill Readiness" />
                     <CircularProgress value={careerFit} label="Career Fit" />
@@ -190,10 +190,10 @@ export default function CandidateDashboardPage() {
     const imageSrc = user?.photoURL ?? `https://api.dicebear.com/7.x/initials/svg?seed=${userName}`;
 
     return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full overflow-hidden">
         <ProfileGistCard candidate={candidate || null} />
 
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400">
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400 w-full overflow-x-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -201,7 +201,7 @@ export default function CandidateDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex md:grid md:grid-cols-4 gap-4 overflow-x-auto pb-4 md:pb-0 min-w-max md:min-w-0">
               <ActionIconButton title="AI Chat Assistant" icon={MessageSquare} href="/ai-assistant" delay={100} />
               <ActionIconButton title="Smart Resume Analysis" icon={FileText} href="/smart-recruiter" delay={200} />
               <ActionIconButton title="AI Mock Interview" icon={Mic} href="/voice-interview" delay={300} />
@@ -214,7 +214,7 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
 
-       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20 relative">
+       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20 relative w-full overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-primary/10 to-transparent">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -235,7 +235,7 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-1000 border-2 border-green-500/20">
+        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-1000 border-2 border-green-500/20 w-full overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-green-500/10 to-transparent">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function CandidateDashboardPage() {
           </CardContent>
         </Card>
 
-       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-1100 border-2 border-blue-500/20">
+       <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-1100 border-2 border-blue-500/20 w-full overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-500/10 to-transparent">
             <div>
               <CardTitle className="flex items-center gap-2">

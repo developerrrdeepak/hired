@@ -18,6 +18,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { scheduleInterviewFlow } from "@/ai/flows/ai-schedule-interview";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { MessageCircle } from "lucide-react";
+import Link from "next/link";
 
 function CandidateProfileSkeleton() {
     return (
@@ -145,6 +147,16 @@ export default function CandidateDetailPage() {
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
       <CandidateHeader candidate={candidate} hasStarred={!!hasStarred} onToggleStar={toggleStar} isCandidateViewing={isCandidateViewing} />
       
+      {!isCandidateViewing && (
+        <div className="mb-4">
+             <Button variant="outline" className="gap-2" asChild>
+                <Link href={`/messages?convId=new&userId=${candidate.id}`}>
+                    <MessageCircle className="h-4 w-4" /> Message Candidate
+                </Link>
+             </Button>
+        </div>
+      )}
+
       <Tabs defaultValue="overview" className="w-full mt-6">
         <TabsList className="mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>

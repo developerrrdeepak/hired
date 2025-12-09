@@ -20,10 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { deleteDoc } from 'firebase/firestore';
 import { CommentsSection } from '@/components/community/CommentsSection';
-import { Stories } from '@/components/community/Stories';
 import { PostReactions } from '@/components/community/PostReactions';
 import { TrendingSidebar } from '@/components/community/TrendingSidebar';
 import Link from 'next/link';
+import { ProfileCard } from '@/components/community/ProfileCard';
 
 export default function CommunityPage() {
   const { firestore, user } = useFirebase();
@@ -38,6 +38,7 @@ export default function CommunityPage() {
   const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [hoveredProfileId, setHoveredProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 10);
@@ -185,10 +186,6 @@ export default function CommunityPage() {
       <div className="flex gap-6">
         {/* Main Feed Area */}
         <div className="flex-1 min-w-0">
-            <div className="mb-6">
-                <Stories />
-            </div>
-
             <div className="mb-8 flex items-end justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Community Feed</h1>
@@ -227,12 +224,27 @@ export default function CommunityPage() {
                     <Card key={post.id} className="hover:shadow-lg transition-all duration-300 border-border/50">
                     <CardHeader>
                         <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                            <div className="relative group cursor-pointer">
+                        <div className="flex items-center gap-3 flex-1 relative group">
+                            <div 
+                                className="relative cursor-pointer"
+                                onMouseEnter={() => setHoveredProfileId(post.id)}
+                                onMouseLeave={() => setHoveredProfileId(null)}
+                            >
                                 <Avatar className="h-10 w-10 ring-2 ring-background">
                                     <AvatarImage src={post.authorAvatar || placeholderImages[0].imageUrl} />
                                     <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
                                 </Avatar>
+                                {hoveredProfileId === post.id && (
+                                    <div className="absolute top-full left-0 z-50 mt-2 w-72">
+                                        <ProfileCard 
+                                            userId={post.authorId}
+                                            name={post.authorName}
+                                            role={post.authorRole}
+                                            avatarUrl={post.authorAvatar}
+                                            onClose={() => setHoveredProfileId(null)}
+                                        />
+                                    </div>
+                                )}
                             </div>
                             <div>
                             <p className="font-semibold text-sm hover:underline cursor-pointer">{post.authorName}</p>

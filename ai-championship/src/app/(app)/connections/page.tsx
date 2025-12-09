@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPlus, UserCheck, Users, Check, X } from 'lucide-react';
+import { UserPlus, UserCheck, Users, Check, X, MessageCircle, Eye } from 'lucide-react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { useState, useEffect, useMemo } from 'react';
@@ -14,12 +14,15 @@ import { useUserContext } from '../layout';
 import type { Connection } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
+import Link from 'next/link';
+import { ProfileCard } from '@/components/community/ProfileCard';
 
 export default function ConnectionsPage() {
   const { firestore } = useFirebase();
   const { userId, displayName, role } = useUserContext();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [hoveredProfileId, setHoveredProfileId] = useState<string | null>(null);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !userId) return null;
@@ -236,15 +239,35 @@ export default function ConnectionsPage() {
               (c.requesterId === userId && c.receiverId === u.id) || 
               (c.receiverId === userId && c.requesterId === u.id)
             )).map((user: any) => (
-              <Card key={user.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <Card key={user.id} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-visible z-0 relative">
                 <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={user.avatarUrl || placeholderImages[0].imageUrl} />
-                      <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
+                  <div className="flex items-center gap-3 mb-4 relative group">
+                    <div
+                        className="relative cursor-pointer"
+                        onMouseEnter={() => setHoveredProfileId(user.id)}
+                        onMouseLeave={() => setHoveredProfileId(null)}
+                    >
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={user.avatarUrl || placeholderImages[0].imageUrl} />
+                            <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        {hoveredProfileId === user.id && (
+                             <div className="absolute top-full left-0 z-[50] mt-2">
+                                <ProfileCard 
+                                    userId={user.id}
+                                    name={user.name || user.displayName}
+                                    role={user.role || user.title}
+                                    avatarUrl={user.avatarUrl}
+                                />
+                             </div>
+                        )}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{user.name || 'User'}</p>
+                      <p className="font-semibold truncate hover:underline cursor-pointer">
+                        <Link href={`/public-profile/${user.id}`}>
+                            {user.name || 'User'}
+                        </Link>
+                      </p>
                       <Badge variant="secondary" className="text-xs">{user.title || user.role || 'User'}</Badge>
                       {user.location && <p className="text-xs text-muted-foreground mt-1">{user.location}</p>}
                     </div>
@@ -280,7 +303,7 @@ export default function ConnectionsPage() {
                 role: isRequester ? conn.receiverRole : conn.requesterRole,
               };
               return (
-                <Card key={conn.id}>
+                <Card key={conn.id} className="group hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
@@ -292,9 +315,18 @@ export default function ConnectionsPage() {
                         <Badge variant="secondary" className="text-xs">{otherUser.role}</Badge>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full mt-4" size="sm">
-                      View Profile
-                    </Button>
+                    <div className="flex gap-2 mt-4">
+                        <Button variant="outline" className="flex-1 text-xs h-8" asChild>
+                            <Link href={`/public-profile/${otherUser.id}`}>
+                                <Eye className="w-3 h-3 mr-1" /> Profile
+                            </Link>
+                        </Button>
+                        <Button className="flex-1 text-xs h-8" asChild>
+                             <Link href={`/messages?userId=${otherUser.id}`}>
+                                <MessageCircle className="w-3 h-3 mr-1" /> Chat
+                            </Link>
+                        </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

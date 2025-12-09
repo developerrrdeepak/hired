@@ -16,6 +16,7 @@ import type { Conversation, Message } from '@/lib/definitions';
 import { useToast } from '@/hooks/use-toast';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { sendMessage, subscribeToMessages } from '@/lib/messaging-service';
 
@@ -304,6 +305,10 @@ export default function MessagesPage() {
     }
   }, [conversations]);
 
+  const addEmoji = (emoji: string) => {
+    setMessageText(prev => prev + emoji);
+  };
+
   return (
     <div className={`transform transition-all duration-300 ease-out ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <div className="flex items-center justify-between mb-6">
@@ -386,7 +391,7 @@ export default function MessagesPage() {
                     className="hover:bg-primary/10"
                     onClick={() => {
                       toast({ title: 'Voice Call', description: 'Starting voice call...' });
-                      window.open(`/call?type=voice&convId=${selectedConversation.id}`, '_blank');
+                      window.open(`/call?type=voice&convId=${selectedConversation.id}`, '_blank', 'width=800,height=600');
                     }}
                   >
                     <Phone className="h-5 w-5" />
@@ -397,7 +402,7 @@ export default function MessagesPage() {
                     className="hover:bg-primary/10"
                     onClick={() => {
                       toast({ title: 'Video Call', description: 'Starting video call...' });
-                      window.open(`/call?type=video&convId=${selectedConversation.id}`, '_blank');
+                      window.open(`/call?type=video&convId=${selectedConversation.id}`, '_blank', 'width=800,height=600');
                     }}
                   >
                     <Video className="h-5 w-5" />
@@ -489,13 +494,30 @@ export default function MessagesPage() {
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                       className="pr-10 rounded-full border-2 focus:border-primary"
                     />
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-primary/10"
-                    >
-                      <Smile className="h-4 w-4" />
-                    </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-primary/10"
+                            >
+                            <Smile className="h-4 w-4" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-2" align="end">
+                            <div className="flex gap-2 flex-wrap max-w-xs">
+                                {['😀', '😂', '😍', '👍', '👎', '🎉', '🔥', '🤔', '👋', '🙏', '💪', '❤️'].map(emoji => (
+                                    <button 
+                                        key={emoji} 
+                                        className="text-2xl hover:bg-muted p-1 rounded"
+                                        onClick={() => addEmoji(emoji)}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                   </div>
                   {messageText.trim() ? (
                     <Button 
