@@ -3,42 +3,42 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Video, FileText, Brain } from 'lucide-react';
+import { FileEdit, Brain, Briefcase, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 const tools = [
   {
-    title: 'Voice Interview',
-    description: 'Practice with AI voice interviewer',
-    icon: Mic,
-    href: '/voice-interview',
-  },
-  {
-    title: 'Video Interview',
-    description: 'Record and analyze video interviews',
-    icon: Video,
-    href: '/video-interview',
-  },
-  {
-    title: 'Mock Interviews',
-    description: 'AI-powered interview practice',
-    icon: FileText,
-    href: '/interviews',
+    title: 'Resume Builder',
+    description: 'AI-powered resume creation and optimization',
+    icon: FileEdit,
+    href: '/resume-builder',
   },
   {
     title: 'Negotiation Practice',
-    description: 'Practice salary negotiations',
+    description: 'Practice salary and offer negotiations',
     icon: Brain,
     href: '/negotiation-practice',
   },
+  {
+    title: 'Job Recommendations',
+    description: 'AI-matched job opportunities',
+    icon: Briefcase,
+    href: '/job-recommendations',
+  },
+  {
+    title: 'Career Compass',
+    description: 'Get personalized career guidance',
+    icon: TrendingUp,
+    href: '/ai-assistant',
+  },
 ];
 
-export default function InterviewPrepPage() {
+export default function CareerToolsPage() {
   return (
     <>
       <PageHeader
-        title="Interview Tools"
-        description="Prepare for your interviews with AI-powered tools"
+        title="Career Tools"
+        description="Advance your career with AI-powered tools"
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {tools.map((tool) => (
@@ -54,7 +54,7 @@ export default function InterviewPrepPage() {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full">
-                <Link href={tool.href}>Start Practice</Link>
+                <Link href={tool.href}>Open Tool</Link>
               </Button>
             </CardContent>
           </Card>
