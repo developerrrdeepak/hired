@@ -2,30 +2,24 @@
 import admin from 'firebase-admin';
 import { z } from 'zod';
 
-const firebaseAdminConfigSchema = z.object({
-  NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().min(1, 'Missing Firebase project ID'),
-  FIREBASE_CLIENT_EMAIL: z.string().email('Invalid Firebase client email'),
-  FIREBASE_PRIVATE_KEY: z.string().min(1, 'Missing Firebase private key'),
-});
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-const result = firebaseAdminConfigSchema.safeParse(process.env);
-
-if (!result.success) {
-  console.warn('🔥 Firebase admin not configured:', result.error.flatten().fieldErrors);
+if (serviceAccountKey) {
+    try {
+        const serviceAccount = JSON.parse(serviceAccountKey);
+        
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                databaseURL: `https://studio-1555095820-f32c6.firebaseio.com`,
+            });
+        }
+    } catch (e) {
+        console.error('🔥 Firebase Admin SDK initialization error:', e);
+    }
+} else {
+    console.warn('🔥 FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
 }
 
-if (result.success && !admin.apps.length) {
-  const serviceAccount = {
-    projectId: result.data.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    clientEmail: result.data.FIREBASE_CLIENT_EMAIL,
-    privateKey: result.data.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  };
-  
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: `https://${result.data.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
-  });
-}
-
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
+export const adminAuth = admin.apps.length ? admin.auth() : null;
+export const adminDb = admin.apps.length ? admin.firestore() : null;
