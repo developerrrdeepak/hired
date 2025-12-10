@@ -11,7 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useFirebase, useDocument } from "@/firebase";
+import { useFirebase } from "@/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,6 +22,7 @@ import { format } from "date-fns";
 import { useEffect } from "react";
 import type { Challenge } from "@/lib/definitions";
 import { useSearchParams } from "next/navigation";
+import { useDocument } from "@/firebase/firestore/use-doc";
 
 const challengeFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters long."),
