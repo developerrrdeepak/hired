@@ -29,7 +29,11 @@ import {
   MessageCircle,
   KanbanSquare,
   FileEdit,
-  CheckCircle2
+  CheckCircle2,
+  BrainCircuit,
+  Search,
+  BookOpen,
+  DollarSign
 } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -70,7 +74,11 @@ const navConfig: Record<string, NavSection[]> = {
        title: 'AI Suite',
        items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+        { href: '/sourcing', icon: Search, label: 'Smart Sourcing' },
         { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
+        { href: '/onboarding', icon: Rocket, label: 'Onboarding AI' },
+        { href: '/reference-check', icon: CheckCircle2, label: 'Reference AI' },
+        { href: '/salary-insights', icon: DollarSign, label: 'Salary Insights' },
         { href: '/analytics', icon: BarChart3, label: 'Analytics' },
        ]
     },
@@ -103,7 +111,11 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'AI Suite',
         items: [
             { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
+            { href: '/sourcing', icon: Search, label: 'Smart Sourcing' },
             { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
+            { href: '/onboarding', icon: Rocket, label: 'Onboarding AI' },
+            { href: '/reference-check', icon: CheckCircle2, label: 'Reference AI' },
+            { href: '/salary-insights', icon: DollarSign, label: 'Salary Insights' },
             { href: '/analytics', icon: BarChart3, label: 'Analytics' },
         ]
     },
@@ -135,6 +147,8 @@ const navConfig: Record<string, NavSection[]> = {
       items: [
         { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
         { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
+        { href: '/onboarding', icon: Rocket, label: 'Onboarding AI' },
+        { href: '/salary-insights', icon: DollarSign, label: 'Salary Insights' },
       ]
     },
     {
@@ -174,6 +188,8 @@ const navConfig: Record<string, NavSection[]> = {
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
              { href: '/resume-builder', icon: FileEdit, label: 'Resume Builder' },
              { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
+             { href: '/skill-gap', icon: BrainCircuit, label: 'Skill Gap Analysis' },
+             { href: '/salary-insights', icon: DollarSign, label: 'Salary Insights' },
              { href: '/career-tools', icon: Brain, label: 'Career Tools' },
         ]
     },

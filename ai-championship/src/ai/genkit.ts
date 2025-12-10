@@ -1,9 +1,13 @@
 import {genkit} from 'genkit';
-import {GoogleGenerativeAI} from '@google/generative-ai';
+import {googleAI, gemini15Flash, gemini15Pro} from '@genkit-ai/googleai';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY || '');
+// Configure the AI instance with the Google AI plugin
+export const ai = genkit({
+  plugins: [googleAI({
+      apiKey: process.env.GOOGLE_GENAI_API_KEY, 
+  })],
+});
 
-export const geminiPro = genAI.getGenerativeModel({model: 'gemini-1.5-pro-latest'});
-export const geminiFlash = genAI.getGenerativeModel({model: 'gemini-1.5-flash-latest'});
-
-export const ai = genkit({plugins: []});
+// Export the models for use in flows
+export const geminiPro = gemini15Pro;
+export const geminiFlash = gemini15Flash;
