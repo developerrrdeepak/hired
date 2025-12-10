@@ -5,8 +5,8 @@ import admin from 'firebase-admin';
 if (!admin.apps.length) {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Vercel automatically replaces `\n` with the actual newline character from the dashboard.
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY; 
+  // This is the crucial fix: Vercel escapes newlines. We need to un-escape them for the SDK.
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (projectId && clientEmail && privateKey) {
     try {
