@@ -98,7 +98,7 @@ export default function StorefrontPage() {
           </Card>
         </SlideIn>
       ) : (
-        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" staggerDelay={0.1}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product, index) => {
             const price = product.defaultPrice;
             const amount = price?.unit_amount || 0;
