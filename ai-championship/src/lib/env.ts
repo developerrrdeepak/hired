@@ -10,7 +10,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().min(1),
   NEXT_PUBLIC_FIREBASE_APP_ID: z.string().min(1),
   
-  // Use a single variable for the service account key
   FIREBASE_SERVICE_ACCOUNT_KEY: z.string().optional(),
   
   DATABASE_URL: z.string().url().optional(),
@@ -40,9 +39,9 @@ export const getEnv = (): Env => {
   try {
     env = envSchema.parse(process.env);
     return env;
-  } catch (error) in {
-    // Graceful handling for client-side where process.env might not be fully available.
+  } catch (error) {
     if (typeof window !== 'undefined') {
+        console.warn("Skipping server-side env validation on client");
         return {} as Env;
     }
     if (error instanceof z.ZodError) {
@@ -74,7 +73,6 @@ export const getJwtSecret = (): string => {
 
 export const getAppUrl = (): string => getEnv().NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-// Initial validation for server-side
 if (typeof window === 'undefined') {
   getEnv();
 }
