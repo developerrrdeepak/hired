@@ -1,4 +1,4 @@
-'use client';
+   'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,61 +18,68 @@ export default function AuthCallbackPage() {
     const handleAuth = async () => {
       const token = searchParams.get('token');
       const error = searchParams.get('error');
+      const provider = searchParams.get('provider');
 
+      // 1. Handle Errors Redirected from Server
       if (error) {
+        console.error('Auth Callback Error:', error);
         toast({
           variant: 'destructive',
           title: 'Authentication Failed',
-          description: 'There was an error signing you in. Please try again.',
+          description: decodeURIComponent(error),
         });
-        router.push('/login');
+        router.replace('/login');
         return;
       }
 
+      // 2. Validate Token Presence
       if (!token) {
-        // If no token and no error, just go to login
-        router.push('/login');
+        router.replace('/login');
         return;
       }
 
-      if (!auth) {
-        // Wait for auth to be ready
-        return;
-      }
+      // 3. Wait for Firebase SDK
+      if (!auth) return;
 
       try {
-        setStatus('Signing in...');
-        await signInWithCustomToken(auth, token);
+        setStatus('Securely signing you in...');
+        console.log('🔐 Received token from', provider, '- Attempting sign-in...');
         
-        // After signing in, get the token result to check claims for redirection
-        const user = auth.currentUser;
+        // 4. Exchange Custom Token for Firebase Session
+        const userCredential = await signInWithCustomToken(auth, token);
+        const user = userCredential.user;
+        
+        console.log('✅ Sign-in successful for:', user.email);
+
+        // 5. Check Role and Redirect
         if (user) {
-            const idTokenResult = await user.getIdTokenResult();
+            const idTokenResult = await user.getIdTokenResult(true); // Force refresh to get latest claims
             const role = idTokenResult.claims.role;
+            const orgId = idTokenResult.claims.organizationId;
             
+            console.log('🎭 User Role:', role, 'Org:', orgId);
+
             toast({
-            title: 'Welcome back!',
-            description: 'Successfully signed in.',
+              title: 'Welcome!',
+              description: `Signed in successfully as ${role || 'User'}.`,
             });
 
-            if (role === 'Owner') {
-                router.push('/dashboard');
-            } else {
-                router.push('/candidate-portal/dashboard');
-            }
+            const targetPath = role === 'Owner' ? '/dashboard' : '/candidate-portal/dashboard';
+            
+            // Use replace to clear the token from browser history
+            router.replace(targetPath);
         } else {
-             // Fallback if user is somehow null
-             router.push('/dashboard');
+             throw new Error('User object missing after sign-in');
         }
 
-      } catch (err) {
-        console.error('Auth callback error:', err);
+      } catch (err: any) {
+        console.error('❌ Auth callback execution failed:', err);
         toast({
           variant: 'destructive',
-          title: 'Sign In Failed',
-          description: 'Could not verify your session.',
+          title: 'Sign In Error',
+          description: err.message || 'Could not verify your session.',
         });
-        router.push('/login');
+        router.replace('/login');
       }
     };
 
@@ -80,11 +87,16 @@ export default function AuthCallbackPage() {
   }, [auth, router, searchParams, toast]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="text-center space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-        <h2 className="text-xl font-semibold">{status}</h2>
-        <p className="text-muted-foreground">Please wait while we redirect you.</p>
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+      <div className="text-center space-y-4 animate-in fade-in zoom-in duration-300">
+        <div className="relative">
+             <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
+             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto relative z-10" />
+        </div>
+        <h2 className="text-xl font-semibold tracking-tight">{status}</h2>
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Verifying your credentials and setting up your workspace...
+        </p>
       </div>
     </div>
   );
