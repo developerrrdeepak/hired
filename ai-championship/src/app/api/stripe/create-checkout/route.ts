@@ -19,12 +19,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app';
 
+// Map internal plan IDs to Stripe Price IDs
+const PLAN_TO_PRICE_ID: Record<string, string> = {
+  'starter': process.env.STRIPE_PRICE_STARTER || 'price_starter_dummy',
+  'pro': process.env.STRIPE_PRICE_PRO || 'price_pro_dummy',
+  'enterprise': process.env.STRIPE_PRICE_ENTERPRISE || 'price_enterprise_dummy',
+};
+
 export async function POST(request: NextRequest) {
   try {
-    const { priceId, organizationId } = await request.json();
+    const { planId, priceId: explicitPriceId, organizationId } = await request.json();
 
     if (!organizationId) {
-      return NextResponse.json({ error: 'Organization required' }, { status: 401 });
+      return NextResponse.json({ error: 'Organization required' }, { status: 400 });
+    }
+
+    const priceId = explicitPriceId || (planId ? PLAN_TO_PRICE_ID[planId] : null);
+
+    if (!priceId) {
+      return NextResponse.json({ error: 'Invalid plan or price ID' }, { status: 400 });
     }
 
     const firestore = getFirestore();
@@ -55,7 +68,7 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       success_url: `${APP_URL}/billing?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_URL}/billing?cancelled=true`,
-      metadata: { organizationId, priceId },
+      metadata: { organizationId, planId: planId || 'custom' },
     });
 
     return NextResponse.json({ url: session.url });

@@ -577,7 +577,7 @@ function EmployerSignupForm({ onBack }: { onBack: () => void }) {
                 <span className="relative z-10">Continue with Google</span>
             </Button>
 
-            <Button variant="outline" className="w-full mt-3 relative overflow-hidden group border-purple-200" onClick={() => toast({ title: "WorkOS SSO", description: "Enterprise authentication!" })} disabled={isLoading}>
+            <Button variant="outline" className="w-full mt-3 relative overflow-hidden group border-purple-200" onClick={onWorkOSClick} disabled={isLoading}>
                 <svg className="mr-2 h-4 w-4 relative z-10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>
                 <span className="relative z-10">Continue with WorkOS SSO</span>
             </Button>

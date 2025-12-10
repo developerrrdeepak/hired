@@ -72,11 +72,22 @@ export async function GET(request: NextRequest) {
         updatedAt: new Date().toISOString(),
       });
     }
+    
+    // Set custom claims so the frontend knows the role immediately
+    const userSnapshot = await firestore.collection('users').doc(firebaseUser.uid).get();
+    const userData = userSnapshot.data();
+    const role = userData?.role || (userType === 'employer' ? 'Owner' : 'Candidate');
+    
+    await auth.setCustomUserClaims(firebaseUser.uid, { 
+        role: role, 
+        organizationId: userData?.organizationId 
+    });
 
     const customToken = await auth.createCustomToken(firebaseUser.uid);
     
     const redirectUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app');
-    redirectUrl.pathname = userType === 'employer' ? '/dashboard' : '/candidate-portal/dashboard';
+    // Redirect to the dedicated auth callback page to handle the token exchange
+    redirectUrl.pathname = '/auth/callback';
     redirectUrl.searchParams.set('token', customToken);
     redirectUrl.searchParams.set('provider', 'workos');
     

@@ -83,7 +83,7 @@ const FAQS = [
 ];
 
 export default function PricingPage() {
-  const { user, isUserLoading } = useUserContext();
+  const { user, organizationId, isUserLoading } = useUserContext();
   const { toast } = useToast();
   const router = useRouter();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -95,12 +95,22 @@ export default function PricingPage() {
       return;
     }
 
+    if (!organizationId) {
+       toast({ variant: 'destructive', title: 'Error', description: 'Organization not found. Please contact support.' });
+       return;
+    }
+
     setLoadingPlan(planId);
     try {
       const response = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, userId: user.uid, email: user.email }),
+        body: JSON.stringify({ 
+            planId, 
+            userId: user.uid, 
+            email: user.email,
+            organizationId: organizationId 
+        }),
       });
 
       const data = await response.json();
