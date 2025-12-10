@@ -4,14 +4,26 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
+// Ensure Firebase Admin is initialized
 if (!getApps().length) {
-  initializeApp({
-    credential: cert({
+  try {
+    const serviceAccount = {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+    };
+    
+    // Only initialize if we have the necessary credentials
+    if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
+        initializeApp({
+            credential: cert(serviceAccount),
+        });
+    } else {
+        console.warn('Firebase Admin SDK not initialized: Missing credentials');
+    }
+  } catch (e) {
+      console.error('Failed to initialize Firebase Admin:', e);
+  }
 }
 
 const workos = new WorkOS(process.env.WORKOS_API_KEY);
@@ -32,9 +44,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { user } = await workos.userManagement.authenticateWithCode({
+    const clientId = process.env.WORKOS_CLIENT_ID || process.env.NEXT_PUBLIC_WORKOS_CLIENT_ID || '';
+    
+    const { user, organizationId: workosOrgId } = await workos.userManagement.authenticateWithCode({
       code,
-      clientId: process.env.WORKOS_CLIENT_ID || '',
+      clientId,
     });
 
     const auth = getAuth();
@@ -43,40 +57,55 @@ export async function GET(request: NextRequest) {
     let firebaseUser;
     try {
       firebaseUser = await auth.getUserByEmail(user.email);
-    } catch {
-      // User doesn't exist, create them
-      firebaseUser = await auth.createUser({
-        email: user.email,
-        displayName: `${user.firstName} ${user.lastName}`,
-        emailVerified: user.emailVerified,
-      });
       
-      const role = userType === 'employer' ? 'Owner' : 'Candidate';
-      const organizationId = role === 'Owner' ? `org-${firebaseUser.uid}` : `personal-${firebaseUser.uid}`;
-      
+      // Update existing user with WorkOS ID if missing
       await firestore.collection('users').doc(firebaseUser.uid).set({
-        id: firebaseUser.uid,
-        organizationId,
-        email: user.email,
-        displayName: `${user.firstName} ${user.lastName}`,
-        role,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isActive: true,
-        onboardingComplete: false,
-      });
+        workosUserId: user.id,
+        workosOrganizationId: workosOrgId || null,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
-      await firestore.collection('organizations').doc(organizationId).set({
-        id: organizationId,
-        name: role === 'Owner' ? `${user.firstName}'s Organization` : `${user.firstName}'s Profile`,
-        ownerId: firebaseUser.uid,
-        type: role === 'Owner' ? 'company' : 'personal',
-        primaryBrandColor: '207 90% 54%',
-        logoUrl: '',
-        about: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found') {
+        // User doesn't exist, create them
+        firebaseUser = await auth.createUser({
+          email: user.email,
+          displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
+          emailVerified: user.emailVerified,
+        });
+        
+        const role = userType === 'employer' ? 'Owner' : 'Candidate';
+        const organizationId = role === 'Owner' ? `org-${firebaseUser.uid}` : `personal-${firebaseUser.uid}`;
+        
+        await firestore.collection('users').doc(firebaseUser.uid).set({
+          id: firebaseUser.uid,
+          workosUserId: user.id,
+          workosOrganizationId: workosOrgId || null,
+          organizationId,
+          email: user.email,
+          displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0],
+          role,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isActive: true,
+          onboardingComplete: false,
+        });
+
+        await firestore.collection('organizations').doc(organizationId).set({
+          id: organizationId,
+          workosOrganizationId: workosOrgId || null,
+          name: role === 'Owner' ? `${user.firstName || 'User'}'s Organization` : `${user.firstName || 'User'}'s Profile`,
+          ownerId: firebaseUser.uid,
+          type: role === 'Owner' ? 'company' : 'personal',
+          primaryBrandColor: '207 90% 54%',
+          logoUrl: '',
+          about: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        throw err;
+      }
     }
     
     // Set custom claims so the frontend knows the role immediately
@@ -101,8 +130,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('WorkOS Auth Error:', error);
-    // Pass the error message to the login page for debugging
-    const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
-    return NextResponse.redirect(`${baseUrl}/login?error=${errorMessage}`);
+    let errorMessage = error.message || 'Authentication failed';
+    
+    // Provide a more helpful error for configuration issues
+    if (errorMessage.includes('invalid_grant') || errorMessage.includes('credential')) {
+        errorMessage = 'Server configuration error: Firebase credentials invalid. Please check server logs.';
+    }
+
+    const encodedError = encodeURIComponent(errorMessage);
+    return NextResponse.redirect(`${baseUrl}/login?error=${encodedError}`);
   }
 }

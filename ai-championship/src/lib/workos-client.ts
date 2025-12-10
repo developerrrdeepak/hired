@@ -3,75 +3,43 @@
 // WorkOS Authentication Client
 export class WorkOSClient {
   private clientId: string;
-  private apiKey: string;
   private redirectUri: string;
 
   constructor() {
     this.clientId = process.env.NEXT_PUBLIC_WORKOS_CLIENT_ID || '';
-    this.apiKey = process.env.WORKOS_API_KEY || '';
-    this.redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'https://hirevisi.vercel.app/api/auth/workos/callback';
+    // Default redirect URI should match what's configured in WorkOS dashboard
+    this.redirectUri = process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || '';
   }
 
-  getAuthorizationUrl(provider: 'google' | 'microsoft' | 'github' = 'google') {
-    const params = new URLSearchParams({
-      client_id: this.clientId,
-      redirect_uri: this.redirectUri,
-      response_type: 'code',
-      provider,
-      state: Math.random().toString(36).substring(7)
-    });
-
-    return `https://api.workos.com/sso/authorize?${params.toString()}`;
-  }
-
-  async authenticateWithCode(code: string) {
+  /**
+   * Get the authorization URL for WorkOS SSO
+   * This calls the server-side API to generate the URL securely
+   */
+  async getAuthorizationUrl(userType: 'candidate' | 'employer' = 'candidate') {
     try {
-      const response = await fetch('/api/auth/workos/callback', {
+      const res = await fetch('/api/auth/workos/authorize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ userType }),
       });
-
-      if (!response.ok) throw new Error('WorkOS authentication failed');
-      return await response.json();
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to get authorization URL');
+      }
+      
+      return await res.json();
     } catch (error) {
-      console.error('WorkOS auth error:', error);
-      return { success: false, error };
+      console.error('WorkOS Auth URL Error:', error);
+      throw error;
     }
   }
 
-  async getProfile(accessToken: string) {
-    try {
-      const response = await fetch('https://api.workos.com/user_management/users/me', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to get profile');
-      return await response.json();
-    } catch (error) {
-      console.error('WorkOS profile error:', error);
-      return null;
-    }
-  }
-
-  async createOrganization(name: string, domains: string[]) {
-    try {
-      const response = await fetch('/api/auth/workos/organization', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, domains })
-      });
-
-      if (!response.ok) throw new Error('Failed to create organization');
-      return await response.json();
-    } catch (error) {
-      console.error('WorkOS org error:', error);
-      return { success: false, error };
-    }
-  }
+  // Note: Authentication flow is handled via:
+  // 1. Client redirects to URL from getAuthorizationUrl()
+  // 2. User logs in at WorkOS
+  // 3. WorkOS redirects to /api/auth/workos/callback (Server-side)
+  // 4. Server exchanges code, creates Firebase user, and redirects to /auth/callback
 }
 
 export const workosClient = new WorkOSClient();
