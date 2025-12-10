@@ -4,7 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Initialize Firebase Admin (Wrapped to prevent crashes if creds are bad)
+// Initialize Firebase Admin
 if (!getApps().length) {
   try {
     const serviceAccount = {
@@ -14,9 +14,16 @@ if (!getApps().length) {
     };
     if (serviceAccount.projectId && serviceAccount.clientEmail && serviceAccount.privateKey) {
         initializeApp({ credential: cert(serviceAccount) });
+        console.log('✅ Firebase Admin initialized successfully');
+    } else {
+        console.error('❌ Missing Firebase credentials:', {
+            hasProjectId: !!serviceAccount.projectId,
+            hasClientEmail: !!serviceAccount.clientEmail,
+            hasPrivateKey: !!serviceAccount.privateKey
+        });
     }
   } catch (e) {
-      console.error('Firebase Admin Init Failed (Non-fatal for now):', e);
+      console.error('❌ Firebase Admin Init Failed:', e);
   }
 }
 
@@ -52,6 +59,9 @@ export async function GET(request: NextRequest) {
 
     // 3. Attempt to Sync with Firebase (Best Effort)
     try {
+        if (!getApps().length) {
+            throw new Error('Firebase Admin not initialized');
+        }
         const auth = getAuth();
         const firestore = getFirestore();
         
@@ -118,16 +128,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
 
     } catch (firebaseError: any) {
-        console.error('Firebase Sync Failed:', firebaseError);
-        // Fallback: If Firebase fails (e.g. Bad Credentials), we can't log them in efficiently to the app
-        // because the app DEPENDS on Firebase Auth.
+        console.error('🔥 Firebase Sync Failed:', firebaseError);
+        console.error('Error Code:', firebaseError.code);
+        console.error('Error Message:', firebaseError.message);
+        console.error('Error Stack:', firebaseError.stack);
         
-        // HOWEVER, the user asked to "just redirect".
-        // If we can't give them a Firebase token, they will be unauthenticated on the frontend.
-        // So we MUST return an error or fix the credentials.
-        
-        // But to satisfy the "Show me something" desire:
-        const errorMessage = encodeURIComponent("Login successful via WorkOS, but failed to sync with application database. Please contact support.");
+        const errorMessage = encodeURIComponent(`DB Sync Failed: ${firebaseError.message || 'Unknown error'}`);
         return NextResponse.redirect(`${baseUrl}/login?error=${errorMessage}`);
     }
 
