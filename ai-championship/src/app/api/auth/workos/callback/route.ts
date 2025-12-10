@@ -98,11 +98,16 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Set Claims for Role-Based Access Control
-        await auth.setCustomUserClaims(firebaseUser.uid, { role: finalRole });
+        // Get organizationId for existing users
+        const userDoc = await firestore.collection('users').doc(firebaseUser.uid).get();
+        const userData = userDoc.data();
+        const organizationId = userData?.organizationId || (finalRole === 'Owner' ? `org-${firebaseUser.uid}` : `personal-${firebaseUser.uid}`);
 
-        // Generate Custom Token for Client-Side Login
-        const customToken = await auth.createCustomToken(firebaseUser.uid);
+        // Generate Custom Token with Claims for Client-Side Login
+        const customToken = await auth.createCustomToken(firebaseUser.uid, { 
+            role: finalRole,
+            organizationId
+        });
         
         // Redirect to Client Callback to Sign In
         const redirectUrl = new URL(baseUrl);
