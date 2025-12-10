@@ -46,6 +46,8 @@
     "validate": "npm run security:audit && npm run pre-commit && npm run build"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.948.0",
+    "@aws-sdk/s3-request-presigner": "^3.948.0",
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
