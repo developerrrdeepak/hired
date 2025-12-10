@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    // Old logic for backward compatibility, though new auth flow uses /auth/callback
     const token = searchParams.get('token');
     if (token && auth) {
       signInWithCustomToken(auth, token)
@@ -23,12 +24,24 @@ export default function DashboardPage() {
           url.searchParams.delete('provider');
           window.history.replaceState({}, '', url.toString());
         })
-        .catch(() => {});
+        .catch((err) => {
+            console.error("Token sign-in failed on dashboard:", err);
+            router.push('/login?error=' + encodeURIComponent('Authentication failed'));
+        });
     }
-  }, [searchParams, auth]);
+  }, [searchParams, auth, router]);
 
   useEffect(() => {
-    if (!isLoading && role) {
+    if (!isLoading) {
+      if (!role) {
+        // If not loading and no role, redirect to login
+        // But we should verify if a user object exists at all first?
+        // useUserRole hooks usually derives from user context.
+        // If user is null, role is null.
+        router.replace('/login');
+        return;
+      }
+
       switch (role) {
         case 'Candidate':
           router.replace('/candidate-portal/dashboard');
@@ -44,6 +57,7 @@ export default function DashboardPage() {
           router.replace('/hiring-manager/dashboard');
           break;
         default:
+          // Fallback or unknown role
           break;
       }
     }
@@ -51,8 +65,10 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-[calc(100vh-200px)] w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <span className="ml-2 text-muted-foreground">Redirecting to your dashboard...</span>
+      <div className="flex flex-col items-center gap-2">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+         <span className="text-muted-foreground">Redirecting to your dashboard...</span>
+      </div>
     </div>
   );
 }

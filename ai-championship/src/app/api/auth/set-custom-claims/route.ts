@@ -6,13 +6,24 @@ import { z } from 'zod';
 // Initialize Firebase Admin with proper credentials
 let adminInitialized = false;
 try {
-  if (!getApps().length && process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    initializeApp({
-      credential: cert(serviceAccount),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-    adminInitialized = true;
+  if (!getApps().length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        initializeApp({
+            credential: cert(serviceAccount),
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        });
+        adminInitialized = true;
+    } else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+        initializeApp({
+            credential: cert({
+                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            }),
+        });
+        adminInitialized = true;
+    }
   } else if (getApps().length) {
     adminInitialized = true;
   }

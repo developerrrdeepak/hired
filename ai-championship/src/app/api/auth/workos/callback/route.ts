@@ -22,8 +22,13 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state');
   const userType = state?.split(':')[0];
 
+  // Dynamic Base URL
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  const host = request.headers.get('host');
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
   if (!code) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app'}/login?error=no_code`);
+    return NextResponse.redirect(`${baseUrl}/login?error=no_code_received`);
   }
 
   try {
@@ -39,6 +44,7 @@ export async function GET(request: NextRequest) {
     try {
       firebaseUser = await auth.getUserByEmail(user.email);
     } catch {
+      // User doesn't exist, create them
       firebaseUser = await auth.createUser({
         email: user.email,
         displayName: `${user.firstName} ${user.lastName}`,
@@ -85,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     const customToken = await auth.createCustomToken(firebaseUser.uid);
     
-    const redirectUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app');
+    const redirectUrl = new URL(baseUrl);
     // Redirect to the dedicated auth callback page to handle the token exchange
     redirectUrl.pathname = '/auth/callback';
     redirectUrl.searchParams.set('token', customToken);
@@ -93,8 +99,10 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.redirect(redirectUrl);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('WorkOS Auth Error:', error);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app'}/login?error=auth_failed`);
+    // Pass the error message to the login page for debugging
+    const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
+    return NextResponse.redirect(`${baseUrl}/login?error=${errorMessage}`);
   }
 }

@@ -5,11 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { HireVisionLogo, GoogleLogo } from "@/components/icons";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useFirebase, FirebaseClientProvider } from "@/firebase";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, getAdditionalUserInfo } from "firebase/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Briefcase, GraduationCap, AlertCircle } from "lucide-react";
 import { getEmailErrorMessage } from "@/lib/auth-utils";
@@ -117,8 +117,20 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { auth, firestore } = useFirebase();
     const { toast } = useToast();
+
+    useEffect(() => {
+        const errorMsg = searchParams.get('error');
+        if (errorMsg) {
+            setError(decodeURIComponent(errorMsg));
+            // Clean up URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('error');
+            window.history.replaceState({}, '', url);
+        }
+    }, [searchParams]);
 
     const form = useForm<z.infer<typeof loginFormSchema>>({
         resolver: zodResolver(loginFormSchema),
@@ -192,11 +204,17 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userType: userType === 'employer' ? 'employer' : 'candidate' }),
                         });
-                        const { url } = await res.json();
-                        if (url) window.location.href = url;
-                        else toast({ variant: 'destructive', title: 'Error', description: 'WorkOS not configured' });
-                    } catch (error) {
-                        toast({ variant: 'destructive', title: 'Error', description: 'WorkOS authentication failed' });
+                        const data = await res.json();
+                        if (data.url) window.location.href = data.url;
+                        else {
+                            const msg = data.error || data.details || 'WorkOS not configured';
+                            setError(msg);
+                            toast({ variant: 'destructive', title: 'Error', description: msg });
+                        }
+                    } catch (error: any) {
+                        const msg = error.message || 'WorkOS authentication failed';
+                        setError(msg);
+                        toast({ variant: 'destructive', title: 'Error', description: msg });
                     } finally {
                         setIsLoading(false);
                     }
@@ -272,6 +290,19 @@ function LoginForm({ userType, onBack }: { userType: 'candidate' | 'employer', o
 
 function LoginPageContent() {
     const [view, setView] = useState<'selection' | 'candidate' | 'employer'>('selection');
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        // If there's an error param, we should probably show the form so the user can see the error
+        // But we don't know which form (employer/candidate) to show.
+        // We'll Default to candidate or check if there was a state/userType param preserved (unlikely here)
+        if (searchParams.get('error')) {
+            // Just show employer login by default if error, or stay on selection?
+            // Let's stay on selection but show a global toast/alert if needed.
+            // Or better: the LoginForm handles it when mounted.
+            // If the user clicks "Employer" then they see the error.
+        }
+    }, [searchParams]);
 
     return (
         <div className="p-8 md:p-12 min-h-[480px]">
@@ -286,6 +317,12 @@ function LoginPageContent() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 mt-8 p-0">
+                    {searchParams.get('error') && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2 text-sm text-red-700 mb-4">
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span>{decodeURIComponent(searchParams.get('error')!)}</span>
+                        </div>
+                    )}
                     <Button variant="outline" size="lg" className="w-full justify-start h-auto p-4" onClick={() => setView('candidate')}>
                         <GraduationCap className="w-6 h-6 mr-4" />
                         <div className="text-left">
