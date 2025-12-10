@@ -1,130 +1,105 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { constructEvent, getCustomerSubscriptions } from '@/lib/stripe'
-import { getFirestore } from 'firebase-admin/firestore'
+import { NextRequest, NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { logger } from '@/lib/logger';
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-export async function POST(req: NextRequest) {
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY is not set');
+}
+
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('STRIPE_WEBHOOK_SECRET is not set');
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2025-11-17.clover',
+});
+
+/**
+ * Stripe Webhook Handler
+ * Processes Stripe events with signature verification
+ */
+export async function POST(request: NextRequest) {
   try {
-    const signature = req.headers.get('stripe-signature')
+    const body = await request.text();
+    const signature = request.headers.get('stripe-signature');
+
     if (!signature) {
-      return NextResponse.json(
-        { error: 'Missing signature' },
-        { status: 400 }
-      )
+      logger.warn('Webhook received without signature');
+      return NextResponse.json({ error: 'No signature' }, { status: 400 });
     }
 
-    const body = await req.text()
-    
-    let event;
+    // Verify webhook signature
+    let event: Stripe.Event;
     try {
-      event = constructEvent(body, signature);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Stripe signature verification failed:', {
-        message: errorMessage,
-        timestamp: new Date().toISOString(),
-      });
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 400 }
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
       );
+    } catch (err: any) {
+      logger.error('Webhook signature verification failed', { error: err.message });
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    const db = getFirestore()
+    logger.info('Webhook received', { type: event.type, id: event.id });
 
+    const firestore = getFirestore();
+
+    // Handle different event types
     switch (event.type) {
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as any
-        const customerId = subscription.customer
-
-        const query = await db
-          .collection('users')
-          .where('stripeCustomerId', '==', customerId)
-          .limit(1)
-          .get()
-
-        if (!query.empty) {
-          const userDoc = query.docs[0]
-          await userDoc.ref.update({
-            subscriptionId: subscription.id,
-            subscriptionStatus: subscription.status,
-            subscriptionPlan: subscription.items.data[0]?.price?.id,
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-            updatedAt: new Date(),
-          })
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const { organizationId } = session.metadata || {};
+        
+        if (organizationId) {
+          await firestore.collection('organizations').doc(organizationId).update({
+            lastPayment: new Date().toISOString(),
+            paymentStatus: 'paid',
+          });
+          logger.info('Payment recorded', { organizationId, sessionId: session.id });
         }
-        break
+        break;
       }
 
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as any
-        const customerId = subscription.customer
-
-        const query = await db
-          .collection('users')
-          .where('stripeCustomerId', '==', customerId)
-          .limit(1)
-          .get()
-
-        if (!query.empty) {
-          const userDoc = query.docs[0]
-          await userDoc.ref.update({
-            subscriptionId: null,
-            subscriptionStatus: 'canceled',
-            updatedAt: new Date(),
-          })
-        }
-        break
+      case 'account.updated': {
+        const account = event.data.object as Stripe.Account;
+        logger.info('Account updated', { accountId: account.id });
+        break;
       }
 
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as any
-        const customerId = invoice.customer
-
-        const query = await db
-          .collection('users')
-          .where('stripeCustomerId', '==', customerId)
-          .limit(1)
-          .get()
-
-        if (!query.empty) {
-          const userDoc = query.docs[0]
-          await db.collection('invoices').add({
-            userId: userDoc.id,
-            stripeInvoiceId: invoice.id,
-            amount: invoice.total,
-            currency: invoice.currency,
-            status: invoice.status,
-            paidAt: new Date(invoice.paid_at * 1000),
-            createdAt: new Date(),
-          })
-        }
-        break
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        logger.info('Payment succeeded', { paymentIntentId: paymentIntent.id });
+        break;
       }
 
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as any
-        console.error('Payment failed:', {
-          invoiceId: invoice.id,
-          customerId: invoice.customer,
-          amount: invoice.total,
-          currency: invoice.currency,
-          timestamp: new Date().toISOString(),
-        });
-        break
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        logger.error('Payment failed', { paymentIntentId: paymentIntent.id });
+        break;
       }
+
+      default:
+        logger.debug('Unhandled webhook event', { type: event.type });
     }
 
-    return NextResponse.json({ received: true })
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Webhook error:', {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
+    logger.error('Webhook processing error', { error: error.message });
     return NextResponse.json(
-      { error: 'Webhook processing failed', details: errorMessage },
+      { error: 'Webhook processing failed' },
       { status: 500 }
     );
   }

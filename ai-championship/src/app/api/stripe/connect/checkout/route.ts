@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { logger } from '@/lib/logger';
+import { stripeRateLimit } from '@/lib/rate-limit';
 
 // PLACEHOLDER: Ensure STRIPE_SECRET_KEY is set
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -22,7 +24,19 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hirevisi.vercel.app'
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimitResult = await stripeRateLimit(ip);
+    if (!rateLimitResult.success) {
+      logger.warn('Rate limit exceeded', { ip });
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const { accountId, priceId, quantity, applicationFeeAmount } = await request.json();
+    logger.info('Creating checkout session', { accountId, priceId });
 
     if (!accountId || !priceId) {
       return NextResponse.json(
@@ -76,12 +90,13 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    logger.info('Checkout session created', { sessionId: session.id });
     return NextResponse.json({
       sessionId: session.id,
       url: session.url,
     });
   } catch (error: any) {
-    console.error('Stripe Connect checkout error:', error);
+    logger.error('Stripe Connect checkout error', { error: error.message, accountId });
     return NextResponse.json(
       { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
