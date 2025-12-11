@@ -189,13 +189,12 @@ export default function VoiceInterviewPage() {
       
       const data = await response.json();
       
-      if (!data.success || !data.response) {
-        throw new Error('Invalid response from server');
-      }
+      // Handle both success and error cases that have a response
+      const responseText = data.response || data.error || 'I apologize, I had trouble processing that.';
       
       const assistantMessage = {
         role: 'assistant',
-        content: data.response
+        content: responseText
       };
       
       setMessages(prev => [...prev, assistantMessage]);

@@ -49,7 +49,10 @@ Interviewer:`;
     const response = result.response.text();
 
     if (!response || response.trim().length === 0) {
-      throw new Error('Empty response from AI');
+      return NextResponse.json({ 
+        success: true, 
+        response: 'That\'s interesting. Could you tell me more about your experience with that?' 
+      });
     }
 
     return NextResponse.json({ success: true, response: response.trim() });
