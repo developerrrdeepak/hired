@@ -119,9 +119,35 @@ export default function VideoInterviewPage() {
       return;
     }
     
-    setRoomId(joinRoomId);
-    await startCall(true);
-    toast({ title: 'Joining Room', description: `Connecting to ${joinRoomId}...` });
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: true,
+      });
+      
+      setStream(mediaStream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = mediaStream;
+        await localVideoRef.current.play();
+      }
+      
+      setRoomId(joinRoomId);
+      setIsCallActive(true);
+      setTabSwitchCount(0);
+      setAiCheatingDetected(false);
+      
+      toast({ 
+        title: 'Joined Room', 
+        description: `Connected to room: ${joinRoomId}`,
+        duration: 3000 
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Error', 
+        description: 'Could not access camera/microphone', 
+        variant: 'destructive' 
+      });
+    }
   };
 
   const endCall = () => {
@@ -391,6 +417,7 @@ export default function VideoInterviewPage() {
                     playsInline
                     muted
                     className="w-full h-full object-cover"
+                    style={{ transform: 'scaleX(-1)' }}
                   />
                   {!stream && (
                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
