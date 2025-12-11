@@ -167,6 +167,33 @@ function LoginForm({ userType, onBack, onLoginSuccess }: { userType: 'candidate'
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleLogo className="mr-2 h-4 w-4" />}
                 Continue with Google
             </Button>
+
+            <Button 
+                variant="outline" 
+                className="w-full mt-3" 
+                onClick={async () => {
+                    setIsLoading(true);
+                    try {
+                        const res = await fetch('/api/auth/workos/authorize', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userType: userType === 'employer' ? 'employer' : 'candidate' }),
+                        });
+                        const data = await res.json();
+                        if (data.url) window.location.href = data.url;
+                    } catch (error) {
+                        console.error(error);
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }}
+                disabled={isLoading}
+            >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
+                Continue with WorkOS SSO
+            </Button>
             
             <div className="my-4 flex items-center">
                 <div className="flex-grow border-t border-muted"></div>
