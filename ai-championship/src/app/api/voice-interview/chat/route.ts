@@ -23,7 +23,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 200,
+      }
+    });
 
     const context = conversationHistory
       ?.slice(-6)
