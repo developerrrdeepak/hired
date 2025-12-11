@@ -28,6 +28,8 @@ export default function VideoInterviewPage() {
   const [documentText, setDocumentText] = useState('');
   const [aiCheatingDetected, setAiCheatingDetected] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [aiAnalysis, setAiAnalysis] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -103,6 +105,7 @@ export default function VideoInterviewPage() {
       
       if (!isPeer) {
         toast({ title: 'AI Interview Started', description: 'AI analysis enabled' });
+        setTimeout(() => analyzeInterview('start'), 3000);
       }
     } catch (error) {
       toast({ 
@@ -177,6 +180,34 @@ export default function VideoInterviewPage() {
       const audioTrack = stream.getAudioTracks()[0];
       audioTrack.enabled = !audioTrack.enabled;
       setIsAudioOn(!isAudioOn);
+    }
+  };
+
+  const analyzeInterview = async (type: string) => {
+    if (mode !== 'ai') return;
+    
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch('/api/video-interview/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: type === 'start' ? 'suggest-question' : 'analyze-confidence',
+          data: { 
+            text: type === 'start' ? 'Interview starting' : 'Analyzing performance',
+            context: 'Technical interview'
+          }
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setAiAnalysis(data.analysis);
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -451,6 +482,28 @@ export default function VideoInterviewPage() {
               </CardContent>
             </Card>
 
+            {mode === 'ai' && (
+              <Card className="border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <Activity className="w-4 h-4 text-purple-500" />
+                    AI Analysis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {isAnalyzing ? (
+                    <div className="text-sm text-muted-foreground animate-pulse">Analyzing...</div>
+                  ) : aiAnalysis ? (
+                    <div className="text-sm bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg">
+                      {aiAnalysis}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">AI will analyze your performance in real-time</div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm">
@@ -472,8 +525,8 @@ export default function VideoInterviewPage() {
                   <span className="text-muted-foreground">Share notes</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">AI Proctoring</Badge>
-                  <span className="text-muted-foreground">Cheating detection</span>
+                  <Badge variant="secondary">AI Analysis</Badge>
+                  <span className="text-muted-foreground">Real-time feedback</span>
                 </div>
               </CardContent>
             </Card>
