@@ -58,6 +58,26 @@ export async function POST(request: NextRequest) {
       case 'suggest-comments':
         response = await assistant.suggestComment(body.postContent, body.userRole);
         break;
+
+      case 'salary-insights':
+        response = await assistant.getSalaryInsights(body.role, body.location, body.experienceLevel, body.companyType);
+        break;
+
+      case 'skill-gap':
+        response = await assistant.analyzeSkillGap(body.currentSkills, body.targetRole, body.targetJobDescription);
+        break;
+
+      case 'project-ideas':
+        response = await assistant.generateProjectIdeas(body.skill, body.difficulty);
+        break;
+
+      case 'career-guidance':
+        response = await assistant.getCareerGuidance(body.currentRole, body.goals, body.experience);
+        break;
+
+      case 'parse-resume':
+        response = await assistant.parseResume(body.resumeText);
+        break;
       
       default:
         // Default chat behavior
@@ -102,6 +122,11 @@ export async function GET(request: NextRequest) {
       'Interview Question Generation',
       'Post Enhancement',
       'Comment Suggestions',
+      'Salary & Market Insights',
+      'Skill Gap Analysis',
+      'Project Ideas Generator',
+      'Career Guidance',
+      'Resume Parser',
     ],
     message: 'Universal AI Assistant is ready.',
   });

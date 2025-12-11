@@ -275,6 +275,154 @@ Please provide:
     return this.ask(prompt);
   }
 
+  async getSalaryInsights(role: string, location: string, experienceLevel: string, companyType?: string): Promise<AIResponse> {
+    const prompt = `Act as a Compensation Analyst. Provide data-driven salary insights.
+
+ROLE: ${role}
+LOCATION: ${location}
+LEVEL: ${experienceLevel}
+${companyType ? `TYPE: ${companyType}` : ''}
+
+Based on general market knowledge up to 2024/2025, provide:
+
+1. **Estimated Salary Range**: A realistic Base Salary range with min, max, and median values in the appropriate currency.
+2. **Market Trends**: What is happening in the market for this specific role? (e.g., "AI Engineers seeing 20% premiums", "Remote work impact", "High demand sectors").
+3. **Negotiation Levers**: What else can be negotiated for this specific role type? (e.g., Equity, Sign-on bonus, Remote flexibility, Professional development budget).
+4. **Cost of Living Factor**: Context on how the location affects this range.
+
+Be conservative and realistic. Format your response as:
+
+**Estimated Base Salary**
+Min: $XXX,XXX
+Max: $XXX,XXX
+Median: $XXX,XXX
+
+**Market Trends**
+- [Trend 1]
+- [Trend 2]
+- [Trend 3]
+
+**Negotiation Levers**
+- [Lever 1]
+- [Lever 2]
+- [Lever 3]
+
+**Cost of Living Factor**
+[Brief explanation]`;
+
+    return this.ask(prompt);
+  }
+
+  async analyzeSkillGap(currentSkills: string[], targetRole: string, targetJobDescription?: string): Promise<AIResponse> {
+    const prompt = `You are a Senior Technical Career Coach. Analyze the skill gap for a candidate.
+
+CURRENT SKILLS: ${currentSkills.join(', ')}
+TARGET ROLE: ${targetRole}
+${targetJobDescription ? `JOB DESCRIPTION: ${targetJobDescription}` : ''}
+
+Provide a structured analysis with:
+
+**Analysis Summary**
+[Brief summary of readiness]
+
+**Readiness Score**
+[Score out of 100]
+
+**Skill Gaps**
+For each missing skill:
+- Skill: [Name]
+- Importance: [Critical/High/Medium]
+- Gap Description: [Why this matters]
+- Recommended Resources:
+  * [Type]: [Title] - [Estimated Time]
+
+**Project Idea**
+[A practical project to build these skills]`;
+
+    return this.ask(prompt);
+  }
+
+  async generateProjectIdeas(skill: string, difficulty: string): Promise<AIResponse> {
+    const prompt = `Generate 3 unique project ideas for learning ${skill} at ${difficulty} level.
+
+For EACH project, provide:
+1. **Title**: Project name
+2. **Description**: 2-3 sentences
+3. **MVP Features**: List 5 core features
+4. **Bonus Challenges**: List 3 advanced features
+5. **Tech Stack**: List 3-4 technologies
+6. **Estimated Time**: In hours
+
+Make projects practical, modern, and portfolio-worthy.`;
+
+    return this.ask(prompt);
+  }
+
+  async getCareerGuidance(currentRole: string, goals: string, experience: string): Promise<AIResponse> {
+    const prompt = `You are an Executive Career Coach. Provide strategic career guidance.
+
+CURRENT ROLE: ${currentRole}
+CAREER GOALS: ${goals}
+EXPERIENCE: ${experience}
+
+Provide comprehensive guidance covering:
+
+1. **Career Path Analysis**: Evaluate the feasibility and timeline for achieving stated goals.
+2. **Strategic Recommendations**: 3-5 specific, actionable steps to take in the next 6-12 months.
+3. **Skill Development Priorities**: Key competencies to develop or strengthen.
+4. **Networking Strategy**: How to build relationships in target industry/role.
+5. **Potential Obstacles**: Common challenges and how to overcome them.
+6. **Success Metrics**: How to measure progress toward goals.
+
+Be strategic, realistic, and actionable.`;
+
+    return this.ask(prompt);
+  }
+
+  async parseResume(resumeText: string): Promise<AIResponse> {
+    const prompt = `Extract structured information from this resume:
+
+${resumeText.substring(0, 8000)}
+
+Provide a JSON-formatted extraction with:
+
+**Contact Information**
+- Name: [Full name]
+- Email: [Email]
+- Phone: [Phone]
+- Location: [City, State/Country]
+- LinkedIn: [URL if present]
+
+**Professional Summary**
+[Extract or synthesize 2-3 sentence summary]
+
+**Skills**
+- Technical: [List]
+- Soft Skills: [List]
+
+**Experience**
+For each position:
+- Company: [Name]
+- Title: [Job title]
+- Duration: [Start - End]
+- Key Achievements: [Bullet points]
+
+**Education**
+- Degree: [Degree type]
+- Institution: [School name]
+- Year: [Graduation year]
+
+**Certifications**
+[List any certifications]
+
+**Overall Assessment**
+- Seniority Level: [Junior/Mid/Senior/Staff]
+- Primary Domain: [Industry/Field]
+- Years of Experience: [Estimate]`;
+
+    return this.ask(prompt);
+  }
+
   // --- NEW COMMUNITY FEATURES ---
 
   async enhancePostDraft(draft: string, type: string): Promise<AIResponse> {

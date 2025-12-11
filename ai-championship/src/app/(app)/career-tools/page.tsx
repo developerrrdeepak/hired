@@ -29,7 +29,7 @@ const tools = [
     title: 'Career Compass',
     description: 'Get personalized career guidance',
     icon: TrendingUp,
-    href: '/ai-assistant',
+    href: '/career-compass',
   },
 ];
 

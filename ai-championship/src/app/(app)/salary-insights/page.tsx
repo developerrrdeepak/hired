@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, DollarSign, TrendingUp, Briefcase } from 'lucide-react';
-import { aiSalaryInsights } from '@/ai/flows/ai-salary-insights';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function SalaryInsightsPage() {
@@ -29,13 +28,71 @@ export default function SalaryInsightsPage() {
 
     setLoading(true);
     try {
-      const response = await aiSalaryInsights(formData as any);
-      setResult(response);
+      const response = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'salary-insights',
+          role: formData.role,
+          location: formData.location,
+          experienceLevel: formData.experienceLevel,
+          companyType: formData.companyType
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        const answer = data.data.answer;
+        const parsed = parseSalaryResponse(answer);
+        setResult(parsed);
+      } else {
+        throw new Error(data.error || 'Failed to get insights');
+      }
     } catch (error) {
       toast({ title: "Error", description: "Analysis failed.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const parseSalaryResponse = (text: string) => {
+    const lines = text.split('\n');
+    const result: any = {
+      estimatedRange: { min: '0', max: '0', median: '0', currency: '$' },
+      marketTrends: [],
+      negotiationLevers: [],
+      costOfLivingFactor: ''
+    };
+
+    let section = '';
+    for (const line of lines) {
+      if (line.includes('Min:')) {
+        const match = line.match(/[\$€£¥]?([\d,]+)/g);
+        if (match) result.estimatedRange.min = match[0].replace(/[^\d]/g, '');
+      } else if (line.includes('Max:')) {
+        const match = line.match(/[\$€£¥]?([\d,]+)/g);
+        if (match) result.estimatedRange.max = match[0].replace(/[^\d]/g, '');
+      } else if (line.includes('Median:')) {
+        const match = line.match(/[\$€£¥]?([\d,]+)/g);
+        if (match) result.estimatedRange.median = match[0].replace(/[^\d]/g, '');
+      } else if (line.includes('Market Trends')) {
+        section = 'trends';
+      } else if (line.includes('Negotiation Levers')) {
+        section = 'levers';
+      } else if (line.includes('Cost of Living')) {
+        section = 'cost';
+      } else if (line.trim().startsWith('-') || line.trim().startsWith('•')) {
+        const item = line.replace(/^[\s-•]+/, '').trim();
+        if (item && section === 'trends') result.marketTrends.push(item);
+        if (item && section === 'levers') result.negotiationLevers.push(item);
+      } else if (section === 'cost' && line.trim() && !line.includes('**')) {
+        result.costOfLivingFactor += line.trim() + ' ';
+      }
+    }
+
+    result.costOfLivingFactor = result.costOfLivingFactor.trim() || 'Location-adjusted estimate';
+    return result;
   };
 
   return (

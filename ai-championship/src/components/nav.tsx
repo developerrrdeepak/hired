@@ -190,7 +190,6 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'AI Suite',
         items: [
              { href: '/ai-assistant', icon: Bot, label: 'AI Assistant' },
-             { href: '/resume-builder', icon: FileEdit, label: 'Resume Builder' },
              { href: '/interview-prep', icon: Mic, label: 'Interview Tools' },
         ]
     },

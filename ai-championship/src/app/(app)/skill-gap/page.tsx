@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, BrainCircuit, GraduationCap, Target } from 'lucide-react';
-import { aiSkillGapAnalysis } from '@/ai/flows/ai-skill-gap-analysis';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
@@ -31,17 +30,76 @@ export default function SkillGapPage() {
     setLoading(true);
     try {
       const currentSkills = formData.currentSkillsInput.split(',').map(s => s.trim()).filter(Boolean);
-      const response = await aiSkillGapAnalysis({
-        currentSkills,
-        targetRole: formData.targetRole,
-        targetJobDescription: formData.targetJobDescription
+      
+      const response = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'skill-gap',
+          currentSkills,
+          targetRole: formData.targetRole,
+          targetJobDescription: formData.targetJobDescription
+        })
       });
-      setResult(response);
+
+      const data = await response.json();
+      if (data.success) {
+        const parsed = parseSkillGapResponse(data.data.answer);
+        setResult(parsed);
+        toast({ title: "Success", description: "Analysis complete!" });
+      } else {
+        throw new Error(data.error);
+      }
     } catch (error) {
-      toast({ title: "Error", description: "Analysis failed.", variant: "destructive" });
+      console.error(error);
+      toast({ title: "Error", description: "Analysis failed. Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const parseSkillGapResponse = (text: string) => {
+    const result: any = {
+      analysisSummary: '',
+      readinessScore: 50,
+      skillGaps: [],
+      projectIdea: ''
+    };
+
+    const lines = text.split('\n');
+    let section = '';
+    let currentGap: any = null;
+
+    for (const line of lines) {
+      if (line.includes('Analysis Summary')) section = 'summary';
+      else if (line.includes('Readiness Score')) section = 'score';
+      else if (line.includes('Skill Gaps')) section = 'gaps';
+      else if (line.includes('Project Idea')) section = 'project';
+      else if (line.includes('- Skill:')) {
+        if (currentGap) result.skillGaps.push(currentGap);
+        currentGap = { missingSkill: line.split(':')[1]?.trim() || '', importance: 'Medium', gapDescription: '', recommendedResources: [] };
+      } else if (line.includes('- Importance:') && currentGap) {
+        currentGap.importance = line.split(':')[1]?.trim() || 'Medium';
+      } else if (line.includes('- Gap Description:') && currentGap) {
+        currentGap.gapDescription = line.split(':')[1]?.trim() || '';
+      } else if (line.match(/^\s*\*/) && currentGap) {
+        const match = line.match(/\[(.+?)\]:\s*(.+?)\s*-\s*(.+)/);
+        if (match) currentGap.recommendedResources.push({ type: match[1], title: match[2], estimatedTime: match[3] });
+      } else if (section === 'summary' && line.trim() && !line.includes('**')) {
+        result.analysisSummary += line.trim() + ' ';
+      } else if (section === 'score' && line.match(/\d+/)) {
+        const score = parseInt(line.match(/\d+/)?.[0] || '50');
+        result.readinessScore = Math.min(100, Math.max(0, score));
+      } else if (section === 'project' && line.trim() && !line.includes('**')) {
+        result.projectIdea += line.trim() + ' ';
+      }
+    }
+
+    if (currentGap) result.skillGaps.push(currentGap);
+    result.analysisSummary = result.analysisSummary.trim() || 'Analysis complete';
+    result.projectIdea = result.projectIdea.trim() || 'Build a comprehensive project showcasing these skills';
+    
+    return result;
   };
 
   return (
@@ -98,7 +156,6 @@ export default function SkillGapPage() {
 
         {result && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Score & Summary */}
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center mb-2">
@@ -114,13 +171,12 @@ export default function SkillGapPage() {
                     </CardContent>
                 </Card>
 
-                {/* Skill Gaps */}
                 <div className="grid gap-4">
                     <h2 className="text-xl font-semibold flex items-center gap-2">
                         <Target className="h-5 w-5" />
                         Identified Gaps & Learning Plan
                     </h2>
-                    {result.skillGaps.map((gap: any, i: number) => (
+                    {result.skillGaps?.map((gap: any, i: number) => (
                         <Card key={i} className="border-l-4 border-l-orange-400">
                             <CardHeader className="pb-2">
                                 <div className="flex justify-between items-start">
@@ -139,7 +195,7 @@ export default function SkillGapPage() {
                             <CardContent>
                                 <h4 className="text-sm font-semibold mb-2">Recommended Resources:</h4>
                                 <ul className="space-y-2">
-                                    {gap.recommendedResources.map((res: any, idx: number) => (
+                                    {gap.recommendedResources?.map((res: any, idx: number) => (
                                         <li key={idx} className="text-sm bg-muted/50 p-2 rounded flex justify-between items-center">
                                             <span>
                                                 <span className="font-medium text-primary">{res.type}:</span> {res.title}
@@ -155,7 +211,6 @@ export default function SkillGapPage() {
                     ))}
                 </div>
 
-                {/* Capstone Project */}
                 <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">

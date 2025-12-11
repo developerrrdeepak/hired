@@ -1,79 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
     const { skill, difficulty } = await req.json();
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const response = await fetch(`${req.nextUrl.origin}/api/ai-assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'project-ideas',
+        skill,
+        difficulty
+      })
+    });
 
-    const prompt = `Generate EXACTLY 3 unique project ideas for learning ${skill} at ${difficulty} level.
-
-IMPORTANT: Generate ALL 3 projects. Do not generate less than 3.
-
-For EACH of the 3 projects, provide:
-1. Project Title
-2. Brief Description (2-3 sentences)
-3. MVP Features (list EXACTLY 5 core features)
-4. Bonus Challenges (list EXACTLY 3 advanced features)
-5. Tech Stack (list 3-4 technologies)
-6. Estimated Time (in hours)
-
-Format as JSON array with EXACTLY 3 objects:
-[
-  {
-    "title": "Project 1 Name",
-    "description": "Brief description",
-    "mvpFeatures": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"],
-    "bonusChallenges": ["Challenge 1", "Challenge 2", "Challenge 3"],
-    "techStack": ["Tech 1", "Tech 2", "Tech 3"],
-    "estimatedHours": 20
-  },
-  {
-    "title": "Project 2 Name",
-    "description": "Brief description",
-    "mvpFeatures": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"],
-    "bonusChallenges": ["Challenge 1", "Challenge 2", "Challenge 3"],
-    "techStack": ["Tech 1", "Tech 2", "Tech 3"],
-    "estimatedHours": 25
-  },
-  {
-    "title": "Project 3 Name",
-    "description": "Brief description",
-    "mvpFeatures": ["Feature 1", "Feature 2", "Feature 3", "Feature 4", "Feature 5"],
-    "bonusChallenges": ["Challenge 1", "Challenge 2", "Challenge 3"],
-    "techStack": ["Tech 1", "Tech 2", "Tech 3"],
-    "estimatedHours": 30
-  }
-]
-
-Make projects practical, modern, and portfolio-worthy. Generate ALL 3 projects.`;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
+    const data = await response.json();
     
-    const jsonMatch = response.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
+    if (data.success) {
+      const text = data.data.answer;
+      const projects = parseProjectIdeas(text);
+      return NextResponse.json({ projects });
     }
-    
-    const projects = JSON.parse(jsonMatch[0]);
-    
-    // Validate that all required fields are present
-    const validatedProjects = projects.map((p: any) => ({
-      title: p.title || 'Untitled Project',
-      description: p.description || 'No description',
-      mvpFeatures: Array.isArray(p.mvpFeatures) ? p.mvpFeatures : [],
-      bonusChallenges: Array.isArray(p.bonusChallenges) ? p.bonusChallenges : [],
-      techStack: Array.isArray(p.techStack) ? p.techStack : [],
-      estimatedHours: p.estimatedHours || 20
-    }));
 
-    return NextResponse.json({ projects: validatedProjects });
+    throw new Error(data.error || 'Failed to generate projects');
   } catch (error) {
     console.error('Project ideas error:', error);
     return NextResponse.json({ error: 'Failed to generate project ideas' }, { status: 500 });
   }
+}
+
+function parseProjectIdeas(text: string) {
+  const projects: any[] = [];
+  const sections = text.split(/\d+\.\s*\*\*Title\*\*/).filter(s => s.trim());
+  
+  sections.forEach(section => {
+    const project: any = {
+      title: '',
+      description: '',
+      mvpFeatures: [],
+      bonusChallenges: [],
+      techStack: [],
+      estimatedHours: 20
+    };
+
+    const titleMatch = section.match(/^:?\s*(.+?)(?:\n|\*\*)/m);
+    if (titleMatch) project.title = titleMatch[1].trim();
+
+    const descMatch = section.match(/\*\*Description\*\*:?\s*(.+?)(?=\*\*|$)/s);
+    if (descMatch) project.description = descMatch[1].trim().split('\n')[0];
+
+    const mvpMatch = section.match(/\*\*MVP Features\*\*:?([\s\S]*?)(?=\*\*|$)/m);
+    if (mvpMatch) {
+      project.mvpFeatures = mvpMatch[1].split('\n').filter(l => l.trim().match(/^[-*•\d]/)).map(l => l.replace(/^[-*•\d.\s]+/, '').trim()).filter(Boolean).slice(0, 5);
+    }
+
+    const bonusMatch = section.match(/\*\*Bonus Challenges\*\*:?([\s\S]*?)(?=\*\*|$)/m);
+    if (bonusMatch) {
+      project.bonusChallenges = bonusMatch[1].split('\n').filter(l => l.trim().match(/^[-*•\d]/)).map(l => l.replace(/^[-*•\d.\s]+/, '').trim()).filter(Boolean).slice(0, 3);
+    }
+
+    const techMatch = section.match(/\*\*Tech Stack\*\*:?([\s\S]*?)(?=\*\*|$)/m);
+    if (techMatch) {
+      project.techStack = techMatch[1].split('\n').filter(l => l.trim().match(/^[-*•\d]/)).map(l => l.replace(/^[-*•\d.\s]+/, '').trim()).filter(Boolean).slice(0, 4);
+    }
+
+    const timeMatch = section.match(/\*\*Estimated Time\*\*:?\s*(\d+)/m);
+    if (timeMatch) project.estimatedHours = parseInt(timeMatch[1]);
+
+    if (project.title) projects.push(project);
+  });
+
+  return projects.length > 0 ? projects : [{
+    title: 'Sample Project',
+    description: 'Build a practical application',
+    mvpFeatures: ['Core feature 1', 'Core feature 2', 'Core feature 3'],
+    bonusChallenges: ['Advanced feature 1'],
+    techStack: ['Technology 1', 'Technology 2'],
+    estimatedHours: 20
+  }];
 }
