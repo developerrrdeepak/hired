@@ -61,14 +61,48 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        const { organizationId } = session.metadata || {};
+        const { userId, role } = session.metadata || {};
         
-        if (organizationId) {
-          await firestore.collection('organizations').doc(organizationId).update({
+        if (userId && session.customer) {
+          await firestore.collection('users').doc(userId).update({
+            stripeCustomerId: session.customer,
+            subscriptionStatus: 'active',
+            subscriptionRole: role,
             lastPayment: new Date().toISOString(),
-            paymentStatus: 'paid',
           });
-          logger.info('Payment recorded', { organizationId, sessionId: session.id });
+          logger.info('Subscription activated', { userId, customerId: session.customer });
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        
+        const usersSnapshot = await firestore.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+        if (!usersSnapshot.empty) {
+          const userDoc = usersSnapshot.docs[0];
+          await userDoc.ref.update({
+            subscriptionStatus: subscription.status,
+            subscriptionId: subscription.id,
+          });
+          logger.info('Subscription updated', { userId: userDoc.id, status: subscription.status });
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        
+        const usersSnapshot = await firestore.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+        if (!usersSnapshot.empty) {
+          const userDoc = usersSnapshot.docs[0];
+          await userDoc.ref.update({
+            subscriptionStatus: 'canceled',
+            subscriptionId: null,
+          });
+          logger.info('Subscription canceled', { userId: userDoc.id });
         }
         break;
       }

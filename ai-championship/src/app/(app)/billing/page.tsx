@@ -88,45 +88,18 @@ function BillingStatus() {
 }
 
 export default function BillingPage() {
-    const { organization, subscription, isUserLoading } = useUserContext();
+    const { user, role, isUserLoading } = useUserContext();
     const { toast } = useToast();
     const [isRedirecting, setIsRedirecting] = useState<Record<string, boolean>>({});
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [isLoadingInvoices, setIsLoadingInvoices] = useState(true);
 
     useEffect(() => {
-        const fetchInvoices = async () => {
-            if (!organization?.id) return;
-            setIsLoadingInvoices(true);
-            try {
-                const res = await fetch('/api/stripe/invoices', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ organizationId: organization.id }),
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setInvoices(data);
-                } else {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch invoices.' });
-                }
-            } catch (error) {
-                console.error(error);
-                toast({ variant: 'destructive', title: 'Error', description: 'An unexpected error occurred.' });
-            } finally {
-                setIsLoadingInvoices(false);
-            }
-        };
-
-        if (organization?.id) {
-            fetchInvoices();
-        } else if (!isUserLoading) {
-            setIsLoadingInvoices(false);
-        }
-    }, [organization?.id, isUserLoading, toast]);
+        setIsLoadingInvoices(false);
+    }, []);
 
     const handleCreateCheckout = async (priceId: string) => {
-        if (!organization?.id) return;
+        if (!user) return;
         setIsRedirecting(prev => ({...prev, [priceId]: true}));
         try {
             const res = await fetch('/api/stripe/create-checkout', {
@@ -134,7 +107,9 @@ export default function BillingPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     priceId,
-                    organizationId: organization.id,
+                    userId: user.id,
+                    userEmail: user.email,
+                    role,
                 }),
             });
             const { url } = await res.json();
@@ -152,14 +127,14 @@ export default function BillingPage() {
     };
     
     const handleCreatePortal = async () => {
-        if (!organization?.id) return;
+        if (!user?.stripeCustomerId) return;
         setIsRedirecting(prev => ({...prev, portal: true}));
         try {
-            const res = await fetch('/api/stripe/create-portal', {
+            const res = await fetch('/api/stripe/billing-portal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    organizationId: organization.id,
+                    customerId: user.stripeCustomerId,
                 }),
             });
             const { url } = await res.json();
@@ -176,7 +151,7 @@ export default function BillingPage() {
         }
     }
     
-    const currentPlan = plans.find(p => p.id === subscription?.priceId);
+    const currentPlan = null;
 
     if(isUserLoading) return <p>Loading...</p>
 
@@ -198,20 +173,20 @@ export default function BillingPage() {
                             </div>
                             <Button
                                 onClick={handleCreatePortal}
-                                disabled={isRedirecting['portal'] || !subscription}
+                                disabled={isRedirecting['portal'] || !user?.stripeCustomerId}
                             >
                                 {isRedirecting['portal'] ? 'Redirecting...' : 'Manage Subscription'}
                             </Button>
                         </CardHeader>
                         <CardContent>
-                            {subscription?.status === 'active' && currentPlan ? (
+                            {user?.subscriptionStatus === 'active' ? (
                                 <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
                                     <div>
-                                        <h3 className="text-lg font-semibold">{currentPlan.name} Plan</h3>
-                                        <p className="text-muted-foreground">${currentPlan.price}/month</p>
+                                        <h3 className="text-lg font-semibold">Active Subscription</h3>
+                                        <p className="text-muted-foreground">Your plan is active</p>
                                     </div>
-                                    <Badge variant={subscription.status === 'active' ? 'default' : 'secondary'} className="capitalize bg-green-100 text-green-800">
-                                        {subscription.status}
+                                    <Badge variant="default" className="capitalize bg-green-100 text-green-800">
+                                        {user.subscriptionStatus}
                                     </Badge>
                                 </div>
                             ) : (
@@ -252,11 +227,11 @@ export default function BillingPage() {
                                     <CardFooter>
                                          <Button
                                             className="w-full"
-                                            disabled={isRedirecting[plan.id] || (plan.id === currentPlan?.id && subscription?.status === 'active')}
+                                            disabled={isRedirecting[plan.id]}
                                             onClick={() => plan.price > 0 ? handleCreateCheckout(plan.id) : null}
                                             variant={plan.isPopular ? 'default' : 'outline'}
                                          >
-                                            {isRedirecting[plan.id] ? 'Redirecting...' : (plan.id === currentPlan?.id && subscription?.status === 'active' ? 'Current Plan' : (plan.price > 0 ? 'Subscribe' : 'Contact Sales'))}
+                                            {isRedirecting[plan.id] ? 'Redirecting...' : (plan.price > 0 ? 'Subscribe' : 'Contact Sales')}
                                          </Button>
                                     </CardFooter>
                                 </Card>
