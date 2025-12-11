@@ -106,46 +106,65 @@ function ProfileGistCard({ candidate }: { candidate: Candidate | null }) {
     const imageSrc = user?.photoURL ?? `https://api.dicebear.com/7.x/initials/svg?seed=${userName}`;
 
     return (
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 overflow-hidden">
-            <CardHeader>
-                <CardTitle className="text-2xl font-bold">Just the Gist</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-16 w-16 border-2 border-primary/50">
-                            <AvatarImage src={imageSrc} />
-                            <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                                {userName.charAt(0)}
-                            </AvatarFallback>
-                        </Avatar>
+        <Card className="relative overflow-hidden border-2 animate-in fade-in-0 slide-in-from-top-4 duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-pink-950/20"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
+            <div className="relative">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Welcome Back!</CardTitle>
+                        <Button asChild className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg">
+                            <Link href={`/profile/edit`}>
+                                Edit Profile
+                            </Link>
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-6 mb-8">
+                        <div className="relative">
+                            <Avatar className="h-24 w-24 border-4 border-white dark:border-gray-800 shadow-xl">
+                                <AvatarImage src={imageSrc} />
+                                <AvatarFallback className="text-3xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white">
+                                    {userName.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                        </div>
                         <div>
-                            <p className="text-xl font-semibold">{userName}</p>
+                            <p className="text-2xl font-bold">{userName}</p>
+                            <p className="text-muted-foreground">{candidate?.currentRole || 'Professional'}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full font-semibold">Active</span>
+                                <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-3 py-1 rounded-full font-semibold">Verified</span>
+                            </div>
                         </div>
                     </div>
-                     <Button asChild variant="outline">
-                        <Link href={`/profile/edit`}>
-                            View Profile
-                        </Link>
-                    </Button>
-                </div>
-                 <div className="flex items-center justify-around mt-6 flex-wrap">
-                    <CircularProgress value={profileComplete} label="Profile Complete" />
-                    <CircularProgress value={skillReadiness} label="Skill Readiness" />
-                    <CircularProgress value={careerFit} label="Career Fit" />
-                 </div>
-            </CardContent>
+                    <div className="grid grid-cols-3 gap-6">
+                        <div className="text-center p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-indigo-200 dark:border-indigo-800">
+                            <CircularProgress value={profileComplete} label="Profile Complete" />
+                        </div>
+                        <div className="text-center p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-purple-200 dark:border-purple-800">
+                            <CircularProgress value={skillReadiness} label="Skill Readiness" />
+                        </div>
+                        <div className="text-center p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-2 border-pink-200 dark:border-pink-800">
+                            <CircularProgress value={careerFit} label="Career Fit" />
+                        </div>
+                    </div>
+                </CardContent>
+            </div>
         </Card>
     );
 }
 
-function ActionIconButton({ title, icon: Icon, href, disabled = false, delay }: { title: string, icon: React.ElementType, href: string, disabled?: boolean, delay: number }) {
+function ActionIconButton({ title, icon: Icon, href, disabled = false, delay, gradient }: { title: string, icon: React.ElementType, href: string, disabled?: boolean, delay: number, gradient: string }) {
     const content = (
-        <div className="flex flex-col items-center gap-2 text-center text-muted-foreground hover:text-foreground transition-colors duration-200">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/20">
-                <Icon className="h-8 w-8 text-primary" />
+        <div className="group relative flex flex-col items-center gap-3 text-center p-4 rounded-2xl border-2 hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl bg-white dark:bg-gray-900">
+            <div className={`absolute inset-0 ${gradient} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity"}></div>
+            <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl ${gradient} text-white shadow-lg group-hover:scale-110 transition-transform`}>
+                <Icon className="h-8 w-8" />
             </div>
-            <span className="text-xs font-semibold">{title}</span>
+            <span className="text-sm font-bold relative">{title}</span>
         </div>
     );
     
@@ -193,25 +212,29 @@ export default function CandidateDashboardPage() {
     <div className="space-y-8 w-full overflow-hidden">
         <ProfileGistCard candidate={candidate || null} />
 
-        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400 w-full overflow-x-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              AI-Powered Career Tools
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex md:grid md:grid-cols-4 gap-4 overflow-x-auto pb-4 md:pb-0 min-w-max md:min-w-0">
-              <ActionIconButton title="AI Chat Assistant" icon={MessageSquare} href="/ai-assistant" delay={100} />
-              <ActionIconButton title="Smart Resume Analysis" icon={FileText} href="/smart-recruiter" delay={200} />
-              <ActionIconButton title="AI Mock Interview" icon={Mic} href="/voice-interview" delay={300} />
-              <ActionIconButton title="AI Interview Prep" icon={GraduationCap} href="/interview-prep" delay={400} />
-              <ActionIconButton title="Skill Gap Analysis" icon={Sparkles} href="/interview-prep" delay={500} />
-              <ActionIconButton title="Career Path AI" icon={Briefcase} href="/startup-agent" delay={600} />
-              <ActionIconButton title="Ultra-Fast Matching" icon={RefreshCcw} href="/ultra-fast-matching" delay={700} />
-              <ActionIconButton title="Diversity Insights" icon={Users} href="/diversity-hiring" delay={800} />
-            </div>
-          </CardContent>
+        <Card className="relative overflow-hidden border-2 animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-400 w-full">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/10 dark:via-purple-950/10 dark:to-pink-950/10"></div>
+          <div className="relative">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Sparkles className="h-6 w-6 text-purple-600 animate-pulse" />
+                AI-Powered Career Tools
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Supercharge your career with intelligent AI assistants</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <ActionIconButton title="AI Chat" icon={MessageSquare} href="/ai-assistant" delay={100} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" />
+                <ActionIconButton title="Resume AI" icon={FileText} href="/smart-recruiter" delay={200} gradient="bg-gradient-to-br from-purple-500 to-pink-500" />
+                <ActionIconButton title="Mock Interview" icon={Mic} href="/voice-interview" delay={300} gradient="bg-gradient-to-br from-emerald-500 to-teal-500" />
+                <ActionIconButton title="Interview Prep" icon={GraduationCap} href="/interview-prep" delay={400} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
+                <ActionIconButton title="Skill Gap" icon={Sparkles} href="/skill-gap" delay={500} gradient="bg-gradient-to-br from-indigo-500 to-purple-500" />
+                <ActionIconButton title="Career Path" icon={Briefcase} href="/career-compass" delay={600} gradient="bg-gradient-to-br from-pink-500 to-rose-500" />
+                <ActionIconButton title="Fast Match" icon={RefreshCcw} href="/ultra-fast-matching" delay={700} gradient="bg-gradient-to-br from-cyan-500 to-blue-500" />
+                <ActionIconButton title="Diversity" icon={Users} href="/diversity-hiring" delay={800} gradient="bg-gradient-to-br from-green-500 to-emerald-500" />
+              </div>
+            </CardContent>
+          </div>
         </Card>
 
        <Card className="glassmorphism animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-900 border-2 border-primary/20 relative w-full overflow-hidden">
