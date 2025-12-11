@@ -61,7 +61,7 @@ function SidebarWithHover({ children, nav, homePath, organization }: AppShellPro
                 </div>
             </SidebarHeader>
             
-            <SidebarContent className="overflow-y-auto">
+            <SidebarContent>
               {nav}
             </SidebarContent>
 
