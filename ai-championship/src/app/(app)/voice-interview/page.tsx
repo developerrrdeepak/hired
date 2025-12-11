@@ -33,51 +33,69 @@ export default function VoiceInterviewPage() {
         .then(stream => {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(e => console.log('Video play error:', e));
           }
         })
-        .catch(err => console.error('Camera error:', err));
+        .catch(err => {
+          console.error('Camera error:', err);
+          // Continue without camera
+        });
     }
+    
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [isInterviewStarted]);
 
   const handleStartListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Speech recognition not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+    
     setIsListening(true);
-    // Web Speech API for voice input
-    if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.continuous = true; // Keep listening
-      recognition.interimResults = true; // Show interim results
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    
+    let finalTranscript = '';
+    
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
       
-      let finalTranscript = '';
-      let silenceTimer: NodeJS.Timeout;
-      
-      recognition.onresult = (event: any) => {
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' ';
-          } else {
-            interimTranscript += transcript;
-          }
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
         }
-        
-        setInput(finalTranscript + interimTranscript);
-        
-        // Reset silence timer on each result
-        clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(() => {
-          recognition.stop();
-        }, 2000); // Stop after 2 seconds of silence
-      };
+      }
       
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => {
-        setIsListening(false);
-        clearTimeout(silenceTimer);
-      };
-      
+      setInput(finalTranscript + interimTranscript);
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript.trim()) {
+        setInput(finalTranscript.trim());
+      }
+    };
+    
+    try {
       recognition.start();
+    } catch (error) {
+      console.error('Failed to start recognition:', error);
+      setIsListening(false);
     }
   };
 
@@ -228,14 +246,22 @@ export default function VoiceInterviewPage() {
                     playsInline
                     className="w-full h-full object-cover"
                   />
+                  {!isInterviewStarted && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                      <div className="text-center text-white">
+                        <User className="h-16 w-16 mx-auto mb-2 text-gray-600" />
+                        <p className="text-sm text-gray-400">Camera will activate when interview starts</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="absolute bottom-4 left-4 text-white">
                     <Badge variant="secondary">You</Badge>
                   </div>
                   {isListening && (
                     <div className="absolute top-4 right-4">
-                      <div className="flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full">
-                        <Mic className="h-4 w-4 animate-pulse" />
-                        <span className="text-sm">Listening...</span>
+                      <div className="flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full animate-pulse">
+                        <Mic className="h-4 w-4" />
+                        <span className="text-sm font-medium">Listening...</span>
                       </div>
                     </div>
                   )}

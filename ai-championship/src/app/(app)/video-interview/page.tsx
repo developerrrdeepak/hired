@@ -275,12 +275,21 @@ export default function VideoInterviewPage() {
             <Card className="overflow-hidden border-2 shadow-xl">
               <CardContent className="p-0">
                 <div className="relative bg-slate-900 aspect-video">
-                  <video
-                    ref={remoteVideoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+                  {isScreenSharing ? (
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+                      <div className="text-center text-white">
+                        <Users className="h-16 w-16 mx-auto mb-4 text-blue-400" />
+                        <p className="text-xl font-medium">{mode === 'ai' ? 'AI Interviewer' : 'Waiting for interviewer...'}</p>
+                      </div>
+                    </div>
+                  )}
                   
                   {mode === 'peer' && roomId && (
                     <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white p-3 rounded-xl">
@@ -294,14 +303,7 @@ export default function VideoInterviewPage() {
                     </div>
                   )}
 
-                  {!stream && !isScreenSharing && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-                      <div className="text-center text-white">
-                        <Users className="h-16 w-16 mx-auto mb-4 text-blue-400" />
-                        <p className="text-xl font-medium">Waiting to connect...</p>
-                      </div>
-                    </div>
-                  )}
+
                 </div>
               </CardContent>
             </Card>
@@ -389,6 +391,11 @@ export default function VideoInterviewPage() {
                     muted
                     className="w-full h-full object-cover"
                   />
+                  {!stream && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+                      <Video className="h-12 w-12 text-slate-600" />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
