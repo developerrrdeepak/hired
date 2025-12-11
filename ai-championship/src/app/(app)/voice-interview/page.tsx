@@ -182,25 +182,14 @@ export default function VoiceInterviewPage() {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'API error');
-      }
-      
       const data = await response.json();
-      
-      // Handle both success and error cases that have a response
-      const responseText = data.response || data.error || 'I apologize, I had trouble processing that.';
-      
       const assistantMessage = {
         role: 'assistant',
-        content: responseText
+        content: data.response || 'Could you please repeat that?'
       };
       
       setMessages(prev => [...prev, assistantMessage]);
-      
-      // Auto-speak the response
-      await speakMessage(data.response);
+      await speakMessage(assistantMessage.content);
     } catch (error: any) {
       console.error('Interview error:', error);
       const errorMessage = {

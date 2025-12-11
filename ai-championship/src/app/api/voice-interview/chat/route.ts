@@ -8,64 +8,37 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message, conversationHistory } = body;
 
-    if (!message || typeof message !== 'string') {
+    if (!message) {
       return NextResponse.json(
-        { success: false, error: 'Message is required' },
+        { error: 'Message is required' },
         { status: 400 }
       );
     }
 
-    if (!process.env.GOOGLE_GENAI_API_KEY) {
-      console.error('GOOGLE_GENAI_API_KEY is not set');
-      return NextResponse.json(
-        { success: false, error: 'AI service not configured' },
-        { status: 500 }
-      );
-    }
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-pro',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 500,
-      }
-    });
+    const context = conversationHistory
+      ?.slice(-4)
+      .map((msg: any) => `${msg.role === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`)
+      .join('\n') || '';
 
-    // Build conversation context
-    const context = conversationHistory && conversationHistory.length > 0
-      ? conversationHistory
-          .slice(-6) // Last 6 messages for context
-          .map((msg: any) => `${msg.role === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`)
-          .join('\n')
-      : '';
+    const prompt = `You are a professional AI interviewer. Be conversational and ask follow-up questions.
 
-    const prompt = `You are a professional AI interviewer conducting a job interview. Be conversational, friendly, ask follow-up questions, and provide constructive feedback. Keep responses concise (2-3 sentences).
+${context}
 
-${context ? `Previous conversation:\n${context}\n\n` : ''}Candidate: ${message}
+Candidate: ${message}
 
 Interviewer:`;
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
 
-    if (!response || response.trim().length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        response: 'That\'s interesting. Could you tell me more about your experience with that?' 
-      });
-    }
-
-    return NextResponse.json({ success: true, response: response.trim() });
+    return NextResponse.json({ success: true, response });
   } catch (error: any) {
     console.error('Voice interview error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to process interview', 
-        details: error?.message,
-        response: 'I apologize for the technical difficulty. Could you please rephrase your answer?'
-      },
-      { status: 500 }
+      { success: true, response: 'Could you please repeat that?' },
+      { status: 200 }
     );
   }
 }
