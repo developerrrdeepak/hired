@@ -112,7 +112,7 @@ export default function CoursesPage() {
                         <Target className="w-4 h-4" /> Missing Critical Skills
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                        {skillAnalysis.missingSkills?.map((s: string, i: number) => (
+                        {(skillAnalysis.missingSkills || []).map((s: string, i: number) => (
                             <Badge key={i} variant="secondary" className="bg-white text-indigo-700">{s}</Badge>
                         ))}
                     </div>
@@ -121,14 +121,14 @@ export default function CoursesPage() {
                   <div>
                     <h4 className="font-bold mb-3 text-lg">Your 8-Week Plan</h4>
                     <div className="space-y-3">
-                        {skillAnalysis.roadmap?.slice(0, 4).map((week: any, i: number) => (
+                        {(skillAnalysis.roadmap || []).slice(0, 4).map((week: any, i: number) => (
                             <div key={i} className="flex gap-4 items-start p-3 bg-white border rounded-lg hover:border-indigo-300 transition-colors">
                                 <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm">
-                                    W{week.week}
+                                    W{week.week || i+1}
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-sm">{week.focus}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Resources: {week.resources?.join(', ')}</p>
+                                    <p className="font-semibold text-sm">{week.focus || week}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Resources: {(week.resources || []).join(', ')}</p>
                                 </div>
                             </div>
                         ))}
@@ -166,20 +166,20 @@ export default function CoursesPage() {
 
               {projectIdea && (
                 <div className="mt-6 p-5 bg-white border-2 border-emerald-100 rounded-xl shadow-sm animate-in fade-in zoom-in-95">
-                  <h3 className="text-xl font-bold text-emerald-900 mb-1">{projectIdea.title}</h3>
-                  <p className="text-sm text-emerald-600 mb-4 font-medium italic">{projectIdea.problem}</p>
+                  <h3 className="text-xl font-bold text-emerald-900 mb-1">{projectIdea.title || 'Project Idea'}</h3>
+                  <p className="text-sm text-emerald-600 mb-4 font-medium italic">{projectIdea.problem || projectIdea.description || 'Build something amazing!'}</p>
                   
                   <div className="space-y-4">
                     <div>
                         <h4 className="text-sm font-bold uppercase text-muted-foreground mb-2">MVP Features</h4>
                         <ul className="list-disc list-inside text-sm space-y-1">
-                            {projectIdea.mvp?.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                            {(projectIdea.mvp || projectIdea.features || []).map((f: string, i: number) => <li key={i}>{f}</li>)}
                         </ul>
                     </div>
                     <div>
                         <h4 className="text-sm font-bold uppercase text-muted-foreground mb-2">Bonus Challenge</h4>
                         <ul className="list-disc list-inside text-sm space-y-1 text-purple-600">
-                            {projectIdea.bonus?.map((f: string, i: number) => <li key={i}>{f}</li>)}
+                            {(projectIdea.bonus || projectIdea.advanced || []).map((f: string, i: number) => <li key={i}>{f}</li>)}
                         </ul>
                     </div>
                   </div>
