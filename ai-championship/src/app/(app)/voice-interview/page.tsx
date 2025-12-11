@@ -12,7 +12,7 @@ import { Video, Mic, MicOff, Volume2, Send, User, Bot, Sparkles } from 'lucide-r
 
 export default function VoiceInterviewPage() {
   const [messages, setMessages] = useState<Array<{role: string, content: string, timestamp?: Date}>>([
-    { role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?', timestamp: new Date() }
+    { role: 'assistant', content: '👋 Hello! I\'m your AI interviewer. Ready for a realistic interview? Tell me what role you\'re preparing for!', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -206,7 +206,7 @@ export default function VoiceInterviewPage() {
   };
 
   const handleReset = () => {
-    setMessages([{ role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?', timestamp: new Date() }]);
+    setMessages([{ role: 'assistant', content: '👋 Hello! I\'m your AI interviewer. Ready for a realistic interview? Tell me what role you\'re preparing for!', timestamp: new Date() }]);
     setIsInterviewStarted(false);
     setInput('');
     if (window.speechSynthesis) {
@@ -384,14 +384,17 @@ export default function VoiceInterviewPage() {
               <CardTitle className="text-sm">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full" onClick={handleReset}>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleReset}>
                 🔄 Start New Interview
               </Button>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setInput('Tell me about yourself')}>
-                💼 Common Question
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setInput('Tell me about yourself')}>
+                💼 Tell me about yourself
               </Button>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setInput('What are my strengths?')}>
-                💪 Get Feedback
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setInput('What are your strengths and weaknesses?')}>
+                💪 Strengths & Weaknesses
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setInput('Why should we hire you?')}>
+                🎯 Why hire you?
               </Button>
             </CardContent>
           </Card>
@@ -426,11 +429,19 @@ export default function VoiceInterviewPage() {
             <CardHeader>
               <CardTitle className="text-sm">Interview Tips</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>• Speak naturally like a real interview</p>
-              <p>• AI adapts to any field or role</p>
-              <p>• Use voice or text input</p>
-              <p>• Get instant feedback</p>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2">
+                <span className="text-green-500">✓</span> Speak naturally
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="text-green-500">✓</span> Any field/role
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="text-green-500">✓</span> Voice or text
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="text-green-500">✓</span> Instant feedback
+              </p>
             </CardContent>
           </Card>
         </div>

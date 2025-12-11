@@ -29,13 +29,13 @@ export function UniversalAIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hello! I am your Universal AI Assistant. How can I help you today? I can assist with coding, debugging, recruitment tasks, and more.',
+      content: '👋 Hi! I\'m your Universal AI Assistant. I can help with coding, debugging, recruitment, and more. What would you like to do?',
       timestamp: new Date(),
       suggestions: [
-        'Analyze code',
-        'Debug an error',
-        'Generate Job Description',
-        'Analyze Resume',
+        '💻 Analyze my code',
+        '🐛 Debug an error',
+        '📋 Generate Job Description',
+        '📄 Analyze Resume',
       ],
     },
   ]);
@@ -236,13 +236,13 @@ export function UniversalAIChat() {
 
   const getModePlaceholder = (m: Mode) => {
     switch (m) {
-      case 'chat': return 'Ask anything...';
-      case 'code': return 'Paste code to analyze...';
-      case 'debug': return 'Paste error message...';
-      case 'brainstorm': return 'Enter topic to brainstorm...';
-      case 'resume': return 'Paste resume text...';
-      case 'jd': return 'Enter job title (e.g. Senior React Developer)...';
-      case 'interview': return 'Enter job role for questions...';
+      case 'chat': return '💬 Ask me anything...';
+      case 'code': return '💻 Paste your code here...';
+      case 'debug': return '🐛 Paste error message...';
+      case 'brainstorm': return '💡 What topic to brainstorm?';
+      case 'resume': return '📄 Paste resume text...';
+      case 'jd': return '📋 Job title (e.g. Senior React Developer)...';
+      case 'interview': return '🎯 Job role for interview questions...';
       default: return 'Type your message...';
     }
   };
