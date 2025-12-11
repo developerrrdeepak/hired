@@ -5,3 +5,6 @@ export * from './errors';
 export * from './provider';
 export * from './utils';
 export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+export { addDocumentNonBlocking } from './non-blocking-updates';
+export { initializeFirebase } from './config';

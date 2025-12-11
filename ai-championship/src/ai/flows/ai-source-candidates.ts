@@ -13,32 +13,34 @@ const SourceCandidatesOutputSchema = z.object({
 });
 export type SourceCandidatesOutput = z.infer<typeof SourceCandidatesOutputSchema>;
 
-export async function sourceCandidates(input: SourceCandidatesInput): Promise<SourceCandidatesOutput> {
-    return sourceCandidatesFlow(input);
-}
-
-const prompt = ai.definePrompt({
-    name: 'sourceCandidatesPrompt',
-    input: {schema: SourceCandidatesInputSchema},
-    output: {schema: SourceCandidatesOutputSchema},
-    prompt: `Act as a Senior Talent Sourcer. Create a sourcing strategy for the following role.
-    
-    Job Description:
-    ---
-    {{{jobDescription}}}
-    ---
-    
-    Provide a sourcing plan and a list of keywords to search for.`,
-});
-
-const sourceCandidatesFlow = ai.defineFlow(
+// The Genkit flow itself
+export const sourceCandidatesFlow = ai.defineFlow(
   {
     name: 'sourceCandidatesFlow',
     inputSchema: SourceCandidatesInputSchema,
     outputSchema: SourceCandidatesOutputSchema,
+    model: geminiPro,
   },
   async (input) => {
+    const prompt = ai.definePrompt({
+      name: 'sourceCandidatesPrompt',
+      input: {schema: SourceCandidatesInputSchema},
+      output: {schema: SourceCandidatesOutputSchema},
+      prompt: `Act as a Senior Talent Sourcer. Create a sourcing strategy for the following role.
+      
+      Job Description:
+      ---
+      {{{jobDescription}}}
+      ---
+      
+      Provide a sourcing plan and a list of keywords to search for.`,
+    });
     const {output} = await prompt(input);
     return output!;
   }
 );
+
+// Wrapper function for direct external use
+export async function sourceCandidates(input: SourceCandidatesInput): Promise<SourceCandidatesOutput> {
+    return sourceCandidatesFlow(input);
+}
