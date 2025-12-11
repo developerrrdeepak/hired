@@ -78,13 +78,14 @@ export default function VideoInterviewPage() {
   const startCall = async (isPeer: boolean = false) => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: { width: 1280, height: 720 },
         audio: true,
       });
       
       setStream(mediaStream);
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = mediaStream;
+        await localVideoRef.current.play();
       }
       
       setIsCallActive(true);
