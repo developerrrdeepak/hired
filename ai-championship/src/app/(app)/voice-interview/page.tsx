@@ -28,24 +28,34 @@ export default function VoiceInterviewPage() {
   }, [messages]);
 
   useEffect(() => {
-    if (videoRef.current && isInterviewStarted) {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then(stream => {
+    let stream: MediaStream | null = null;
+    
+    const startCamera = async () => {
+      if (videoRef.current && isInterviewStarted) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: 1280, height: 720 }, 
+            audio: false 
+          });
+          
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(e => console.log('Video play error:', e));
+            await videoRef.current.play();
           }
-        })
-        .catch(err => {
+        } catch (err) {
           console.error('Camera error:', err);
-          // Continue without camera
-        });
-    }
+        }
+      }
+    };
+    
+    startCamera();
     
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
+      if (stream) {
         stream.getTracks().forEach(track => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [isInterviewStarted]);
@@ -172,9 +182,17 @@ export default function VoiceInterviewPage() {
         })
       });
 
-      if (!response.ok) throw new Error('API error');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'API error');
+      }
       
       const data = await response.json();
+      
+      if (!data.success || !data.response) {
+        throw new Error('Invalid response from server');
+      }
+      
       const assistantMessage = {
         role: 'assistant',
         content: data.response
@@ -184,13 +202,14 @@ export default function VoiceInterviewPage() {
       
       // Auto-speak the response
       await speakMessage(data.response);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Interview error:', error);
       const errorMessage = {
         role: 'assistant',
         content: 'I apologize, I had trouble processing that. Could you please repeat?'
       };
       setMessages(prev => [...prev, errorMessage]);
+      await speakMessage(errorMessage.content);
     } finally {
       setIsLoading(false);
     }
@@ -238,13 +257,14 @@ export default function VoiceInterviewPage() {
                 </div>
 
                 {/* Your Video */}
-                <div className="relative bg-gray-900 aspect-video">
+                <div className="relative bg-gray-900 aspect-video overflow-hidden">
                   <video
                     ref={videoRef}
                     autoPlay
                     muted
                     playsInline
                     className="w-full h-full object-cover"
+                    style={{ transform: 'scaleX(-1)' }}
                   />
                   {!isInterviewStarted && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
@@ -254,11 +274,11 @@ export default function VoiceInterviewPage() {
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-4 left-4 text-white">
+                  <div className="absolute bottom-4 left-4 text-white z-10">
                     <Badge variant="secondary">You</Badge>
                   </div>
                   {isListening && (
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-4 right-4 z-10">
                       <div className="flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full animate-pulse">
                         <Mic className="h-4 w-4" />
                         <span className="text-sm font-medium">Listening...</span>
