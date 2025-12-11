@@ -1,12 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pdf from 'pdf-parse';
-
-// The 'pdf-parse' library does not have a default export.
-// We must import it using the `import * as pdf from 'pdf-parse'` syntax if it's a module
-// or require if it's commonjs. Given the error, it's likely a commonjs issue with esm.
-// A robust way is to use require.
-// const pdf = require('pdf-parse');
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,12 +11,13 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Using the imported pdf function directly
-    const data = await pdf(buffer);
+    // Dynamic import for pdf-parse
+    const pdfParse = (await import('pdf-parse')).default;
+    const data = await pdfParse(buffer);
 
     return NextResponse.json({ text: data.text });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Resume parsing error:', error);
-    return NextResponse.json({ error: 'Failed to parse resume' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to parse resume' }, { status: 500 });
   }
 }
