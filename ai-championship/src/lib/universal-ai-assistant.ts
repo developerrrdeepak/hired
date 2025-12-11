@@ -345,15 +345,34 @@ For each missing skill:
   async generateProjectIdeas(skill: string, difficulty: string): Promise<AIResponse> {
     const prompt = `Generate 3 unique project ideas for learning ${skill} at ${difficulty} level.
 
-For EACH project, provide:
-1. **Title**: Project name
-2. **Description**: 2-3 sentences
-3. **MVP Features**: List 5 core features
-4. **Bonus Challenges**: List 3 advanced features
-5. **Tech Stack**: List 3-4 technologies
-6. **Estimated Time**: In hours
+For EACH project, use this EXACT format:
 
-Make projects practical, modern, and portfolio-worthy.`;
+1. **Title**: [Project Name]
+**Description**: [2-3 sentences about the project]
+**MVP Features**:
+- Feature 1
+- Feature 2
+- Feature 3
+- Feature 4
+- Feature 5
+**Bonus Challenges**:
+- Challenge 1
+- Challenge 2
+- Challenge 3
+**Tech Stack**:
+- Technology 1
+- Technology 2
+- Technology 3
+- Technology 4
+**Estimated Time**: [X hours]
+
+2. **Title**: [Project Name]
+[Continue same format]
+
+3. **Title**: [Project Name]
+[Continue same format]
+
+Make projects practical, modern, and portfolio-worthy. STRICTLY follow this format.`;
 
     return this.ask(prompt);
   }
