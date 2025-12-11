@@ -160,7 +160,7 @@ function ProfileGistCard({ candidate }: { candidate: Candidate | null }) {
 function ActionIconButton({ title, icon: Icon, href, disabled = false, delay, gradient }: { title: string, icon: React.ElementType, href: string, disabled?: boolean, delay: number, gradient: string }) {
     const content = (
         <div className="group relative flex flex-col items-center gap-3 text-center p-4 rounded-2xl border-2 hover:border-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl bg-white dark:bg-gray-900">
-            <div className={`absolute inset-0 ${gradient} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity"}></div>
+            <div className={`absolute inset-0 ${gradient} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity`}></div>
             <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl ${gradient} text-white shadow-lg group-hover:scale-110 transition-transform`}>
                 <Icon className="h-8 w-8" />
             </div>
