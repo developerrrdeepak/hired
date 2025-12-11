@@ -11,8 +11,8 @@ import { PageHeader } from '@/components/page-header';
 import { Video, Mic, MicOff, Volume2, Send, User, Bot, Sparkles } from 'lucide-react';
 
 export default function VoiceInterviewPage() {
-  const [messages, setMessages] = useState<Array<{role: string, content: string}>>([
-    { role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?' }
+  const [messages, setMessages] = useState<Array<{role: string, content: string, timestamp?: Date}>>([
+    { role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?', timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -162,7 +162,7 @@ export default function VoiceInterviewPage() {
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { role: 'user', content: input };
+    const userMessage = { role: 'user', content: input, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     const currentInput = input;
     setInput('');
@@ -185,7 +185,8 @@ export default function VoiceInterviewPage() {
       const data = await response.json();
       const assistantMessage = {
         role: 'assistant',
-        content: data.response || 'Could you please repeat that?'
+        content: data.response || 'Could you please repeat that?',
+        timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -194,7 +195,8 @@ export default function VoiceInterviewPage() {
       console.error('Interview error:', error);
       const errorMessage = {
         role: 'assistant',
-        content: 'I apologize, I had trouble processing that. Could you please repeat?'
+        content: 'I apologize, I had trouble processing that. Could you please repeat?',
+        timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
       await speakMessage(errorMessage.content);
@@ -204,9 +206,12 @@ export default function VoiceInterviewPage() {
   };
 
   const handleReset = () => {
-    setMessages([{ role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?' }]);
+    setMessages([{ role: 'assistant', content: 'Hello! I\'m your AI interviewer. What field or role would you like to practice for today?', timestamp: new Date() }]);
     setIsInterviewStarted(false);
     setInput('');
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
   };
 
   return (

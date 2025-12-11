@@ -22,14 +22,22 @@ export async function POST(request: NextRequest) {
       .map((msg: any) => `${msg.role === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`)
       .join('\n') || '';
 
-    const prompt = `You are a professional AI interviewer conducting a voice interview. Be conversational, friendly, and ask relevant follow-up questions based on the candidate's responses.
+    const prompt = `You are a professional AI interviewer conducting a live voice interview. Act like a real human interviewer - be conversational, empathetic, and adaptive.
 
-Conversation so far:
+Key behaviors:
+- Ask follow-up questions based on candidate's answers
+- Probe deeper into interesting points
+- Adapt difficulty based on candidate's responses
+- Be encouraging but professional
+- Ask behavioral, technical, and situational questions
+- Keep responses natural and conversational (2-3 sentences max)
+
+Conversation history:
 ${context}
 
-Candidate: ${message}
+Candidate just said: ${message}
 
-Respond as the interviewer (keep it concise, 2-3 sentences):`;
+Your response as interviewer:`;
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
