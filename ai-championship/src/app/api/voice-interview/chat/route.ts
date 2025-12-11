@@ -15,6 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+      console.error('GOOGLE_GENAI_API_KEY not configured');
+      return NextResponse.json(
+        { error: 'API key not configured' },
+        { status: 500 }
+      );
+    }
+
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
     const context = conversationHistory

@@ -182,10 +182,14 @@ export default function VoiceInterviewPage() {
         })
       });
 
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+
       const data = await response.json();
       const assistantMessage = {
         role: 'assistant',
-        content: data.response || 'Could you please repeat that?',
+        content: data.response || data.error || 'Could you please repeat that?',
         timestamp: new Date()
       };
       
