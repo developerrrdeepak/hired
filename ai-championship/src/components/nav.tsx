@@ -62,7 +62,6 @@ type NavSection = {
 const navConfig: Record<string, NavSection[]> = {
   'Owner': [
     {
-      title: 'Platform',
       items: [
         { href: '/founder/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { href: '/jobs', icon: Briefcase, label: 'Jobs'}, 
@@ -83,6 +82,13 @@ const navConfig: Record<string, NavSection[]> = {
        ]
     },
     {
+       title: 'Management',
+       items: [
+        { href: '/billing', icon: CreditCard, label: 'Billing' },
+        { href: '/settings', icon: Settings, label: 'Settings' },
+       ]
+    },
+    {
        title: 'Community',
        items: [
         { href: '/community', icon: Users, label: 'Community' },
@@ -93,7 +99,6 @@ const navConfig: Record<string, NavSection[]> = {
         title: 'Account',
         items: [
             { href: '/profile/edit', icon: User, label: 'Profile' },
-            { href: '/billing', icon: CreditCard, label: 'Billing' },
         ]
     }
   ],
@@ -174,7 +179,6 @@ const navConfig: Record<string, NavSection[]> = {
   ],
   'Candidate': [
     {
-        title: 'Platform',
         items: [
             { href: '/candidate-portal/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
             { href: '/jobs', icon: Briefcase, label: 'Jobs' },
