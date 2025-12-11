@@ -303,16 +303,32 @@ export default function CandidateDashboardPage() {
        <div className="grid gap-6 md:grid-cols-2">
          <Card className="glassmorphism transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-in fade-in-0 slide-in-from-top-4 duration-500 delay-700">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Trending News</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-orange-500" />
+              Trending News
+            </CardTitle>
             <RefreshCcw className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-                 <div className="flex items-center gap-4">
-                    <img src={placeholderImages.find(p => p.id === 'news-1')?.imageUrl} alt="News" className="w-24 h-24 rounded-lg object-cover" data-ai-hint="news article"/>
-                    <div>
-                        <h4 className="font-semibold">Implementation of labour codes, a watershed</h4>
-                        <p className="text-xs text-muted-foreground">The new set of labour codes will likely be implemented in the next few months...</p>
+                 <div className="flex items-center gap-4 p-3 rounded-lg border hover:border-primary transition-all cursor-pointer">
+                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-2xl shrink-0">
+                      📰
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-sm mb-1">AI Transforming Recruitment Industry</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2">Companies are adopting AI-powered tools for faster and smarter hiring decisions...</p>
+                        <span className="text-xs text-orange-600 font-medium mt-1 inline-block">2 hours ago</span>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-4 p-3 rounded-lg border hover:border-primary transition-all cursor-pointer">
+                    <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl shrink-0">
+                      💼
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-sm mb-1">Remote Work Trends 2024</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2">Latest survey shows 70% of tech companies offering hybrid work models...</p>
+                        <span className="text-xs text-blue-600 font-medium mt-1 inline-block">5 hours ago</span>
                     </div>
                 </div>
             </div>
