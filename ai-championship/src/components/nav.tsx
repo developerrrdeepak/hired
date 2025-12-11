@@ -288,7 +288,7 @@ export function Nav({ role }: { role: string | null }) {
   };
 
   return (
-    <SidebarMenu className="h-full overflow-hidden">
+    <SidebarMenu>
       {navSections.map((section, index) => (
         <SidebarGroup key={index} className={index > 0 ? 'mt-2' : ''}>
             {section.title && (
