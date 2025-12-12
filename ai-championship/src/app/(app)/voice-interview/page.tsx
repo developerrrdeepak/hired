@@ -246,25 +246,16 @@ export default function VoiceInterviewPage() {
     recognition.onend = () => {
       setIsListening(false);
       if (finalTranscript.trim()) {
-        setInput(finalTranscript.trim());
+        const trimmed = finalTranscript.trim();
+        setInput(trimmed);
         
-        // Calculate response time
         const responseTime = Date.now() - lastResponseTime;
         setAverageResponseTime(prev => prev === 0 ? responseTime : Math.round((prev + responseTime) / 2));
         
-        // Detect pauses (long response times)
-        if (responseTime > 8000) {
-          setPauseCount(prev => prev + 1);
-        }
+        if (responseTime > 8000) setPauseCount(prev => prev + 1);
         
-        if (autoSendEnabled && finalTranscript.trim()) {
-          setTimeout(() => {
-            const trimmed = finalTranscript.trim();
-            if (trimmed) {
-              setInput(trimmed);
-              handleSendMessage();
-            }
-          }, 500);
+        if (autoSendEnabled) {
+          setTimeout(() => handleSendMessage(), 500);
         }
       }
     };
