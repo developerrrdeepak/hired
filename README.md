@@ -13,7 +13,7 @@ The ultimate force multiplier: helping tiny teams hire like enterprises through 
 Best Small Startup Agents | Best Voice Agent | Best Overall Idea
 
 📹 Demo Video (3 min): Add your link here
-🚀 Live App: https://hirevision-ai.vercel.app
+🚀 Live App: https://hirevisi.vercel.app
 
 🚀 The Problem
 
