@@ -22,8 +22,7 @@
   },
   "homepage": "https://github.com/developerrrdeepak/hired#readme",
   "scripts": {
-    "dev": "node server.js",
-    "dev:next": "next dev -p 9002",
+    "dev": "next dev -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "cross-env SKIP_ENV_VALIDATION=true next build",
@@ -106,6 +105,7 @@
     "next": "^15.5.7",
     "patch-package": "^8.0.0",
     "pdf-parse": "^2.4.5",
+    "peerjs": "^1.5.5",
     "react": "^19.0.1",
     "react-day-picker": "^9.12.0",
     "react-dom": "^19.0.1",

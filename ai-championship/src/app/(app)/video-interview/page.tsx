@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Video, VideoOff, Mic, MicOff, PhoneOff, Send, Bot, User, Shield, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { io, Socket } from 'socket.io-client';
+import Peer from 'peerjs';
 
 export default function VideoInterviewPage() {
   const { toast } = useToast();
@@ -29,8 +29,8 @@ export default function VideoInterviewPage() {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const peerRef = useRef<Peer | null>(null);
+  const callRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -38,60 +38,15 @@ export default function VideoInterviewPage() {
   }, [messages]);
 
   useEffect(() => {
-    socketRef.current = io();
-    
-    socketRef.current.on('room-created', (id) => {
-      console.log('Room created:', id);
-    });
-
-    socketRef.current.on('room-joined', (id) => {
-      console.log('Room joined:', id);
-    });
-
-    socketRef.current.on('user-joined', async (userId) => {
-      console.log('User joined:', userId);
-      if (peerConnectionRef.current) {
-        const offer = await peerConnectionRef.current.createOffer();
-        await peerConnectionRef.current.setLocalDescription(offer);
-        socketRef.current?.emit('offer', { roomId, offer });
-      }
-    });
-
-    socketRef.current.on('offer', async ({ offer, from }) => {
-      console.log('Received offer from:', from);
-      if (!peerConnectionRef.current) {
-        await setupPeerConnection(false);
-      }
-      await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peerConnectionRef.current?.createAnswer();
-      await peerConnectionRef.current?.setLocalDescription(answer!);
-      socketRef.current?.emit('answer', { roomId, answer });
-    });
-
-    socketRef.current.on('answer', async ({ answer }) => {
-      console.log('Received answer');
-      await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(answer));
-    });
-
-    socketRef.current.on('ice-candidate', async ({ candidate }) => {
-      console.log('Received ICE candidate');
-      if (candidate) {
-        await peerConnectionRef.current?.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
-    socketRef.current.on('user-left', () => {
-      setRemoteStream(null);
-      toast({ title: 'User left the room' });
-    });
-
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
-      socketRef.current?.disconnect();
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
     };
-  }, [stream, roomId, toast]);
+  }, [stream]);
 
   useEffect(() => {
     if (!isCallActive) return;
@@ -120,13 +75,33 @@ export default function VideoInterviewPage() {
   }, [remoteStream]);
 
   const createRoom = async () => {
-    const id = Math.random().toString(36).substring(2, 10);
-    setRoomId(id);
     await startCamera();
-    await setupPeerConnection(true);
-    socketRef.current?.emit('create-room', id);
-    setIsCallActive(true);
-    toast({ title: 'Room Created', description: `Room ID: ${id}` });
+    const peer = new Peer({
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
+    });
+
+    peer.on('open', (id) => {
+      setRoomId(id);
+      setIsCallActive(true);
+      toast({ title: 'Room Created', description: `Room ID: ${id}` });
+    });
+
+    peer.on('call', (call) => {
+      if (stream) {
+        call.answer(stream);
+        call.on('stream', (remoteStream) => {
+          setRemoteStream(remoteStream);
+        });
+        callRef.current = call;
+      }
+    });
+
+    peerRef.current = peer;
   };
 
   const joinRoom = async () => {
@@ -134,41 +109,31 @@ export default function VideoInterviewPage() {
       toast({ title: 'Error', description: 'Enter Room ID', variant: 'destructive' });
       return;
     }
-    setRoomId(joinRoomId);
+    
     await startCamera();
-    await setupPeerConnection(false);
-    socketRef.current?.emit('join-room', joinRoomId);
-    setIsCallActive(true);
-    toast({ title: 'Joined', description: `Room: ${joinRoomId}` });
-  };
-
-  const setupPeerConnection = async (isInitiator: boolean) => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+    const peer = new Peer({
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
     });
 
-    if (stream) {
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    }
-
-    pc.ontrack = (event) => {
-      console.log('Remote track received');
-      setRemoteStream(event.streams[0]);
-    };
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socketRef.current?.emit('ice-candidate', { 
-          roomId: roomId || joinRoomId, 
-          candidate: event.candidate 
+    peer.on('open', () => {
+      if (stream) {
+        const call = peer.call(joinRoomId, stream);
+        call.on('stream', (remoteStream) => {
+          setRemoteStream(remoteStream);
         });
+        callRef.current = call;
+        setRoomId(joinRoomId);
+        setIsCallActive(true);
+        toast({ title: 'Joined', description: `Room: ${joinRoomId}` });
       }
-    };
+    });
 
-    peerConnectionRef.current = pc;
+    peerRef.current = peer;
   };
 
   const startCamera = async () => {
@@ -192,11 +157,14 @@ export default function VideoInterviewPage() {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+    if (callRef.current) {
+      callRef.current.close();
+      callRef.current = null;
     }
-    socketRef.current?.emit('leave-room', roomId);
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+    }
     setRemoteStream(null);
     setIsCallActive(false);
     setRoomId('');
