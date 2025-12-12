@@ -226,7 +226,7 @@ export default function CandidateDashboardPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <ActionIconButton title="AI Chat" icon={MessageSquare} href="/ai-assistant" delay={100} gradient="bg-gradient-to-br from-blue-500 to-cyan-500" />
                 <ActionIconButton title="Resume AI" icon={FileText} href="/smart-recruiter" delay={200} gradient="bg-gradient-to-br from-purple-500 to-pink-500" />
-                <ActionIconButton title="Mock Interview" icon={Mic} href="/voice-interview" delay={300} gradient="bg-gradient-to-br from-emerald-500 to-teal-500" />
+                <ActionIconButton title="Skill Assessment" icon={Mic} href="/voice-interview" delay={300} gradient="bg-gradient-to-br from-emerald-500 to-teal-500" />
                 <ActionIconButton title="Interview Prep" icon={GraduationCap} href="/interview-prep" delay={400} gradient="bg-gradient-to-br from-orange-500 to-red-500" />
                 <ActionIconButton title="Skill Gap" icon={Sparkles} href="/skill-gap" delay={500} gradient="bg-gradient-to-br from-indigo-500 to-purple-500" />
                 <ActionIconButton title="Career Path" icon={Briefcase} href="/career-compass" delay={600} gradient="bg-gradient-to-br from-pink-500 to-rose-500" />

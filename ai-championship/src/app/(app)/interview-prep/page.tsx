@@ -16,13 +16,13 @@ const candidateTools = [
   },
   {
     title: 'Video Interview',
-    description: 'Record and analyze video interviews',
+    description: 'Real-time video interviews with AI analysis',
     icon: Video,
     href: '/video-interview',
   },
   {
-    title: 'Mock Interviews',
-    description: 'AI-powered interview practice',
+    title: 'Skill Assessment',
+    description: 'AI-powered skill evaluation',
     icon: FileText,
     href: '/interviews',
   },
