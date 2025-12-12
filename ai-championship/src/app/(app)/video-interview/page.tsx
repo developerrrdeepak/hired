@@ -75,7 +75,9 @@ export default function VideoInterviewPage() {
   }, [remoteStream]);
 
   const createRoom = async () => {
-    await startCamera();
+    const mediaStream = await startCamera();
+    if (!mediaStream) return;
+
     const peer = new Peer({
       config: {
         iceServers: [
@@ -92,13 +94,11 @@ export default function VideoInterviewPage() {
     });
 
     peer.on('call', (call) => {
-      if (stream) {
-        call.answer(stream);
-        call.on('stream', (remoteStream) => {
-          setRemoteStream(remoteStream);
-        });
-        callRef.current = call;
-      }
+      call.answer(mediaStream);
+      call.on('stream', (remoteStream) => {
+        setRemoteStream(remoteStream);
+      });
+      callRef.current = call;
     });
 
     peerRef.current = peer;
@@ -110,7 +110,9 @@ export default function VideoInterviewPage() {
       return;
     }
     
-    await startCamera();
+    const mediaStream = await startCamera();
+    if (!mediaStream) return;
+
     const peer = new Peer({
       config: {
         iceServers: [
@@ -121,16 +123,14 @@ export default function VideoInterviewPage() {
     });
 
     peer.on('open', () => {
-      if (stream) {
-        const call = peer.call(joinRoomId, stream);
-        call.on('stream', (remoteStream) => {
-          setRemoteStream(remoteStream);
-        });
-        callRef.current = call;
-        setRoomId(joinRoomId);
-        setIsCallActive(true);
-        toast({ title: 'Joined', description: `Room: ${joinRoomId}` });
-      }
+      const call = peer.call(joinRoomId, mediaStream);
+      call.on('stream', (remoteStream) => {
+        setRemoteStream(remoteStream);
+      });
+      callRef.current = call;
+      setRoomId(joinRoomId);
+      setIsCallActive(true);
+      toast({ title: 'Joined', description: `Room: ${joinRoomId}` });
     });
 
     peerRef.current = peer;
@@ -140,9 +140,11 @@ export default function VideoInterviewPage() {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setStream(mediaStream);
+      return mediaStream;
     } catch (error) {
       console.error('Camera error:', error);
       toast({ title: 'Error', description: 'Camera access denied', variant: 'destructive' });
+      return null;
     }
   };
 
