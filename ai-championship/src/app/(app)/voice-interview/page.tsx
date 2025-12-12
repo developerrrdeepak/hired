@@ -20,12 +20,74 @@ export default function VoiceInterviewPage() {
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [tabSwitches, setTabSwitches] = useState(0);
+  const [focusLosses, setFocusLosses] = useState(0);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [interviewDuration, setInterviewDuration] = useState(0);
+  const [confidenceScore, setConfidenceScore] = useState(0);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Interview Timer
+  useEffect(() => {
+    if (isInterviewStarted) {
+      timerRef.current = setInterval(() => {
+        setInterviewDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setInterviewDuration(0);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isInterviewStarted]);
+
+  // Calculate confidence score based on behavior
+  useEffect(() => {
+    if (!isInterviewStarted) {
+      setConfidenceScore(0);
+      return;
+    }
+    const baseScore = 100;
+    const tabPenalty = tabSwitches * 10;
+    const focusPenalty = focusLosses * 5;
+    const score = Math.max(0, baseScore - tabPenalty - focusPenalty);
+    setConfidenceScore(score);
+  }, [tabSwitches, focusLosses, isInterviewStarted]);
+
+  // Behavior Detection - Tab Switch & Focus Loss
+  useEffect(() => {
+    if (!isInterviewStarted) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitches(prev => prev + 1);
+        const warning = `⚠️ Tab switch detected at ${new Date().toLocaleTimeString()}`;
+        setWarnings(prev => [...prev, warning]);
+      }
+    };
+
+    const handleBlur = () => {
+      setFocusLosses(prev => prev + 1);
+      const warning = `⚠️ Focus lost at ${new Date().toLocaleTimeString()}`;
+      setWarnings(prev => [...prev, warning]);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [isInterviewStarted]);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -98,6 +160,17 @@ export default function VoiceInterviewPage() {
       setIsListening(false);
       if (finalTranscript.trim()) {
         setInput(finalTranscript.trim());
+        // Auto-send if enabled
+        if (autoSendEnabled && finalTranscript.trim()) {
+          setTimeout(() => {
+            const trimmed = finalTranscript.trim();
+            if (trimmed) {
+              setInput(trimmed);
+              // Trigger send
+              handleSendMessage();
+            }
+          }, 500);
+        }
       }
     };
     
@@ -213,9 +286,27 @@ export default function VoiceInterviewPage() {
     setMessages([{ role: 'assistant', content: '👋 Hello! I\'m your AI interviewer. Ready for a realistic interview? Tell me what role you\'re preparing for!', timestamp: new Date() }]);
     setIsInterviewStarted(false);
     setInput('');
+    setTabSwitches(0);
+    setFocusLosses(0);
+    setWarnings([]);
+    setInterviewDuration(0);
+    setConfidenceScore(0);
+    if (timerRef.current) clearInterval(timerRef.current);
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getConfidenceColor = (score: number) => {
+    if (score >= 80) return 'text-green-500';
+    if (score >= 60) return 'text-yellow-500';
+    return 'text-red-500';
   };
 
   return (
@@ -274,6 +365,13 @@ export default function VoiceInterviewPage() {
                   <div className="absolute bottom-4 left-4 text-white z-10">
                     <Badge variant="secondary">You</Badge>
                   </div>
+                  {isInterviewStarted && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <Badge variant="default" className="bg-green-500">
+                        🔴 {formatTime(interviewDuration)}
+                      </Badge>
+                    </div>
+                  )}
                   {isListening && (
                     <div className="absolute top-4 right-4 z-10">
                       <div className="flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full animate-pulse">
@@ -363,22 +461,35 @@ export default function VoiceInterviewPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Voice Selection */}
+          {/* Settings */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Interviewer Voice</CardTitle>
+              <CardTitle className="text-sm">⚙️ Settings</CardTitle>
             </CardHeader>
-            <CardContent>
-              <RadioGroup value={voiceGender} onValueChange={(v) => setVoiceGender(v as 'male' | 'female')}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female" className="cursor-pointer">👩 Female Voice</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male" className="cursor-pointer">👨 Male Voice</Label>
-                </div>
-              </RadioGroup>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Interviewer Voice</Label>
+                <RadioGroup value={voiceGender} onValueChange={(v) => setVoiceGender(v as 'male' | 'female')}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="female" />
+                    <Label htmlFor="female" className="cursor-pointer">👩 Female</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="male" />
+                    <Label htmlFor="male" className="cursor-pointer">👨 Male</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <Label htmlFor="auto-send" className="text-sm cursor-pointer">Auto-send voice</Label>
+                <input
+                  id="auto-send"
+                  type="checkbox"
+                  checked={autoSendEnabled}
+                  onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -403,6 +514,67 @@ export default function VoiceInterviewPage() {
             </CardContent>
           </Card>
 
+          {/* Interview Stats */}
+          {isInterviewStarted && (
+            <Card className="border-blue-500/50">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <span>📊</span>
+                  Interview Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <Badge variant="secondary">{formatTime(interviewDuration)}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Questions:</span>
+                  <Badge variant="secondary">{Math.floor(messages.length / 2)}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Confidence:</span>
+                  <Badge variant="secondary" className={getConfidenceColor(confidenceScore)}>
+                    {confidenceScore}%
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Proctoring */}
+          {isInterviewStarted && (
+            <Card className="border-orange-500/50">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <span className="text-orange-500">👁️</span>
+                  AI Proctoring
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Tab Switches:</span>
+                  <Badge variant={tabSwitches > 0 ? "destructive" : "secondary"}>
+                    {tabSwitches}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Focus Losses:</span>
+                  <Badge variant={focusLosses > 0 ? "destructive" : "secondary"}>
+                    {focusLosses}
+                  </Badge>
+                </div>
+                {warnings.length > 0 && (
+                  <div className="mt-3 p-2 bg-orange-500/10 rounded text-xs space-y-1 max-h-32 overflow-y-auto">
+                    {warnings.slice(-3).map((warning, i) => (
+                      <p key={i} className="text-orange-600 dark:text-orange-400">{warning}</p>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Features */}
           <Card>
             <CardHeader>
@@ -418,8 +590,8 @@ export default function VoiceInterviewPage() {
                 <span className="text-xs text-muted-foreground">ElevenLabs</span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">Smart AI</Badge>
-                <span className="text-xs text-muted-foreground">ChatGPT-like</span>
+                <Badge variant="secondary" className="text-xs">AI Proctoring</Badge>
+                <span className="text-xs text-muted-foreground">Behavior</span>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">Any Field</Badge>
