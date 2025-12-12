@@ -29,6 +29,12 @@ export default function VoiceInterviewPage() {
   const [faceDetected, setFaceDetected] = useState(false);
   const [eyeContact, setEyeContact] = useState(0);
   const [lookingAway, setLookingAway] = useState(0);
+  const [speechQuality, setSpeechQuality] = useState(0);
+  const [sentimentScore, setSentimentScore] = useState(0);
+  const [interviewInsights, setInterviewInsights] = useState<string[]>([]);
+  const [pauseCount, setPauseCount] = useState(0);
+  const [averageResponseTime, setAverageResponseTime] = useState(0);
+  const [lastResponseTime, setLastResponseTime] = useState(Date.now());
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -59,14 +65,17 @@ export default function VoiceInterviewPage() {
       return;
     }
     const baseScore = 100;
-    const tabPenalty = tabSwitches * 10;
-    const focusPenalty = focusLosses * 5;
-    const faceBonus = faceDetected ? 10 : -20;
+    const tabPenalty = tabSwitches * 8;
+    const focusPenalty = focusLosses * 4;
+    const faceBonus = faceDetected ? 15 : -15;
     const eyeContactRatio = eyeContact / Math.max(1, eyeContact + lookingAway);
-    const eyeContactBonus = eyeContactRatio * 15;
-    const score = Math.max(0, baseScore - tabPenalty - focusPenalty + faceBonus + eyeContactBonus);
+    const eyeContactBonus = eyeContactRatio * 12;
+    const speechBonus = speechQuality * 0.1;
+    const sentimentBonus = sentimentScore > 0 ? sentimentScore * 0.05 : 0;
+    const responseTimeBonus = averageResponseTime < 5000 ? 5 : averageResponseTime > 15000 ? -5 : 0;
+    const score = Math.max(0, baseScore - tabPenalty - focusPenalty + faceBonus + eyeContactBonus + speechBonus + sentimentBonus + responseTimeBonus);
     setConfidenceScore(Math.round(score));
-  }, [tabSwitches, focusLosses, faceDetected, eyeContact, lookingAway, isInterviewStarted]);
+  }, [tabSwitches, focusLosses, faceDetected, eyeContact, lookingAway, speechQuality, sentimentScore, averageResponseTime, isInterviewStarted]);
 
   useEffect(() => {
     if (!isInterviewStarted) return;
@@ -223,6 +232,10 @@ export default function VoiceInterviewPage() {
       }
       
       setInput(finalTranscript + interimTranscript);
+      
+      // Analyze speech quality
+      const confidence = event.results[event.results.length - 1][0].confidence || 0;
+      setSpeechQuality(prev => Math.round((prev + confidence * 100) / 2));
     };
     
     recognition.onerror = (event: any) => {
@@ -234,6 +247,16 @@ export default function VoiceInterviewPage() {
       setIsListening(false);
       if (finalTranscript.trim()) {
         setInput(finalTranscript.trim());
+        
+        // Calculate response time
+        const responseTime = Date.now() - lastResponseTime;
+        setAverageResponseTime(prev => prev === 0 ? responseTime : Math.round((prev + responseTime) / 2));
+        
+        // Detect pauses (long response times)
+        if (responseTime > 8000) {
+          setPauseCount(prev => prev + 1);
+        }
+        
         if (autoSendEnabled && finalTranscript.trim()) {
           setTimeout(() => {
             const trimmed = finalTranscript.trim();
@@ -334,7 +357,15 @@ export default function VoiceInterviewPage() {
         timestamp: new Date()
       };
       
+      // Analyze sentiment of user message
+      const sentiment = analyzeSentiment(currentInput);
+      setSentimentScore(sentiment);
+      
+      // Generate insights
+      generateInterviewInsights(currentInput, assistantMessage.content);
+      
       setMessages(prev => [...prev, assistantMessage]);
+      setLastResponseTime(Date.now());
       await speakMessage(assistantMessage.content);
     } catch (error: any) {
       console.error('Interview error:', error);
@@ -350,10 +381,56 @@ export default function VoiceInterviewPage() {
     }
   };
 
+  const analyzeSentiment = (text: string): number => {
+    const positiveWords = ['excited', 'passionate', 'love', 'enjoy', 'great', 'excellent', 'amazing', 'wonderful'];
+    const negativeWords = ['difficult', 'challenging', 'hard', 'struggle', 'problem', 'issue', 'worried', 'nervous'];
+    
+    const words = text.toLowerCase().split(' ');
+    let score = 50; // neutral
+    
+    words.forEach(word => {
+      if (positiveWords.includes(word)) score += 10;
+      if (negativeWords.includes(word)) score -= 10;
+    });
+    
+    return Math.max(0, Math.min(100, score));
+  };
+  
+  const generateInterviewInsights = (userMessage: string, aiResponse: string) => {
+    const insights: string[] = [];
+    
+    if (userMessage.length < 20) {
+      insights.push('💡 Try to provide more detailed responses');
+    }
+    if (pauseCount > 3) {
+      insights.push('⏱️ Consider preparing answers in advance');
+    }
+    if (eyeContact / Math.max(1, eyeContact + lookingAway) < 0.6) {
+      insights.push('👁️ Maintain better eye contact with the camera');
+    }
+    if (speechQuality < 70) {
+      insights.push('🎤 Speak more clearly and confidently');
+    }
+    if (sentimentScore < 40) {
+      insights.push('😊 Show more enthusiasm and positivity');
+    }
+    
+    if (insights.length > 0) {
+      setInterviewInsights(prev => [...new Set([...prev, ...insights])]);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const getPerformanceLevel = (score: number) => {
+    if (score >= 90) return { level: 'Excellent', color: 'text-green-600', bg: 'bg-green-100' };
+    if (score >= 75) return { level: 'Good', color: 'text-blue-600', bg: 'bg-blue-100' };
+    if (score >= 60) return { level: 'Average', color: 'text-yellow-600', bg: 'bg-yellow-100' };
+    return { level: 'Needs Improvement', color: 'text-red-600', bg: 'bg-red-100' };
   };
 
   return (
@@ -492,15 +569,24 @@ export default function VoiceInterviewPage() {
                 </RadioGroup>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="autoSend"
-                  checked={autoSendEnabled}
-                  onChange={(e) => setAutoSendEnabled(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="autoSend">Auto-send voice messages</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="autoSend"
+                    checked={autoSendEnabled}
+                    onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="autoSend">Auto-send voice messages</Label>
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <Label className="text-sm font-medium">Performance Overview</Label>
+                  <div className={`mt-1 p-2 rounded text-center text-sm ${getPerformanceLevel(confidenceScore).bg} ${getPerformanceLevel(confidenceScore).color}`}>
+                    {getPerformanceLevel(confidenceScore).level} ({confidenceScore}%)
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -530,12 +616,41 @@ export default function VoiceInterviewPage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm">Tab Switches:</span>
-                  <span className="text-sm font-medium">{tabSwitches}</span>
+                  <span className="text-sm">Speech Quality:</span>
+                  <Badge variant={speechQuality >= 80 ? "default" : speechQuality >= 60 ? "secondary" : "destructive"} className="text-xs">
+                    {speechQuality}%
+                  </Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm">Focus Losses:</span>
-                  <span className="text-sm font-medium">{focusLosses}</span>
+                  <span className="text-sm">Sentiment:</span>
+                  <div className={`text-xs px-2 py-1 rounded ${getPerformanceLevel(sentimentScore).bg} ${getPerformanceLevel(sentimentScore).color}`}>
+                    {getPerformanceLevel(sentimentScore).level}
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Avg Response:</span>
+                  <span className="text-sm font-medium">{(averageResponseTime / 1000).toFixed(1)}s</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Pauses:</span>
+                  <span className="text-sm font-medium">{pauseCount}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {interviewInsights.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-blue-600">💡 Interview Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {interviewInsights.slice(-4).map((insight, index) => (
+                    <div key={index} className="text-xs bg-blue-50 p-2 rounded border-l-2 border-blue-200">
+                      {insight}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -544,12 +659,12 @@ export default function VoiceInterviewPage() {
           {warnings.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-orange-600">Warnings</CardTitle>
+                <CardTitle className="text-orange-600">⚠️ Warnings</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {warnings.slice(-5).map((warning, index) => (
-                    <p key={index} className="text-xs text-orange-600">{warning}</p>
+                  {warnings.slice(-3).map((warning, index) => (
+                    <p key={index} className="text-xs text-orange-600 bg-orange-50 p-1 rounded">{warning}</p>
                   ))}
                 </div>
               </CardContent>
