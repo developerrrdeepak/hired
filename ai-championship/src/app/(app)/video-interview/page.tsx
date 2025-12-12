@@ -5,34 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Video, VideoOff, Mic, MicOff, PhoneOff, Monitor, Users, Activity, Copy, Check, Code, FileText, Shield, AlertTriangle } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Monitor, Send, Bot, User, Shield, Copy, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Editor from '@monaco-editor/react';
 
 export default function VideoInterviewPage() {
   const { toast } = useToast();
-  const [mode, setMode] = useState<'ai' | 'peer'>('ai');
+  const [mode, setMode] = useState<'ai' | 'real'>('ai');
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isCallActive, setIsCallActive] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [roomId, setRoomId] = useState('');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [copied, setCopied] = useState(false);
-  const [showCodeEditor, setShowCodeEditor] = useState(false);
-  const [showDocuments, setShowDocuments] = useState(false);
-  const [code, setCode] = useState('// Write your code here\n');
-  const [documentText, setDocumentText] = useState('');
-  const [aiCheatingDetected, setAiCheatingDetected] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [messages, setMessages] = useState<Array<{role: 'user' | 'ai', content: string}>>([
+    { role: 'ai', content: 'Hello! I\'m your AI interviewer. Ready to begin?' }
+  ]);
+  const [input, setInput] = useState('');
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const mainVideoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
     return () => {
@@ -42,115 +40,55 @@ export default function VideoInterviewPage() {
     };
   }, [stream]);
 
-  // AI Cheating Detection
   useEffect(() => {
     if (!isCallActive) return;
-
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setTabSwitchCount(prev => prev + 1);
-        if (tabSwitchCount >= 2) {
-          setAiCheatingDetected(true);
-          toast({
-            title: 'Warning',
-            description: 'Multiple tab switches detected!',
-            variant: 'destructive'
-          });
-        }
       }
     };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isCallActive, tabSwitchCount, toast]);
+  }, [isCallActive]);
 
-  const generateRoomId = () => {
+  const createRoom = async () => {
     const id = Math.random().toString(36).substring(2, 10);
     setRoomId(id);
-    return id;
-  };
-
-  const copyRoomId = () => {
-    navigator.clipboard.writeText(roomId);
-    setCopied(true);
-    toast({ title: 'Copied!', description: 'Room ID copied to clipboard' });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const startCall = async (isPeer: boolean = false) => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: true,
-      });
-      
-      setStream(mediaStream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = mediaStream;
-        await localVideoRef.current.play();
-      }
-      
-      setIsCallActive(true);
-      setTabSwitchCount(0);
-      setAiCheatingDetected(false);
-      
-      if (isPeer && !roomId) {
-        const newRoomId = generateRoomId();
-        toast({ 
-          title: 'Room Created', 
-          description: `Share Room ID: ${newRoomId}`,
-          duration: 5000 
-        });
-      }
-      
-      if (!isPeer) {
-        toast({ title: 'AI Interview Started', description: 'AI analysis enabled' });
-        setTimeout(() => analyzeInterview('start'), 3000);
-      }
-    } catch (error) {
-      toast({ 
-        title: 'Error', 
-        description: 'Could not access camera/microphone', 
-        variant: 'destructive' 
-      });
-    }
+    await startCamera();
+    setIsCallActive(true);
+    toast({ title: 'Room Created', description: `Room ID: ${id}` });
   };
 
   const joinRoom = async () => {
     if (!joinRoomId.trim()) {
-      toast({ title: 'Error', description: 'Please enter a Room ID', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Enter Room ID', variant: 'destructive' });
       return;
     }
-    
+    setRoomId(joinRoomId);
+    await startCamera();
+    setIsCallActive(true);
+    toast({ title: 'Joined', description: `Room: ${joinRoomId}` });
+  };
+
+  const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: true,
-      });
-      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setStream(mediaStream);
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = mediaStream;
-        await localVideoRef.current.play();
       }
-      
-      setRoomId(joinRoomId);
-      setIsCallActive(true);
-      setTabSwitchCount(0);
-      setAiCheatingDetected(false);
-      
-      toast({ 
-        title: 'Joined Room', 
-        description: `Connected to room: ${joinRoomId}`,
-        duration: 3000 
-      });
+      if (mainVideoRef.current && mode === 'ai') {
+        mainVideoRef.current.srcObject = mediaStream;
+      }
     } catch (error) {
-      toast({ 
-        title: 'Error', 
-        description: 'Could not access camera/microphone', 
-        variant: 'destructive' 
-      });
+      toast({ title: 'Error', description: 'Camera access denied', variant: 'destructive' });
     }
+  };
+
+  const startAIInterview = async () => {
+    await startCamera();
+    setIsCallActive(true);
+    toast({ title: 'AI Interview Started' });
   };
 
   const endCall = () => {
@@ -160,379 +98,273 @@ export default function VideoInterviewPage() {
     }
     setIsCallActive(false);
     setRoomId('');
-    setJoinRoomId('');
-    setShowCodeEditor(false);
-    setShowDocuments(false);
-    setIsScreenSharing(false);
-    toast({ title: 'Call Ended' });
+    setMessages([{ role: 'ai', content: 'Hello! I\'m your AI interviewer. Ready to begin?' }]);
+    toast({ title: 'Interview Ended' });
   };
 
   const toggleVideo = () => {
     if (stream) {
-      const videoTrack = stream.getVideoTracks()[0];
-      videoTrack.enabled = !videoTrack.enabled;
+      stream.getVideoTracks()[0].enabled = !isVideoOn;
       setIsVideoOn(!isVideoOn);
     }
   };
 
   const toggleAudio = () => {
     if (stream) {
-      const audioTrack = stream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
+      stream.getAudioTracks()[0].enabled = !isAudioOn;
       setIsAudioOn(!isAudioOn);
     }
   };
 
-  const analyzeInterview = async (type: string) => {
-    if (mode !== 'ai') return;
-    
-    setIsAnalyzing(true);
-    try {
-      const response = await fetch('/api/video-interview/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: type === 'start' ? 'suggest-question' : 'analyze-confidence',
-          data: { 
-            text: type === 'start' ? 'Interview starting' : 'Analyzing performance',
-            context: 'Technical interview'
-          }
-        })
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setAiAnalysis(data.analysis);
-      }
-    } catch (error) {
-      console.error('AI analysis error:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
+  const sendMessage = () => {
+    if (!input.trim()) return;
+    setMessages(prev => [...prev, { role: 'user', content: input }]);
+    setTimeout(() => {
+      setMessages(prev => [...prev, { role: 'ai', content: 'Great answer! Tell me more about your experience.' }]);
+    }, 1000);
+    setInput('');
   };
 
-  const toggleScreenShare = async () => {
-    try {
-      if (!isScreenSharing) {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = screenStream;
-        }
-        setIsScreenSharing(true);
-        toast({ title: 'Screen Sharing', description: 'Now sharing your screen' });
-      } else {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = null;
-        }
-        setIsScreenSharing(false);
-        toast({ title: 'Screen Share Stopped' });
-      }
-    } catch (error) {
-      toast({ title: 'Error', description: 'Could not share screen', variant: 'destructive' });
-    }
+  const copyRoomId = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopied(true);
+    toast({ title: 'Copied!' });
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Video Interview</h1>
-            <p className="text-muted-foreground">AI Interview or Connect with Real Interviewer</p>
-        </div>
-        {isCallActive && (
-          <div className="flex gap-2">
-            {roomId && (
-              <Badge variant="outline" className="px-4 py-2 border-green-500 text-green-500 bg-green-50">
-                  ● Room: {roomId}
-              </Badge>
-            )}
-            {aiCheatingDetected && (
-              <Badge variant="destructive" className="px-4 py-2 animate-pulse">
-                  <AlertTriangle className="h-3 w-3 mr-1" /> Suspicious Activity
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
+    <div className="min-h-screen bg-[#0D0F12] text-white p-4">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
+          Video Interview
+        </h1>
 
-      {!isCallActive && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose Interview Mode</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={mode} onValueChange={(v) => setMode(v as 'ai' | 'peer')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="ai">AI Interview</TabsTrigger>
-                <TabsTrigger value="peer">Real Interviewer</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="ai" className="space-y-4 mt-4">
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Activity className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">AI-Powered Interview</h3>
-                  <p className="text-sm text-muted-foreground mb-6">Practice with AI emotion & confidence analysis</p>
-                  <Button onClick={() => startCall(false)} size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600">
-                    <Video className="h-5 w-5 mr-2" />
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'ai' | 'real')} className="w-full">
+          <TabsList className="w-full bg-[#1A1D24] border-b border-gray-800">
+            <TabsTrigger value="ai" className="flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+              AI Interview
+            </TabsTrigger>
+            <TabsTrigger value="real" className="flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+              Real Interview
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ai" className="mt-6">
+            {!isCallActive ? (
+              <Card className="bg-[#1A1D24] border-gray-800">
+                <CardContent className="p-12 text-center">
+                  <Bot className="w-16 h-16 mx-auto mb-4 text-purple-500" />
+                  <h3 className="text-xl font-semibold mb-2">AI Interview Mode</h3>
+                  <p className="text-gray-400 mb-6">Practice with AI-powered interviewer</p>
+                  <Button onClick={startAIInterview} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                     Start AI Interview
                   </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="peer" className="space-y-4 mt-4">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Create Room
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">Start a new interview room and share the ID with interviewer</p>
-                      <Button onClick={() => startCall(true)} className="w-full">
-                        Create & Start
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Join Room
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label htmlFor="roomId">Room ID</Label>
-                        <Input 
-                          id="roomId"
-                          placeholder="Enter room ID"
-                          value={joinRoomId}
-                          onChange={(e) => setJoinRoomId(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={joinRoom} className="w-full" variant="outline">
-                        Join Interview
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      )}
-
-      {isCallActive && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-4">
-            <Card className="overflow-hidden border-2 shadow-xl">
-              <CardContent className="p-0">
-                <div className="relative bg-slate-900 aspect-video">
-                  {isScreenSharing ? (
-                    <video
-                      ref={remoteVideoRef}
-                      autoPlay
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-                      <div className="text-center text-white">
-                        <Users className="h-16 w-16 mx-auto mb-4 text-blue-400" />
-                        <p className="text-xl font-medium">{mode === 'ai' ? 'AI Interviewer' : 'Waiting for interviewer...'}</p>
-                      </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  <Card className="bg-[#1A1D24] border-gray-800 overflow-hidden">
+                    <div className="relative aspect-video bg-black flex items-center justify-center">
+                      <video ref={mainVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                      {!stream && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Bot className="w-24 h-24 text-purple-500" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  
-                  {mode === 'peer' && roomId && (
-                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white p-3 rounded-xl">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs">Room ID:</span>
-                        <code className="text-sm font-mono">{roomId}</code>
-                        <Button size="sm" variant="ghost" onClick={copyRoomId} className="h-6 w-6 p-0">
-                          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  </Card>
+
+                  <Card className="bg-[#1A1D24] border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Chat</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="h-64 overflow-y-auto space-y-3 p-4 bg-[#0D0F12] rounded-lg">
+                        {messages.map((msg, i) => (
+                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`flex gap-2 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${msg.role === 'user' ? 'bg-blue-600' : 'bg-purple-600'}`}>
+                                {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                              </div>
+                              <div className={`rounded-lg p-3 ${msg.role === 'user' ? 'bg-blue-600' : 'bg-purple-600'}`}>
+                                <p className="text-sm">{msg.content}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                          placeholder="Type your answer..."
+                          className="bg-[#0D0F12] border-gray-700"
+                        />
+                        <Button onClick={sendMessage} size="icon" className="bg-gradient-to-r from-purple-600 to-blue-600">
+                          <Send className="w-4 h-4" />
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    </CardContent>
+                  </Card>
 
-
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={toggleVideo} variant={isVideoOn ? 'default' : 'destructive'} size="icon" className="rounded-full">
+                      {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                    </Button>
+                    <Button onClick={toggleAudio} variant={isAudioOn ? 'default' : 'destructive'} size="icon" className="rounded-full">
+                      {isAudioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                    </Button>
+                    <Button onClick={endCall} variant="destructive" size="icon" className="rounded-full">
+                      <PhoneOff className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  <Button onClick={toggleVideo} variant={isVideoOn ? 'default' : 'secondary'} size="lg" className="rounded-full w-12 h-12 p-0">
-                    {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5 text-red-500" />}
-                  </Button>
-                  <Button onClick={toggleAudio} variant={isAudioOn ? 'default' : 'secondary'} size="lg" className="rounded-full w-12 h-12 p-0">
-                    {isAudioOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5 text-red-500" />}
-                  </Button>
-                  <Button onClick={toggleScreenShare} variant={isScreenSharing ? 'default' : 'outline'} size="lg" className="rounded-full w-12 h-12 p-0">
-                    <Monitor className="h-5 w-5" />
-                  </Button>
-                  <Button onClick={() => setShowCodeEditor(!showCodeEditor)} variant={showCodeEditor ? 'default' : 'outline'} size="lg" className="rounded-full w-12 h-12 p-0">
-                    <Code className="h-5 w-5" />
-                  </Button>
-                  <Button onClick={() => setShowDocuments(!showDocuments)} variant={showDocuments ? 'default' : 'outline'} size="lg" className="rounded-full w-12 h-12 p-0">
-                    <FileText className="h-5 w-5" />
-                  </Button>
-                  <Button onClick={endCall} variant="destructive" size="lg" className="rounded-full w-16 h-12">
-                    <PhoneOff className="h-6 w-6" />
-                  </Button>
+                <div className="space-y-4">
+                  <Card className="bg-[#1A1D24] border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-sm">Your Feed</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                        <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#1A1D24] border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        AI Proctoring
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Tab Switches</span>
+                        <Badge variant={tabSwitchCount > 2 ? 'destructive' : 'secondary'}>{tabSwitchCount}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status</span>
+                        <Badge variant={tabSwitchCount > 2 ? 'destructive' : 'default'}>
+                          {tabSwitchCount > 2 ? 'Suspicious' : 'Normal'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-
-            {showCodeEditor && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Code className="h-4 w-4" />
-                    Live Code Editor
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Editor
-                    height="400px"
-                    defaultLanguage="javascript"
-                    value={code}
-                    onChange={(value) => setCode(value || '')}
-                    theme="vs-dark"
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                    }}
-                  />
-                </CardContent>
-              </Card>
+              </div>
             )}
+          </TabsContent>
 
-            {showDocuments && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Shared Documents
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    placeholder="Share notes, requirements, or documents here..."
-                    value={documentText}
-                    onChange={(e) => setDocumentText(e.target.value)}
-                    rows={10}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <TabsContent value="real" className="mt-6">
+            {!isCallActive ? (
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="bg-[#1A1D24] border-gray-800">
+                  <CardHeader>
+                    <CardTitle>Create Room</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-gray-400">Start a new interview room</p>
+                    <Button onClick={createRoom} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                      Create & Start
+                    </Button>
+                  </CardContent>
+                </Card>
 
-          <div className="space-y-4">
-            <Card className="bg-slate-950 border-slate-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-white text-sm">Your Feed</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="relative bg-black aspect-video rounded-lg overflow-hidden border border-slate-800">
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }}
-                  />
-                  {!stream && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-                      <Video className="h-12 w-12 text-slate-600" />
+                <Card className="bg-[#1A1D24] border-gray-800">
+                  <CardHeader>
+                    <CardTitle>Join Room</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Input
+                      value={joinRoomId}
+                      onChange={(e) => setJoinRoomId(e.target.value)}
+                      placeholder="Enter Room ID"
+                      className="bg-[#0D0F12] border-gray-700"
+                    />
+                    <Button onClick={joinRoom} className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                      Join Interview
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 space-y-4">
+                  <Card className="bg-[#1A1D24] border-gray-800 overflow-hidden">
+                    <div className="relative aspect-video bg-black flex items-center justify-center">
+                      <video ref={mainVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                      {!stream && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <p className="text-gray-400">Waiting for interviewer...</p>
+                        </div>
+                      )}
+                      {roomId && (
+                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white p-3 rounded-xl flex items-center gap-2">
+                          <span className="text-xs">Room: {roomId}</span>
+                          <Button size="sm" variant="ghost" onClick={copyRoomId} className="h-6 w-6 p-0">
+                            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Shield className="w-4 h-4" />
-                  AI Proctoring
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span>Tab Switches</span>
-                  <Badge variant={tabSwitchCount > 2 ? 'destructive' : 'secondary'}>
-                    {tabSwitchCount}
-                  </Badge>
+                  <div className="flex justify-center gap-2">
+                    <Button onClick={toggleVideo} variant={isVideoOn ? 'default' : 'destructive'} size="icon" className="rounded-full">
+                      {isVideoOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                    </Button>
+                    <Button onClick={toggleAudio} variant={isAudioOn ? 'default' : 'destructive'} size="icon" className="rounded-full">
+                      {isAudioOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                    </Button>
+                    <Button onClick={endCall} variant="destructive" size="icon" className="rounded-full">
+                      <PhoneOff className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span>Status</span>
-                  <Badge variant={aiCheatingDetected ? 'destructive' : 'default'}>
-                    {aiCheatingDetected ? 'Suspicious' : 'Normal'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
 
-            {mode === 'ai' && (
-              <Card className="border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Activity className="w-4 h-4 text-purple-500" />
-                    AI Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {isAnalyzing ? (
-                    <div className="text-sm text-muted-foreground animate-pulse">Analyzing...</div>
-                  ) : aiAnalysis ? (
-                    <div className="text-sm bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg">
-                      {aiAnalysis}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">AI will analyze your performance in real-time</div>
-                  )}
-                </CardContent>
-              </Card>
+                <div className="space-y-4">
+                  <Card className="bg-[#1A1D24] border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-sm">Your Feed</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+                        <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-[#1A1D24] border-gray-800">
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        AI Proctoring
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Tab Switches</span>
+                        <Badge variant={tabSwitchCount > 2 ? 'destructive' : 'secondary'}>{tabSwitchCount}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status</span>
+                        <Badge variant={tabSwitchCount > 2 ? 'destructive' : 'default'}>
+                          {tabSwitchCount > 2 ? 'Suspicious' : 'Normal'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Activity className="w-4 h-4" />
-                  Features
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Screen Share</Badge>
-                  <span className="text-muted-foreground">Share your screen</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Code Editor</Badge>
-                  <span className="text-muted-foreground">Live coding</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Documents</Badge>
-                  <span className="text-muted-foreground">Share notes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">AI Analysis</Badge>
-                  <span className="text-muted-foreground">Real-time feedback</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
