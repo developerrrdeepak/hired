@@ -20,6 +20,7 @@ export default function VideoInterviewPage() {
   const [joinRoomId, setJoinRoomId] = useState('');
   const [copied, setCopied] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Array<{role: 'user' | 'ai', content: string}>>([
     { role: 'ai', content: 'Hello! I\'m your AI interviewer. Ready to begin?' }
   ]);
@@ -75,33 +76,50 @@ export default function VideoInterviewPage() {
   }, [remoteStream]);
 
   const createRoom = async () => {
-    const mediaStream = await startCamera();
-    if (!mediaStream) return;
-
-    const peer = new Peer({
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
+    setIsLoading(true);
+    try {
+      const mediaStream = await startCamera();
+      if (!mediaStream) {
+        setIsLoading(false);
+        return;
       }
-    });
 
-    peer.on('open', (id) => {
-      setRoomId(id);
-      setIsCallActive(true);
-      toast({ title: 'Room Created', description: `Room ID: ${id}` });
-    });
-
-    peer.on('call', (call) => {
-      call.answer(mediaStream);
-      call.on('stream', (remoteStream) => {
-        setRemoteStream(remoteStream);
+      const peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
       });
-      callRef.current = call;
-    });
 
-    peerRef.current = peer;
+      peer.on('open', (id) => {
+        setRoomId(id);
+        setIsCallActive(true);
+        setIsLoading(false);
+        toast({ title: 'Room Created', description: `Room ID: ${id}` });
+      });
+
+      peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        setIsLoading(false);
+        toast({ title: 'Error', description: 'Failed to create room', variant: 'destructive' });
+      });
+
+      peer.on('call', (call) => {
+        call.answer(mediaStream);
+        call.on('stream', (remoteStream) => {
+          setRemoteStream(remoteStream);
+        });
+        callRef.current = call;
+      });
+
+      peerRef.current = peer;
+    } catch (error) {
+      console.error('Create room error:', error);
+      setIsLoading(false);
+      toast({ title: 'Error', description: 'Failed to create room', variant: 'destructive' });
+    }
   };
 
   const joinRoom = async () => {
@@ -149,9 +167,19 @@ export default function VideoInterviewPage() {
   };
 
   const startAIInterview = async () => {
-    await startCamera();
-    setIsCallActive(true);
-    toast({ title: 'AI Interview Started' });
+    setIsLoading(true);
+    try {
+      const mediaStream = await startCamera();
+      if (mediaStream) {
+        setIsCallActive(true);
+        toast({ title: 'AI Interview Started' });
+      }
+    } catch (error) {
+      console.error('Start AI interview error:', error);
+      toast({ title: 'Error', description: 'Failed to start interview', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const endCall = () => {
@@ -222,7 +250,9 @@ export default function VideoInterviewPage() {
                 <Bot className="w-16 h-16 mx-auto mb-4 text-primary" />
                 <h3 className="text-xl font-semibold mb-2">AI Interview Mode</h3>
                 <p className="text-muted-foreground mb-6">Practice with AI-powered interviewer</p>
-                <Button onClick={startAIInterview}>Start AI Interview</Button>
+                <Button onClick={startAIInterview} disabled={isLoading}>
+                  {isLoading ? 'Starting...' : 'Start AI Interview'}
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -339,7 +369,9 @@ export default function VideoInterviewPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-sm text-muted-foreground">Start a new interview room</p>
-                  <Button onClick={createRoom} className="w-full">Create & Start</Button>
+                  <Button onClick={createRoom} className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Creating...' : 'Create & Start'}
+                  </Button>
                 </CardContent>
               </Card>
 
