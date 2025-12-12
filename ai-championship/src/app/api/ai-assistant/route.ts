@@ -79,6 +79,18 @@ export async function POST(request: NextRequest) {
         response = await assistant.parseResume(body.resumeText);
         break;
       
+      case 'summarize-text':
+        response = await assistant.summarizeText(body.text);
+        break;
+
+      case 'generate-email':
+        response = await assistant.generateEmailDraft(body.topic, body.recipient, body.tone);
+        break;
+
+      case 'meeting-notes':
+        response = await assistant.generateMeetingNotes(body.transcript);
+        break;
+      
       default:
         // Default chat behavior
         response = await assistant.ask(question, userId, context);
@@ -127,6 +139,9 @@ export async function GET(request: NextRequest) {
       'Project Ideas Generator',
       'Career Guidance',
       'Resume Parser',
+      'Text Summarization',
+      'Email Generation',
+      'Meeting Notes Organization',
     ],
     message: 'Universal AI Assistant is ready.',
   });

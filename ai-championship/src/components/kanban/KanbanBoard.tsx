@@ -146,11 +146,53 @@ export function KanbanBoard() {
         });
 
         toast({ title: "Updated", description: `Application moved to ${newStage}` });
+        
+        // --- Productivity Automation: Auto-Email Trigger ---
+        if (newStage === 'Offer' || newStage === 'Rejected' || newStage === 'Technical Interview') {
+           triggerAutomatedEmail(appId, newStage);
+        }
+
     } catch (error) {
         console.error("Failed to update stage", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to move application" });
     }
   };
+
+  const triggerAutomatedEmail = async (appId: string, stage: string) => {
+      try {
+           // We would fetch candidate and job details here if not available in closure
+           // But simpler to let the API handle it if we passed IDs. 
+           // For now, let's just use the AI Assistant API to generate a draft and maybe log it.
+           // In a real app, this would likely call a specific 'automation' endpoint.
+           
+           // Finding task details for context
+           const task = tasks.find(t => t.id === appId);
+           if (!task) return;
+
+           const response = await fetch('/api/ai-assistant', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                   action: 'generate-email',
+                   topic: `Application update: moved to ${stage} stage`,
+                   recipient: task.candidateName,
+                   tone: 'professional'
+               })
+           });
+           
+           if (response.ok) {
+               const data = await response.json();
+               toast({ 
+                   title: "AI Automation", 
+                   description: `Draft email generated for ${task.candidateName} (${stage})`,
+                   // In a real app, we might open a modal with this draft
+               });
+               console.log("Generated Draft:", data.data.answer);
+           }
+      } catch (e) {
+          console.error("Automation error", e);
+      }
+  }
 
   if (isLoadingApps) return <div className="flex gap-4 p-4 overflow-x-auto"><Skeleton className="w-[280px] h-[500px]" /><Skeleton className="w-[280px] h-[500px]" /><Skeleton className="w-[280px] h-[500px]" /></div>;
 

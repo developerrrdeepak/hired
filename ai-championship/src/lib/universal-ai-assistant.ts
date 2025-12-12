@@ -90,6 +90,7 @@ CAPABILITIES:
 - **Technical Expertise:** Ability to explain code, system architecture, and tech trends with clarity and depth.
 - **Business Writing:** Drafting and refining emails, job descriptions, and professional communications.
 - **Strategic Analysis:** Evaluating profiles, matching candidates to roles, and identifying skill gaps.
+- **Productivity Enhancement:** Summarizing text, generating email drafts, and organizing meeting notes.
 
 RESPONSE FORMATTING:
 - Use clear headings and bullet points for readability.
@@ -136,6 +137,11 @@ Provide a high-quality, professional response:`;
     if (answer.includes('post') || answer.includes('community')) {
       suggestions.push('How can I increase engagement on this post?');
       suggestions.push('What is the best time to publish this?');
+    }
+
+    if (answer.includes('email') || answer.includes('draft')) {
+      suggestions.push('Make it more formal');
+      suggestions.push('Make it shorter');
     }
     
     suggestions.push('Can you provide a real-world example?');
@@ -473,6 +479,52 @@ Options to provide:
 3.  **The Appreciative Networker**: Expresses gratitude and highlights a specific takeaway.
 
 Ensure all comments are polite, constructive, and add value to the conversation.`;
+
+    return this.ask(prompt);
+  }
+
+  // --- NEW PRODUCTIVITY FEATURES ---
+
+  async summarizeText(text: string): Promise<AIResponse> {
+    const prompt = `Summarize the following text efficiently:
+
+TEXT TO SUMMARIZE:
+"${text.substring(0, 10000)}"
+
+Please provide:
+1.  **Executive Summary**: A 1-2 sentence high-level overview.
+2.  **Key Points**: 3-5 bullet points covering the most important information.
+3.  **Action Items**: If applicable, any tasks or steps implied.
+4.  **Sentiment**: Brief note on the tone (Positive/Neutral/Negative/Urgent).`;
+
+    return this.ask(prompt);
+  }
+
+  async generateEmailDraft(topic: string, recipient: string, tone: string = 'professional'): Promise<AIResponse> {
+    const prompt = `Draft a ${tone} email to ${recipient} about: "${topic}".
+
+Please provide:
+1.  **Subject Lines**: 3 options (Direct, Engaging, Urgent).
+2.  **Email Body**: A well-structured draft with placeholders for specifics [like this].
+3.  **Closing**: A professional sign-off.
+
+Ensure the email is clear, concise, and effective.`;
+
+    return this.ask(prompt);
+  }
+
+  async generateMeetingNotes(transcript: string): Promise<AIResponse> {
+    const prompt = `Organize the following meeting notes/transcript into a structured summary:
+
+TRANSCRIPT/NOTES:
+"${transcript.substring(0, 8000)}"
+
+Please output:
+1.  **Meeting Goal**: What was the primary purpose?
+2.  **Key Decisions**: What was agreed upon?
+3.  **Action Items**: Who needs to do what? (Format: [Owner] - [Task])
+4.  **Open Questions**: What is still unresolved?
+5.  **Next Steps**: Immediate follow-ups required.`;
 
     return this.ask(prompt);
   }

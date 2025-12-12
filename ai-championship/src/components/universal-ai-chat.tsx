@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { 
   Send, Sparkles, Code, Bug, Lightbulb, Brain, Loader2, 
-  FileText, Briefcase, UserCheck 
+  FileText, Briefcase, UserCheck, Mail, ClipboardList, PenTool
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -23,19 +23,19 @@ interface Message {
   suggestions?: string[];
 }
 
-type Mode = 'chat' | 'code' | 'debug' | 'explain' | 'brainstorm' | 'resume' | 'jd' | 'interview';
+type Mode = 'chat' | 'code' | 'debug' | 'explain' | 'brainstorm' | 'resume' | 'jd' | 'interview' | 'email' | 'summarize' | 'meeting';
 
 export function UniversalAIChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: '👋 Hi! I\'m your Universal AI Assistant. I can help with coding, debugging, recruitment, and more. What would you like to do?',
+      content: '👋 Hi! I\'m your Universal AI Assistant. I can help with coding, debugging, recruitment, productivity tasks, and more. What would you like to do?',
       timestamp: new Date(),
       suggestions: [
         '💻 Analyze my code',
         '🐛 Debug an error',
-        '📋 Generate Job Description',
-        '📄 Analyze Resume',
+        '📧 Draft an email',
+        '📝 Summarize text',
       ],
     },
   ]);
@@ -103,6 +103,19 @@ export function UniversalAIChat() {
         case 'interview':
           payload.action = 'generate-interview-questions';
           payload.role = input;
+          break;
+        case 'email':
+          payload.action = 'generate-email';
+          payload.topic = input;
+          payload.recipient = 'Relevant Person'; // Generic placeholder
+          break;
+        case 'summarize':
+          payload.action = 'summarize-text';
+          payload.text = input;
+          break;
+        case 'meeting':
+          payload.action = 'meeting-notes';
+          payload.transcript = input;
           break;
         default:
           // Default chat
@@ -200,6 +213,19 @@ export function UniversalAIChat() {
           payload.action = 'generate-interview-questions';
           payload.role = suggestion;
           break;
+        case 'email':
+          payload.action = 'generate-email';
+          payload.topic = suggestion;
+          payload.recipient = 'Relevant Person';
+          break;
+        case 'summarize':
+          payload.action = 'summarize-text';
+          payload.text = suggestion;
+          break;
+        case 'meeting':
+          payload.action = 'meeting-notes';
+          payload.transcript = suggestion;
+          break;
       }
 
       const response = await fetch('/api/ai-assistant', {
@@ -243,6 +269,9 @@ export function UniversalAIChat() {
       case 'resume': return '📄 Paste resume text...';
       case 'jd': return '📋 Job title (e.g. Senior React Developer)...';
       case 'interview': return '🎯 Job role for interview questions...';
+      case 'email': return '📧 What is the email about?';
+      case 'summarize': return '📝 Paste text to summarize...';
+      case 'meeting': return '📅 Paste meeting notes/transcript...';
       default: return 'Type your message...';
     }
   };
@@ -278,6 +307,27 @@ export function UniversalAIChat() {
             </div>
 
             <div className="h-4 w-[1px] bg-gray-300 mx-1"></div>
+
+             {/* Productivity Modes Dropdown */}
+             <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant={['email', 'summarize', 'meeting'].includes(mode) ? 'default' : 'outline'}>
+                   <PenTool className="w-4 h-4 mr-2" />
+                   Work
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setMode('email')}>
+                  <Mail className="w-4 h-4 mr-2" /> Draft Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode('summarize')}>
+                  <FileText className="w-4 h-4 mr-2" /> Summarize
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode('meeting')}>
+                  <ClipboardList className="w-4 h-4 mr-2" /> Meeting Notes
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Recruitment Modes Dropdown */}
             <DropdownMenu>

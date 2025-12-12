@@ -18,7 +18,7 @@ import { collection, doc, getDoc, addDoc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, X, Building } from "lucide-react";
+import { Loader2, X, Building, Sparkles } from "lucide-react";
 import { useUserContext } from "@/app/(app)/layout";
 
 const jobFormSchema = z.object({
@@ -92,6 +92,7 @@ export default function NewJobPage() {
     const { firestore, user } = useFirebase();
     const { organizationId } = useUserContext();
     const [organization, setOrganization] = useState<any>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         if (!firestore || !organizationId) return;
@@ -121,6 +122,38 @@ export default function NewJobPage() {
             niceToHaveSkills: [],
         },
     });
+
+    const generateJobDescription = async () => {
+        const title = form.getValues('title');
+        if (!title) {
+            toast({ title: 'Please enter a Job Title first', variant: 'destructive' });
+            return;
+        }
+        
+        setIsGenerating(true);
+        try {
+            const response = await fetch('/api/ai-assistant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'generate-jd',
+                    role: title,
+                    companyContext: organization?.name
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                form.setValue('jobDescription', data.data.answer);
+                toast({ title: 'Job Description Generated', description: 'AI has drafted a description for you.' });
+            }
+        } catch (error) {
+            console.error(error);
+            toast({ title: 'Generation Failed', variant: 'destructive' });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     async function onSubmit(values: z.infer<typeof jobFormSchema>) {
         if (!firestore || !user) {
@@ -452,12 +485,25 @@ export default function NewJobPage() {
                 />
               </div>
               <div className="md:col-span-2">
+                <div className="flex justify-between items-center mb-2">
+                   <FormLabel>Job Description</FormLabel>
+                   <Button 
+                     type="button" 
+                     variant="ghost" 
+                     size="sm" 
+                     className="text-purple-600 gap-1"
+                     onClick={generateJobDescription}
+                     disabled={isGenerating}
+                   >
+                     {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                     AI Generate
+                   </Button>
+                </div>
                 <FormField
                     control={form.control}
                     name="jobDescription"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Job Description</FormLabel>
                         <FormControl>
                         <Textarea
                             placeholder="Describe the role, responsibilities, and qualifications."
