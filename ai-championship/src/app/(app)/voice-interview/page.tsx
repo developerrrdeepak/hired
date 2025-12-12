@@ -26,9 +26,14 @@ export default function VoiceInterviewPage() {
   const [interviewDuration, setInterviewDuration] = useState(0);
   const [confidenceScore, setConfidenceScore] = useState(0);
   const [autoSendEnabled, setAutoSendEnabled] = useState(true);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [eyeContact, setEyeContact] = useState(0);
+  const [lookingAway, setLookingAway] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const faceDetectionRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,7 +54,7 @@ export default function VoiceInterviewPage() {
     };
   }, [isInterviewStarted]);
 
-  // Calculate confidence score based on behavior
+  // Calculate confidence score based on behavior and face analysis
   useEffect(() => {
     if (!isInterviewStarted) {
       setConfidenceScore(0);
@@ -58,9 +63,12 @@ export default function VoiceInterviewPage() {
     const baseScore = 100;
     const tabPenalty = tabSwitches * 10;
     const focusPenalty = focusLosses * 5;
-    const score = Math.max(0, baseScore - tabPenalty - focusPenalty);
-    setConfidenceScore(score);
-  }, [tabSwitches, focusLosses, isInterviewStarted]);
+    const faceBonus = faceDetected ? 10 : -20;
+    const eyeContactRatio = eyeContact / Math.max(1, eyeContact + lookingAway);
+    const eyeContactBonus = eyeContactRatio * 15;
+    const score = Math.max(0, baseScore - tabPenalty - focusPenalty + faceBonus + eyeContactBonus);
+    setConfidenceScore(Math.round(score));
+  }, [tabSwitches, focusLosses, faceDetected, eyeContact, lookingAway, isInterviewStarted]);
 
   // Behavior Detection - Tab Switch & Focus Loss
   useEffect(() => {
@@ -89,6 +97,75 @@ export default function VoiceInterviewPage() {
     };
   }, [isInterviewStarted]);
 
+  // Face Detection
+  const detectFace = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx || video.videoWidth === 0) return;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    
+    // Simple face detection using skin tone and face proportions
+    let skinPixels = 0;
+    let totalPixels = pixels.length / 4;
+    
+    for (let i = 0; i < pixels.length; i += 4) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      
+      // Skin tone detection (simplified)
+      if (r > 95 && g > 40 && b > 20 && 
+          Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
+          Math.abs(r - g) > 15 && r > g && r > b) {
+        skinPixels++;
+      }
+    }
+    
+    const skinRatio = skinPixels / totalPixels;
+    const facePresent = skinRatio > 0.02; // Threshold for face detection
+    
+    setFaceDetected(facePresent);
+    
+    // Eye contact simulation (center region focus)
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const centerRegion = 100;
+    
+    let centerPixels = 0;
+    for (let y = centerY - centerRegion; y < centerY + centerRegion; y++) {
+      for (let x = centerX - centerRegion; x < centerX + centerRegion; x++) {
+        if (x >= 0 && x < canvas.width && y >= 0 && y < canvas.height) {
+          const idx = (y * canvas.width + x) * 4;
+          const r = pixels[idx];
+          const g = pixels[idx + 1];
+          const b = pixels[idx + 2];
+          
+          if (r > 95 && g > 40 && b > 20) {
+            centerPixels++;
+          }
+        }
+      }
+    }
+    
+    if (facePresent) {
+      if (centerPixels > 500) {
+        setEyeContact(prev => prev + 1);
+      } else {
+        setLookingAway(prev => prev + 1);
+      }
+    }
+  };
+
   useEffect(() => {
     let stream: MediaStream | null = null;
     
@@ -96,13 +173,16 @@ export default function VoiceInterviewPage() {
       if (videoRef.current && isInterviewStarted) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: 1280, height: 720 }, 
+            video: { width: 640, height: 480 }, 
             audio: false 
           });
           
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             await videoRef.current.play();
+            
+            // Start face detection
+            faceDetectionRef.current = setInterval(detectFace, 1000);
           }
         } catch (err) {
           console.error('Camera error:', err);
@@ -118,6 +198,9 @@ export default function VoiceInterviewPage() {
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
+      }
+      if (faceDetectionRef.current) {
+        clearInterval(faceDetectionRef.current);
       }
     };
   }, [isInterviewStarted]);
@@ -272,6 +355,228 @@ export default function VoiceInterviewPage() {
       console.error('Interview error:', error);
       const errorMessage = {
         role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <PageHeader
+        title="Voice Interview"
+        description="Practice with our AI interviewer using voice commands"
+      />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Video & Controls */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5" />
+                Interview Session
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                {!isInterviewStarted && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <div className="text-center text-white">
+                      <Video className="h-12 w-12 mx-auto mb-2" />
+                      <p>Camera will start when interview begins</p>
+                    </div>
+                  </div>
+                )}
+                {isInterviewStarted && (
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <Badge variant={faceDetected ? "default" : "destructive"} className="text-xs">
+                      {faceDetected ? "Face ✓" : "No Face"}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={handleStartListening}
+                    disabled={isListening || isSpeaking}
+                    variant={isListening ? "destructive" : "default"}
+                    size="sm"
+                  >
+                    {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    {isListening ? 'Listening...' : 'Start Speaking'}
+                  </Button>
+                  
+                  {isSpeaking && (
+                    <Badge variant="secondary" className="animate-pulse">
+                      <Volume2 className="h-3 w-3 mr-1" />
+                      AI Speaking
+                    </Badge>
+                  )}
+                </div>
+                
+                {isInterviewStarted && (
+                  <div className="text-sm text-muted-foreground">
+                    Duration: {formatTime(interviewDuration)}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Chat Interface */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Conversation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
+                {messages.map((message, index) => (
+                  <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`flex gap-2 max-w-[80%] ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${message.role === 'user' ? 'bg-blue-500' : 'bg-purple-500'}`}>
+                        {message.role === 'user' ? <User className="h-4 w-4 text-white" /> : <Bot className="h-4 w-4 text-white" />}
+                      </div>
+                      <div className={`rounded-lg p-3 ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+                        <p className="text-sm">{message.content}</p>
+                        {message.timestamp && (
+                          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+              
+              <div className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your response or use voice..."
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  disabled={isLoading}
+                />
+                <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Settings & Analytics */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Voice Gender</Label>
+                <RadioGroup value={voiceGender} onValueChange={(value: 'male' | 'female') => setVoiceGender(value)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="female" />
+                    <Label htmlFor="female">Female</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="male" />
+                    <Label htmlFor="male">Male</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="autoSend"
+                  checked={autoSendEnabled}
+                  onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="autoSend">Auto-send voice messages</Label>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {isInterviewStarted && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Interview Analytics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm">Confidence Score:</span>
+                  <Badge variant={confidenceScore >= 80 ? "default" : confidenceScore >= 60 ? "secondary" : "destructive"}>
+                    {confidenceScore}%
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Face Detected:</span>
+                  <Badge variant={faceDetected ? "default" : "destructive"} className="text-xs">
+                    {faceDetected ? "Yes" : "No"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Eye Contact:</span>
+                  <span className="text-sm font-medium">
+                    {Math.round((eyeContact / Math.max(1, eyeContact + lookingAway)) * 100)}%
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Tab Switches:</span>
+                  <span className="text-sm font-medium">{tabSwitches}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Focus Losses:</span>
+                  <span className="text-sm font-medium">{focusLosses}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {warnings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-orange-600">Warnings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {warnings.slice(-5).map((warning, index) => (
+                    <p key={index} className="text-xs text-orange-600">{warning}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
         content: 'I apologize, I had trouble processing that. Could you please repeat?',
         timestamp: new Date()
       };
