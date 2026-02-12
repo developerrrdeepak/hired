@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "cd ai-championship && npm install && npm run build"
+    "build": "cd hirevision && npm install && npm run build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.948.0",
